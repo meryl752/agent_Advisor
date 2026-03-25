@@ -21,8 +21,8 @@ const config: Config = {
         },
         cream: '#f0ede6',
         muted: {
-          DEFAULT: '#444444',
-          2: '#666666',
+          DEFAULT: '#888888',
+          2: '#bbbbbb',
         },
         border: {
           DEFAULT: '#1a1a1a',

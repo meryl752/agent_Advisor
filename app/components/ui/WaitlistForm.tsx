@@ -43,7 +43,7 @@ export default function WaitlistForm({ id, centered = false }: WaitlistFormProps
         />
         <button
           onClick={handleSubmit}
-          className="bg-accent text-bg font-syne font-bold text-sm tracking-[0.03em] px-7 py-4
+          className="bg-accent text-bg font-syne font-bold text-sm px-7 py-4
                      whitespace-nowrap transition-opacity duration-150 hover:opacity-85"
         >
           Rejoindre →
@@ -59,7 +59,7 @@ export default function WaitlistForm({ id, centered = false }: WaitlistFormProps
         </p>
       ) : (
         <p className={cn(
-          'font-dm-mono text-[0.66rem] text-muted mt-3 tracking-[0.05em]',
+          'font-dm-mono text-[0.66rem] text-muted mt-3',
           centered && 'text-center'
         )}>
           ✦ Bêta privée · Places limitées · Aucun spam

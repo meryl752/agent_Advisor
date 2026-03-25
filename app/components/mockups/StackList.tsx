@@ -11,7 +11,7 @@ export default function StackList({ items }: { items?: StackItem[] }) {
 
   return (
     <div className="bg-bg-3 border border-border px-4 py-[14px]">
-      <p className="font-dm-mono text-[0.6rem] text-muted tracking-[0.08em] uppercase mb-[10px]">
+      <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-[10px]">
         Ton stack actuel
       </p>
       {data.map((item, i) => (

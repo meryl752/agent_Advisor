@@ -23,10 +23,11 @@ const COLORS = [
 
 export default function StackFlow({ agents, stackName }: StackFlowProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({})
   
   return (
     <div className="border border-border bg-bg-2 p-5">
-      <p className="font-dm-mono text-[0.65rem] text-muted uppercase tracking-[0.1em] mb-4">
+      <p className="font-dm-mono text-[0.65rem] text-muted uppercase mb-4">
         Flux d'exécution — {stackName}
       </p>
 
@@ -38,39 +39,25 @@ export default function StackFlow({ agents, stackName }: StackFlowProps) {
           return (
             <div key={i} className="flex items-center flex-shrink-0">
               {/* Node */}
-              <div
-                onMouseEnter={() => setHoveredIdx(i)}
-                onMouseLeave={() => setHoveredIdx(null)}
-                className="flex flex-col items-center gap-2 cursor-default transition-transform duration-200"
-                style={{ transform: isHovered ? 'translateY(-4px)' : 'none' }}
-              >
-                {/* Logo circle */}
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center border-2 relative overflow-hidden"
-                  style={{
-                    background: color.bg,
-                    borderColor: color.border,
-                    boxShadow: isHovered ? `0 0 20px ${color.border}` : 'none',
-                  }}
-                >
-                  {agent.website_domain ? (
+              <div className="flex flex-col items-center gap-2 cursor-default">
+                {/* Logo wrapper */}
+                <div className="w-14 h-14 flex items-center justify-center relative">
+                  {agent.website_domain && !imgErrors[i] ? (
                     <img
-                      src={`https://logo.clearbit.com/${agent.website_domain}`}
+                      src={`https://img.logo.dev/${agent.website_domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
                       alt={agent.name}
-                      className="w-8 h-8 object-contain"
-                      onError={e => {
-                        (e.target as HTMLImageElement).style.display = 'none'
-                      }}
+                      className="w-12 h-12 object-contain"
+                      onError={() => setImgErrors(prev => ({ ...prev, [i]: true }))}
                     />
                   ) : (
-                    <span className="font-syne font-extrabold text-lg" style={{ color: color.text }}>
+                    <span className="font-syne font-extrabold text-2xl" style={{ color: color.text }}>
                       {agent.name.charAt(0)}
                     </span>
                   )}
 
                   {/* Step number */}
                   <div
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-sm"
                     style={{ background: color.text }}
                   >
                     <span className="font-syne font-extrabold text-[0.6rem] text-bg">
@@ -84,12 +71,6 @@ export default function StackFlow({ agents, stackName }: StackFlowProps) {
                   <p className="font-syne font-bold text-[0.72rem] text-cream leading-tight text-center">
                     {agent.name}
                   </p>
-                  {isHovered && (
-                    <p className="font-dm-mono text-[0.55rem] text-center leading-tight mt-1"
-                       style={{ color: color.text }}>
-                      {agent.role.length > 40 ? agent.role.slice(0, 40) + '...' : agent.role}
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -106,7 +87,7 @@ export default function StackFlow({ agents, stackName }: StackFlowProps) {
         })}
       </div>
 
-      <p className="font-dm-mono text-[0.6rem] text-muted mt-3 tracking-[0.06em]">
+      <p className="font-dm-mono text-[0.6rem] text-muted mt-3">
         ↑ Passe la souris sur un agent pour voir son rôle
       </p>
     </div>

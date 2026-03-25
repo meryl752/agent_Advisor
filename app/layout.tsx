@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Syne, DM_Mono, DM_Sans } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
+import { dark } from '@clerk/themes'
 import './globals.css'
 
 const syne = Syne({
@@ -26,11 +27,11 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'StackAI — La plateforme IA qui maximise ton ROI',
-  description: "Tu décris ton objectif. StackAI analyse 200+ agents IA et t'assemble le combo exact.",
+  title: 'Raspquery — La plateforme IA qui maximise ton ROI',
+  description: "Tu décris ton objectif. Raspquery analyse 200+ agents IA et t'assemble le combo exact.",
   keywords: ['IA', 'agents IA', 'stack IA', 'ROI', 'automatisation'],
   openGraph: {
-    title: 'StackAI — Construis le stack parfait. Gagne plus.',
+    title: 'Raspquery — Construis le stack parfait. Gagne plus.',
     description: 'Trouve les agents IA exacts pour ton objectif en 30 secondes.',
     type: 'website',
   },
@@ -38,7 +39,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        baseTheme: dark,
+        variables: {
+          colorPrimary: '#C8F135',
+          colorBackground: '#0d0d0d',
+          colorText: '#f0ede6',
+          colorTextSecondary: '#bbbbbb',
+          colorInputBackground: '#111111',
+          colorInputText: '#f0ede6',
+        },
+      }}
+    >
       <html lang="fr" className={`${syne.variable} ${dmMono.variable} ${dmSans.variable}`}>
         <body>{children}</body>
       </html>

@@ -48,7 +48,7 @@ export default function DashboardMockup() {
             className="p-[14px] flex flex-col"
             style={{ background: '#111', border: '1px solid #1a1a1a' }}
           >
-            <span className="font-dm-mono text-[0.6rem] text-[#444] tracking-[0.08em] uppercase mb-[6px]">
+            <span className="font-dm-mono text-[0.6rem] text-[#444] uppercase mb-[6px]">
               {card.label}
             </span>
             <span
@@ -66,7 +66,7 @@ export default function DashboardMockup() {
 
       {/* Bar chart */}
       <div className="p-4" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-        <div className="font-dm-mono text-[0.6rem] text-[#444] tracking-[0.08em] uppercase mb-3">
+        <div className="font-dm-mono text-[0.6rem] text-[#444] uppercase mb-3">
           Économies générées — 6 derniers mois
         </div>
         <div className="flex items-end gap-[6px] h-[60px]">
@@ -88,7 +88,7 @@ export default function DashboardMockup() {
 
       {/* Stack list */}
       <div className="p-[14px]" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-        <div className="font-dm-mono text-[0.6rem] text-[#444] tracking-[0.08em] uppercase mb-[10px]">
+        <div className="font-dm-mono text-[0.6rem] text-[#444] uppercase mb-[10px]">
           Ton stack actuel
         </div>
         {STACK_ITEMS.map((item) => (

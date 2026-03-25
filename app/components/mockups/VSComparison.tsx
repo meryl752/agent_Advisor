@@ -46,7 +46,7 @@ export default function VSComparison() {
               key={i}
               className={`bg-bg-3 border p-3 ${stack.winner ? 'border-accent/30' : 'border-border'}`}
             >
-              <p className="font-dm-mono text-[0.58rem] text-muted tracking-[0.08em] uppercase mb-2">
+              <p className="font-dm-mono text-[0.58rem] text-muted uppercase mb-2">
                 {stack.label}
               </p>
               <p className="font-syne font-bold text-[0.85rem] text-cream mb-[10px]">

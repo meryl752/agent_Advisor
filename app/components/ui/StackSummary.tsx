@@ -12,61 +12,54 @@ export default function StackSummary({
   roi_estimate, time_saved_per_week, agentCount,
 }: StackSummaryProps) {
   return (
-    <div className="relative border border-border bg-bg-2 overflow-hidden">
-      {/* Top accent */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-accent" />
-
-      {/* Grid bg */}
-      <div className="absolute inset-0 grid-bg opacity-40 pointer-events-none" />
-
+    <div className="relative mb-6 border-2 border-[#CAFF32] bg-zinc-950 shadow-[0_0_30px_rgba(202,255,50,0.15)] overflow-hidden">
       <div className="relative p-6">
-        <p className="font-dm-mono text-[0.68rem] text-accent tracking-[0.14em] uppercase mb-2">
+        <p className="font-dm-mono text-[0.7rem] text-[#CAFF32] font-black uppercase mb-2 tracking-[0.2em]">
           ✦ Stack recommandé
         </p>
-        <h2 className="font-syne font-extrabold text-2xl tracking-[-0.03em] text-cream mb-3">
+        <h2 className="font-syne font-black text-3xl tracking-[-0.03em] text-white mb-3">
           {stackName}
         </h2>
-        <p className="font-dm-sans text-sm text-muted-2 font-light leading-relaxed mb-6 max-w-xl">
+        <p className="font-dm-sans text-sm text-zinc-300 font-medium leading-relaxed mb-6 max-w-xl">
           {justification}
         </p>
 
         {/* Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px] bg-border">
-          <div className="bg-bg-2 px-4 py-3">
-            <p className="font-dm-mono text-[0.58rem] text-muted uppercase tracking-[0.08em] mb-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[1px] bg-zinc-800">
+          <div className="bg-zinc-900 px-5 py-4">
+            <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
               Coût total
             </p>
-            <p className="font-syne font-extrabold text-xl text-cream">
+            <p className="font-syne font-black text-2xl text-white">
               {total_cost}€
-              <span className="font-dm-sans text-xs font-light text-muted-2">/mois</span>
+              <span className="font-dm-sans text-xs font-normal text-zinc-500 ml-1">/m</span>
             </p>
           </div>
-          <div className="bg-bg-2 px-4 py-3">
-            <p className="font-dm-mono text-[0.58rem] text-muted uppercase tracking-[0.08em] mb-1">
+          <div className="bg-zinc-900 px-5 py-4">
+            <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
               ROI estimé
             </p>
-            <p className="font-syne font-extrabold text-xl text-accent">
+            <p className="font-syne font-black text-2xl text-[#CAFF32]">
               +{roi_estimate}%
             </p>
           </div>
           {time_saved_per_week && (
-            <div className="bg-bg-2 px-4 py-3">
-              <p className="font-dm-mono text-[0.58rem] text-muted uppercase tracking-[0.08em] mb-1">
-                Temps économisé
+            <div className="bg-zinc-900 px-5 py-4">
+              <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
+                Temps gagné
               </p>
-              <p className="font-syne font-extrabold text-xl text-accent-3">
+              <p className="font-syne font-black text-2xl text-[#38bdf8]">
                 {time_saved_per_week}h
-                <span className="font-dm-sans text-xs font-light text-muted-2">/semaine</span>
+                <span className="font-dm-sans text-xs font-normal text-zinc-500 ml-1">/s</span>
               </p>
             </div>
           )}
-          <div className="bg-bg-2 px-4 py-3">
-            <p className="font-dm-mono text-[0.58rem] text-muted uppercase tracking-[0.08em] mb-1">
-              Agents
+          <div className="bg-zinc-900 px-5 py-4">
+            <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
+              Outils
             </p>
-            <p className="font-syne font-extrabold text-xl text-cream">
+            <p className="font-syne font-black text-2xl text-white">
               {agentCount}
-              <span className="font-dm-sans text-xs font-light text-muted-2"> outils</span>
             </p>
           </div>
         </div>

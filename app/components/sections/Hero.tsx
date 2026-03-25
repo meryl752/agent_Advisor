@@ -28,7 +28,7 @@ export default function Hero() {
       {/* Left — copy */}
       <div className="relative z-10">
         <motion.div {...fadeUp(0.1)}
-          className="font-dm-mono text-[0.72rem] tracking-[0.16em] uppercase
+          className="font-dm-mono text-[0.72rem] uppercase
                      text-accent mb-7 flex items-center gap-[10px]">
           <span className="inline-block w-6 h-px bg-accent" />
           La plateforme IA qui maximise ton ROI
@@ -47,7 +47,7 @@ export default function Hero() {
 
         <motion.p {...fadeUp(0.3)}
           className="mt-7 text-[1.05rem] text-muted-2 max-w-[480px] leading-[1.75] font-light">
-          Tu décris ton objectif. StackAI analyse 200+ agents IA et t&apos;assemble
+          Tu décris ton objectif. Raspquery analyse 200+ agents IA et t&apos;assemble
           le combo exact — avec les coûts, le ROI estimé et le workflow clé en main.
         </motion.p>
 
@@ -55,14 +55,14 @@ export default function Hero() {
           <button
             onClick={() => document.getElementById('cta-email')?.focus()}
             className="bg-accent text-bg font-syne font-bold text-[0.88rem]
-                       tracking-[0.03em] px-[30px] py-[15px]
+                       px-[30px] py-[15px]
                        hover:opacity-85 hover:-translate-y-[2px] transition-all duration-150"
           >
             Accès gratuit →
           </button>
           <a href="#features"
             className="border border-border-2 text-cream font-syne font-bold
-                       text-[0.88rem] tracking-[0.03em] px-[30px] py-[15px]
+                       text-[0.88rem] px-[30px] py-[15px]
                        hover:border-accent hover:-translate-y-[2px] transition-all duration-150">
             Voir la démo ↓
           </a>
@@ -71,7 +71,7 @@ export default function Hero() {
         <motion.div {...fadeUp(0.5)} className="flex gap-7 mt-10">
           {['200+ outils indexés', 'Mis à jour chaque semaine', '0€ pour commencer'].map((t) => (
             <div key={t} className="font-dm-mono text-[0.68rem] text-muted
-                                    tracking-[0.06em] flex items-center gap-[6px]">
+                                    flex items-center gap-[6px]">
               <div className="w-[5px] h-[5px] rounded-full bg-accent flex-shrink-0" />
               {t}
             </div>

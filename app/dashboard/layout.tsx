@@ -1,80 +1,105 @@
-import { UserButton } from '@clerk/nextjs'
-import { currentUser } from '@clerk/nextjs/server'
-import Link from 'next/link'
+'use client'
 
-const SIDEBAR_LINKS = [
-  { label: 'Dashboard', href: '/dashboard', icon: '◈' },
-  { label: 'Mon Stack', href: '/dashboard/stack', icon: '⬡' },
-  { label: 'Recommandations', href: '/dashboard/recommend', icon: '✦' },
-  { label: 'ROI Tracker', href: '/dashboard/roi', icon: '↑' },
-  { label: 'Stack Alerts', href: '/dashboard/alerts', icon: '◎' },
-  { label: 'Stack Score', href: '/dashboard/score', icon: '◐' },
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { UserButton, useUser } from '@clerk/nextjs'
+import { cn } from '@/lib/utils'
+
+const NAV = [
+  { href: '/dashboard', label: 'Dashboard', icon: '◈' },
+  { href: '/dashboard/recommend', label: 'Construis ton stack', icon: '✦', accent: true },
+  { href: '/dashboard/stack', label: 'Mes stacks', icon: '⬡' },
+  { href: '/dashboard/roi', label: 'ROI Tracker', icon: '↑' },
+  { href: '/dashboard/alerts', label: 'Stack Alerts', icon: '◎' },
+  { href: '/dashboard/score', label: 'Stack Score', icon: '◐' },
 ]
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  let user = null
-  try {
-    user = await currentUser()
-  } catch (err) {
-    console.error('Clerk currentUser error:', err)
-  }
-
-  const firstName = user?.firstName ?? 'Utilisateur'
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? ''
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const { user } = useUser()
 
   return (
-    <div className="min-h-screen bg-bg flex">
+    <div className="min-h-screen bg-zinc-950 flex">
+
       {/* Sidebar */}
-      <aside className="w-[220px] border-r border-border flex flex-col flex-shrink-0 bg-bg-2">
+      <aside className="w-[220px] flex-shrink-0 border-r border-zinc-800/60 flex flex-col
+                        bg-zinc-950 relative">
+        {/* Subtle gradient top */}
+        <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, rgba(202,255,50,0.03), transparent)' }} />
+
         {/* Logo */}
-        <div className="px-6 py-[22px] border-b border-border">
-          <Link href="/" className="font-syne font-extrabold text-lg tracking-[-0.02em] text-cream">
-            Stack<span className="text-accent">AI</span>
+        <div className="px-5 py-5 border-b border-zinc-800/60">
+          <Link href="/" className="font-syne font-extrabold text-lg tracking-[-0.02em] text-white flex items-center group">
+            Ras
+            <span className="relative flex items-center mx-[1px] group-hover:scale-110 transition-transform">
+              <span className="text-zinc-900 px-[3px] py-[1px] rounded-l-md leading-none shadow-sm z-10 text-[0.95em]" style={{ background: '#D6E8F5' }}>p</span>
+              <span className="text-zinc-900 bg-[#CAFF32] px-[3px] py-[1px] rounded-r-md leading-none shadow-sm -ml-[1px] text-[0.95em]">q</span>
+            </span>
+            uery
           </Link>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-          {SIDEBAR_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex items-center gap-3 px-3 py-[10px] text-muted-2
-                         hover:text-cream hover:bg-bg-3 transition-colors duration-150
-                         font-dm-mono text-[0.72rem] tracking-[0.06em] uppercase"
-            >
-              <span className="text-accent text-xs">{link.icon}</span>
-              {link.label}
-            </Link>
-          ))}
+          {NAV.map((item) => {
+            const active = pathname === item.href
+            return (
+              <Link key={item.href} href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group',
+                  active
+                    ? 'bg-zinc-800 text-white'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900',
+                  item.accent && !active && 'text-[#CAFF32]/70 hover:text-[#CAFF32]'
+                )}>
+                <span className={cn(
+                  'text-sm transition-transform duration-200 group-hover:scale-110',
+                  active ? 'text-[#CAFF32]' : '',
+                  item.accent && !active ? 'text-[#CAFF32]/70' : ''
+                )}>
+                  {item.icon}
+                </span>
+                <span className="text-xs font-semibold tracking-wide">{item.label}</span>
+                {item.accent && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#CAFF32] animate-pulse" />
+                )}
+                </Link>
+            )
+          })}
         </nav>
 
         {/* User */}
-        <div className="border-t border-border px-4 py-4 flex items-center gap-3">
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'w-8 h-8',
-                userButtonPopoverCard: 'bg-bg-2 border border-border shadow-xl',
-                userButtonPopoverActionButton: 'text-cream hover:bg-bg-3',
-                userButtonPopoverActionButtonText: 'font-dm-mono text-xs',
-              },
-            }}
-          />
-          <div className="overflow-hidden">
-            <p className="font-dm-sans text-[0.78rem] text-cream truncate">
+        <div className="border-t border-zinc-800/60 px-4 py-4 flex items-center gap-3">
+          <UserButton appearance={{
+            elements: {
+              avatarBox: 'w-8 h-8 rounded-xl',
+              userButtonPopoverCard: 'bg-zinc-900 border border-zinc-800 shadow-2xl',
+              userButtonPopoverActionButton: 'text-zinc-300 hover:bg-zinc-800',
+            }
+          }} />
+          <div className="overflow-hidden flex-1">
+            <p className="text-xs font-bold text-zinc-300 truncate">
               {user?.firstName ?? 'Utilisateur'}
             </p>
-            <p className="font-dm-mono text-[0.6rem] text-muted truncate">
+            <p className="text-[10px] text-zinc-600 truncate">
               {user?.emailAddresses[0]?.emailAddress ?? ''}
             </p>
           </div>
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {children}
+      {/* Main */}
+      <main className="flex-1 h-screen flex flex-col overflow-hidden relative">
+        {/* Subtle bg pattern */}
+        <div className="fixed inset-0 pointer-events-none opacity-[0.015]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #CAFF32 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }} />
+        <div className="flex-1 overflow-hidden relative z-10">
+          {children}
+        </div>
       </main>
     </div>
   )

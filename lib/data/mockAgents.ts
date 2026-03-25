@@ -50,7 +50,7 @@ export const MOCK_AGENTS: Agent[] = [
     id: '4',
     name: 'Midjourney',
     category: 'image',
-    description: 'Génération d'images IA de qualité professionnelle.',
+    description: "Génération d'images IA de qualité professionnelle.",
     pricing_model: 'paid',
     price_from: 10,
     score: 88,

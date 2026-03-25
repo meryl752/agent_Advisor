@@ -19,7 +19,7 @@ export default function MockupWindow({ children, title = 'app.stackai.co — Das
         <div className="w-[10px] h-[10px] rounded-full bg-[#ffbd2e]" />
         <div className="w-[10px] h-[10px] rounded-full bg-[#28c840]" />
         <div className="ml-[10px] flex-1 bg-[#161616] border border-border
-                        font-dm-mono text-[0.65rem] text-muted tracking-[0.04em]
+                        font-dm-mono text-[0.65rem] text-muted
                         py-1 px-[14px] text-center">
           {title}
         </div>

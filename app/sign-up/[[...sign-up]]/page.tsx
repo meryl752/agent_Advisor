@@ -1,4 +1,5 @@
 import { SignUp } from '@clerk/nextjs'
+import { dark } from '@clerk/themes'
 
 export default function SignUpPage() {
   return (
@@ -9,16 +10,22 @@ export default function SignUpPage() {
                       top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
 
       <div className="relative z-10 flex flex-col items-center gap-8">
-        <a href="/" className="font-syne font-extrabold text-2xl tracking-[-0.02em] text-cream">
-          Stack<span className="text-accent">AI</span>
+        <a href="/" className="font-syne font-extrabold text-2xl tracking-[-0.02em] text-cream flex items-center">
+          Ras
+          <span className="relative flex items-center mx-[1.5px]">
+            <span className="text-zinc-800 px-[4px] py-[1px] rounded-l-md leading-none shadow-sm z-10 text-[0.95em]" style={{ background: '#D6E8F5' }}>p</span>
+            <span className="text-bg bg-accent px-[4px] py-[1px] rounded-r-md leading-none shadow-sm -ml-[1px] text-[0.95em]">q</span>
+          </span>
+          uery
         </a>
         <SignUp
           appearance={{
+            baseTheme: dark,
             variables: {
               colorPrimary: '#C8F135',
               colorBackground: '#0d0d0d',
               colorText: '#f0ede6',
-              colorTextSecondary: '#666666',
+              colorTextSecondary: '#bbbbbb',
               colorInputBackground: '#111111',
               colorInputText: '#f0ede6',
               borderRadius: '0px',

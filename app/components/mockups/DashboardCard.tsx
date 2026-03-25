@@ -4,7 +4,7 @@ import type { DashboardMetric } from '@/types'
 export default function DashboardCard({ label, value, sub, variant = 'default' }: DashboardMetric) {
   return (
     <div className="bg-bg-3 border border-border px-4 py-[14px]">
-      <p className="font-dm-mono text-[0.6rem] text-muted tracking-[0.08em] uppercase mb-[6px]">
+      <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-[6px]">
         {label}
       </p>
       <p className={cn(

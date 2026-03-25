@@ -13,20 +13,20 @@ export default function Footer() {
           <a
             key={link.href}
             href={link.href}
-            className="font-dm-mono text-[0.65rem] text-muted tracking-[0.06em]
+            className="font-dm-mono text-[0.65rem] text-muted
                        uppercase hover:text-accent transition-colors"
           >
             {link.label}
           </a>
         ))}
-        <a href="#" className="font-dm-mono text-[0.65rem] text-muted tracking-[0.06em]
+        <a href="#" className="font-dm-mono text-[0.65rem] text-muted
                                uppercase hover:text-accent transition-colors">
           Contact
         </a>
       </div>
 
       <p className="font-dm-mono text-[0.62rem] text-muted">
-        © 2025 StackAI — Tous droits réservés
+        © 2025 Raspquery — Tous droits réservés
       </p>
     </footer>
   )

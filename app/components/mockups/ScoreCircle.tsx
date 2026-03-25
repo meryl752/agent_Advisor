@@ -28,7 +28,7 @@ export default function ScoreCircle({ score, metrics }: ScoreCircleProps) {
             {score}
           </span>
         </div>
-        <p className="font-dm-mono text-[0.58rem] text-muted uppercase tracking-[0.1em] mt-2 text-center">
+        <p className="font-dm-mono text-[0.58rem] text-muted uppercase mt-2 text-center">
           Stack Score
         </p>
       </div>

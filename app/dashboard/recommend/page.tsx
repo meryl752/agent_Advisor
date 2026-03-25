@@ -1,73 +1,119 @@
 'use client'
 
 import { useState } from 'react'
-import type { StackResult, UserContext, SubTask } from '@/lib/gemini/recommender'
+import { motion, AnimatePresence } from 'framer-motion'
+import type { FinalStack as StackResult, SubTask } from '@/lib/agents/types'
 import { cn } from '@/lib/utils'
 import AgentCard from '@/app/components/ui/AgentCard'
 import StackFlow from '@/app/components/ui/StackFlow'
 import StackSummary from '@/app/components/ui/StackSummary'
 
-const STEPS = ['Objectif', 'Profil', 'Contexte', 'Résultat']
 
-const SECTORS = ['E-commerce', 'SaaS', 'Agence', 'Consultant', 'Créateur', 'B2B', 'Education', 'Santé', 'Autre']
-const TEAM_SIZES = [
-  { value: 'solo', label: 'Solo — juste moi' },
-  { value: 'small', label: 'Petite — 2 à 10' },
-  { value: 'medium', label: 'Moyenne — 10 à 50' },
-  { value: 'large', label: 'Grande — 50+' },
-]
-const BUDGETS = [
-  { value: 'zero', label: '0€ — gratuit uniquement' },
-  { value: 'low', label: 'Jusqu\'à 50€/mois' },
-  { value: 'medium', label: 'Jusqu\'à 200€/mois' },
-  { value: 'high', label: '200€+ /mois' },
-]
-const TECH_LEVELS = [
-  { value: 'beginner', label: 'Débutant — pas de code' },
-  { value: 'intermediate', label: 'Intermédiaire — no-code ok' },
-  { value: 'advanced', label: 'Avancé — code possible' },
-]
-const TIMELINES = [
-  { value: 'asap', label: 'Dès aujourd\'hui' },
-  { value: 'weeks', label: 'Dans quelques semaines' },
-  { value: 'months', label: 'Pas d\'urgence' },
+
+const EXAMPLE_CHIPS = [
+  { label: 'Aide j\'aimerais automatiser mon service de receptions pour mon business', prompt: 'Aide j\'aimerais automatiser mon service de receptions pour mon business' },
+  { label: 'J\'aimerais augmenter la rapidité à laquelle j\'atteint mes clients dans mon business', prompt: 'J\'aimerais augmenter la rapidité à laquelle j\'atteint mes clients dans mon business' },
+  { label: 'J\'aimerais automatiser le service client au niveau de ma plateforme Shopify', prompt: 'J\'aimerais automatiser le service client au niveau de ma plateforme Shopify' },
+  { label: 'Optimiser mes processus de vente avec l\'IA pour gagner du temps', prompt: 'Je souhaite optimiser mes processus de vente avec l\'IA pour gagner du temps au quotidien' },
+  { label: 'Analyser mes données clients pour prédire les futures tendances', prompt: 'J\'aimerais analyser mes données clients pour prédire les futures tendances et anticiper la demande' },
+  { label: 'Automatiser ma gestion d\'inventaire e-commerce intelligemment', prompt: 'Mettre en place un système intelligent pour automatiser ma gestion d\'inventaire et mes commandes' },
 ]
 
-const LOGO_URL = (domain: string) =>
-  `https://logo.clearbit.com/${domain}`
+const BUDGET_OPTIONS = [
+  { value: 'all', label: 'Tous' },
+  { value: 'zero', label: 'Gratuit' },
+  { value: 'low', label: '<50€' },
+  { value: 'medium', label: '<200€' },
+  { value: 'high', label: '200€+' },
+]
+
+const TECH_OPTIONS = [
+  { value: 'all', label: 'Tous' },
+  { value: 'beginner', label: 'Débutant' },
+  { value: 'intermediate', label: 'Intermédiaire' },
+  { value: 'advanced', label: 'Avancé' },
+]
+
+const TEAM_OPTIONS = [
+  { value: 'all', label: 'Tous' },
+  { value: 'solo', label: 'Solo' },
+  { value: 'small', label: '2-10' },
+  { value: 'medium', label: '10-50' },
+  { value: 'large', label: '50+' },
+]
+
+const TIMELINE_OPTIONS = [
+  { value: 'all', label: 'Tous' },
+  { value: 'asap', label: 'Urgent' },
+  { value: 'weeks', label: 'Semaines' },
+  { value: 'months', label: 'Mois' },
+]
+
+const BUDGET_LIMITS: Record<string, number> = {
+  all: 999999, zero: 0, low: 50, medium: 200, high: 999999,
+}
+
+const DIFFICULTY_MAP: Record<string, string[]> = {
+  all: ['easy', 'medium', 'hard'],
+  beginner: ['easy'],
+  intermediate: ['easy', 'medium'],
+  advanced: ['easy', 'medium', 'hard'],
+}
+
+function filterStack(stack: StackResult, filters: Record<string, string>): StackResult {
+  const budgetLimit = BUDGET_LIMITS[filters.budget]
+  const allowedDiff = DIFFICULTY_MAP[filters.tech]
+
+  const filteredAgents = stack.agents.filter(agent => {
+    if (filters.budget !== 'all' && agent.price_from > budgetLimit) return false
+    if (filters.tech !== 'all' && agent.setup_difficulty &&
+        !allowedDiff.includes(agent.setup_difficulty)) return false
+    return true
+  })
+
+  return {
+    ...stack,
+    agents: filteredAgents.map((a, i) => ({ ...a, rank: i + 1 })),
+    total_cost: filteredAgents.reduce((sum, a) => sum + a.price_from, 0),
+  }
+}
 
 export default function RecommendPage() {
-  const [step, setStep] = useState(0)
+  const [objective, setObjective] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<StackResult | null>(null)
+  const [loadingStep, setLoadingStep] = useState(0)
+  const [originalStack, setOriginalStack] = useState<StackResult | null>(null)
+  const [displayStack, setDisplayStack] = useState<StackResult | null>(null)
   const [error, setError] = useState('')
-  const [ctx, setCtx] = useState<UserContext>({
-    objective: '',
-    sector: '',
-    team_size: 'solo',
-    budget: 'low',
-    tech_level: 'intermediate',
-    timeline: 'weeks',
-    current_tools: [],
+  const [filters, setFilters] = useState({
+    budget: 'all', tech: 'all', team: 'all', timeline: 'all',
   })
-  const [toolInput, setToolInput] = useState('')
 
-  const update = (key: keyof UserContext, value: unknown) =>
-    setCtx(prev => ({ ...prev, [key]: value }))
+  const hasActiveFilters = Object.values(filters).some(v => v !== 'all')
 
   const handleSubmit = async () => {
+    if (!objective.trim()) return
     setLoading(true)
+    setLoadingStep(0)
     setError('')
+    setOriginalStack(null)
+    setDisplayStack(null)
+
+    const t1 = setTimeout(() => setLoadingStep(1), 3000)
+    const t2 = setTimeout(() => setLoadingStep(2), 6000)
+
     try {
       const res = await fetch('/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ctx),
+        body: JSON.stringify({ objective }),
       })
       const data = await res.json()
+      clearTimeout(t1); clearTimeout(t2)
       if (!res.ok) { setError(data.error); return }
-      setResult(data.result)
-      setStep(3)
+      setOriginalStack(data.result)
+      setDisplayStack(data.result)
+      setFilters({ budget: 'all', tech: 'all', team: 'all', timeline: 'all' })
     } catch {
       setError('Erreur réseau')
     } finally {
@@ -75,343 +121,473 @@ export default function RecommendPage() {
     }
   }
 
-  return (
-    <div className="p-8 max-w-2xl">
-      {/* Header */}
-      <p className="font-dm-mono text-[0.7rem] text-muted tracking-[0.12em] uppercase mb-2">
-        Algorithme StackAI
-      </p>
-      <h1 className="font-syne font-extrabold text-3xl tracking-[-0.03em] text-cream mb-6">
-        Construis ton stack
-      </h1>
+  const applyFilter = (key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value }
+    setFilters(newFilters)
+    if (originalStack) setDisplayStack(filterStack(originalStack, newFilters))
+  }
 
-      {/* Progress */}
-      <div className="flex gap-0 mb-10 bg-border">
-        {STEPS.map((s, i) => (
-          <div key={s} className={cn(
-            'flex-1 py-3 text-center font-dm-mono text-[0.62rem] tracking-[0.08em] uppercase transition-colors',
-            i === step ? 'bg-accent text-bg' : i < step ? 'bg-accent/20 text-accent' : 'bg-bg-2 text-muted'
-          )}>
-            {s}
-          </div>
-        ))}
-      </div>
+  const resetFilters = () => {
+    setFilters({ budget: 'all', tech: 'all', team: 'all', timeline: 'all' })
+    setDisplayStack(originalStack)
+  }
 
-      {/* STEP 0 — Objectif */}
-      {step === 0 && (
-        <div className="flex flex-col gap-4">
-          <p className="font-dm-sans text-sm text-muted-2 font-light">
-            Décris ton objectif en langage naturel. Plus c'est précis, meilleur sera le stack.
-          </p>
-          <div className="border border-border bg-bg-2 p-1">
-            <textarea
-              value={ctx.objective}
-              onChange={e => update('objective', e.target.value)}
-              placeholder="Ex: Je veux lancer une boutique Shopify, automatiser mon service client et créer du contenu pour Instagram..."
-              rows={5}
-              className="w-full bg-transparent text-cream font-dm-sans text-sm p-4
-                         outline-none resize-none placeholder:text-muted leading-relaxed"
-            />
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <div className={cn('w-2 h-2 rounded-full', ctx.objective.length > 20 ? 'bg-accent' : 'bg-border-2')} />
-            <p className="font-dm-mono text-[0.65rem] text-muted">
-              {ctx.objective.length < 20 ? 'Décris un peu plus ton objectif...' : 'Parfait, on peut continuer ✦'}
+  // ── IDLE STATE ────────────────────────────────────────────────
+  if (!displayStack && !loading) {
+    return (
+      <div className="min-h-[calc(100vh-0px)] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+        {/* Animated Background orbs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.03, 0.05, 0.03],
+              x: [-20, 20, -20],
+              y: [-20, 20, -20],
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                          w-[800px] h-[400px] blur-3xl rounded-full"
+            style={{ background: 'radial-gradient(ellipse, #CAFF32, transparent 70%)' }}
+          />
+          {/* Strategic subtle green gradients */}
+          <div className="absolute top-10 left-10 w-96 h-96 bg-[#CAFF32]/[0.02] blur-[120px] rounded-full" />
+          <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-[#CAFF32]/[0.01] blur-[150px] rounded-full" />
+          
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.02, 0.04, 0.02],
+              x: [20, -20, 20],
+              y: [20, -20, 20],
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+            className="absolute top-1/4 right-1/4 w-[400px] h-[400px] blur-3xl rounded-full"
+            style={{ background: 'radial-gradient(circle, #6B4FFF, transparent 70%)' }}
+          />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 w-full max-w-2xl"
+        >
+          {/* Header */}
+          <div className="text-center mb-10">
+            <h1 className="font-black text-5xl text-white tracking-tight mb-4 leading-tight">
+              Construis ton stack <br />
+              de <span className="text-[#CAFF32]">super-pouvoirs</span> IA
+            </h1>
+            <p className="text-zinc-500 text-lg font-medium max-w-lg mx-auto leading-relaxed">
+              Décris ton objectif métier — notre IA assemble le combo optimal d'outils en 30 secondes.
             </p>
           </div>
-          <button
-            onClick={() => setStep(1)}
-            disabled={ctx.objective.length < 20}
-            className="bg-accent text-bg font-syne font-bold text-[0.88rem] px-8 py-4
-                       tracking-[0.03em] hover:opacity-85 transition-opacity disabled:opacity-40 w-fit"
-          >
-            Continuer →
-          </button>
-        </div>
-      )}
 
-      {/* STEP 1 — Profil */}
-      {step === 1 && (
-        <div className="flex flex-col gap-6">
-          {/* Secteur */}
-          <div>
-            <p className="font-dm-mono text-[0.68rem] text-muted uppercase tracking-[0.1em] mb-3">Ton secteur</p>
-            <div className="flex flex-wrap gap-2">
-              {SECTORS.map(s => (
-                <button key={s} onClick={() => update('sector', s)}
-                  className={cn(
-                    'font-dm-mono text-[0.7rem] px-4 py-2 border transition-colors tracking-[0.06em]',
-                    ctx.sector === s ? 'bg-accent text-bg border-accent' : 'bg-bg-2 text-muted-2 border-border hover:border-accent/50'
-                  )}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Taille équipe */}
-          <div>
-            <p className="font-dm-mono text-[0.68rem] text-muted uppercase tracking-[0.1em] mb-3">Taille de ton équipe</p>
-            <div className="flex flex-col gap-2">
-              {TEAM_SIZES.map(t => (
-                <button key={t.value} onClick={() => update('team_size', t.value)}
-                  className={cn(
-                    'font-dm-sans text-sm px-4 py-3 border text-left transition-colors',
-                    ctx.team_size === t.value ? 'bg-accent/10 text-cream border-accent' : 'bg-bg-2 text-muted-2 border-border hover:border-border-2'
-                  )}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button onClick={() => setStep(0)} className="border border-border text-muted-2 font-syne font-bold text-[0.85rem] px-6 py-3 hover:border-border-2 transition-colors">
-              ← Retour
-            </button>
-            <button onClick={() => setStep(2)} disabled={!ctx.sector}
-              className="bg-accent text-bg font-syne font-bold text-[0.88rem] px-8 py-3 tracking-[0.03em] hover:opacity-85 transition-opacity disabled:opacity-40">
-              Continuer →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 2 — Contexte */}
-      {step === 2 && (
-        <div className="flex flex-col gap-6">
-          {/* Budget */}
-          <div>
-            <p className="font-dm-mono text-[0.68rem] text-muted uppercase tracking-[0.1em] mb-3">Budget mensuel outils IA</p>
-            <div className="flex flex-col gap-2">
-              {BUDGETS.map(b => (
-                <button key={b.value} onClick={() => update('budget', b.value)}
-                  className={cn(
-                    'font-dm-sans text-sm px-4 py-3 border text-left transition-colors',
-                    ctx.budget === b.value ? 'bg-accent/10 text-cream border-accent' : 'bg-bg-2 text-muted-2 border-border hover:border-border-2'
-                  )}>
-                  {b.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Niveau technique */}
-          <div>
-            <p className="font-dm-mono text-[0.68rem] text-muted uppercase tracking-[0.1em] mb-3">Niveau technique</p>
-            <div className="flex flex-col gap-2">
-              {TECH_LEVELS.map(t => (
-                <button key={t.value} onClick={() => update('tech_level', t.value)}
-                  className={cn(
-                    'font-dm-sans text-sm px-4 py-3 border text-left transition-colors',
-                    ctx.tech_level === t.value ? 'bg-accent/10 text-cream border-accent' : 'bg-bg-2 text-muted-2 border-border hover:border-border-2'
-                  )}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div>
-            <p className="font-dm-mono text-[0.68rem] text-muted uppercase tracking-[0.1em] mb-3">Urgence</p>
-            <div className="flex gap-2">
-              {TIMELINES.map(t => (
-                <button key={t.value} onClick={() => update('timeline', t.value)}
-                  className={cn(
-                    'flex-1 font-dm-sans text-sm px-3 py-3 border text-center transition-colors',
-                    ctx.timeline === t.value ? 'bg-accent/10 text-cream border-accent' : 'bg-bg-2 text-muted-2 border-border hover:border-border-2'
-                  )}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Outils actuels */}
-          <div>
-            <p className="font-dm-mono text-[0.68rem] text-muted uppercase tracking-[0.1em] mb-3">
-              Outils que tu utilises déjà (optionnel)
-            </p>
-            <div className="flex gap-2 mb-2">
-              <input
-                value={toolInput}
-                onChange={e => setToolInput(e.target.value)}
+          {/* Main input - Glassmorphism style */}
+          <div className="relative mb-8 group">
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-[#CAFF32]/20 via-zinc-800 to-[#6B4FFF]/20 rounded-2xl blur-sm opacity-50 group-focus-within:opacity-100 transition-opacity" />
+            <div className="relative bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-2xl overflow-hidden
+                            focus-within:border-[#CAFF32]/40 transition-all duration-500 shadow-2xl">
+              <textarea
+                value={objective}
+                onChange={e => setObjective(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && toolInput.trim()) {
-                    update('current_tools', [...ctx.current_tools, toolInput.trim()])
-                    setToolInput('')
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSubmit()
                   }
                 }}
-                placeholder="Ex: Shopify, Notion... (Entrée pour ajouter)"
-                className="flex-1 bg-bg-2 border border-border text-cream text-sm px-4 py-2
-                           font-dm-sans outline-none focus:border-accent placeholder:text-muted"
+                placeholder="Ex: Je veux lancer une boutique Shopify et automatiser mon service client..."
+                rows={4}
+                className="w-full bg-transparent text-zinc-100 font-medium text-lg
+                           px-6 pt-6 pb-2 outline-none resize-none placeholder:text-zinc-700
+                           leading-relaxed"
               />
+              <div className="flex items-center justify-end px-6 pb-4">
+                <button
+                  onClick={handleSubmit}
+                  disabled={!objective.trim()}
+                  className={cn(
+                    'flex items-center gap-3 px-6 py-3 rounded-xl font-black text-sm',
+                    'transition-all duration-300 relative overflow-hidden group/btn',
+                    objective.trim()
+                      ? 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] hover:scale-105 hover:shadow-[0_0_20px_rgba(202,255,50,0.3)]'
+                      : 'bg-zinc-900 text-zinc-700 border border-zinc-800 cursor-not-allowed'
+                  )}
+                >
+                  <span className="relative z-10">Générer mon stack</span>
+                  <span className="text-lg relative z-10 group-hover/btn:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
             </div>
-            {ctx.current_tools.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {ctx.current_tools.map((t, i) => (
-                  <span key={i} className="font-dm-mono text-[0.68rem] bg-bg-3 border border-border
-                                           text-muted-2 px-3 py-1 flex items-center gap-2">
-                    {t}
-                    <button onClick={() => update('current_tools', ctx.current_tools.filter((_, j) => j !== i))}
-                      className="text-muted hover:text-accent">×</button>
-                  </span>
+          </div>
+
+          {/* Suggestion Chips - Infinite Auto-scroll */}
+          <div className="w-full relative px-1 flex flex-col gap-3 overflow-hidden" 
+               style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
+            {/* Row 1 */}
+            <div className="flex overflow-hidden relative">
+              <motion.div
+                animate={{ x: [0, -1000] }}
+                transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
+                className="flex gap-2 whitespace-nowrap"
+              >
+                {[...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS].map((chip, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setObjective(chip.prompt)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl 
+                               bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50
+                               hover:bg-zinc-800/60 hover:border-[#CAFF32]/30 
+                               text-zinc-500 hover:text-[#CAFF32]
+                               transition-all duration-200 text-[11px] font-medium 
+                               group shadow-xl whitespace-nowrap flex-shrink-0"
+                  >
+                    <span className="group-hover:translate-x-0.5 transition-transform">{chip.label}</span>
+                  </button>
                 ))}
-              </div>
-            )}
+              </motion.div>
+            </div>
+
+            {/* Row 2 */}
+            <div className="flex overflow-hidden relative">
+              <motion.div
+                animate={{ x: [-1000, 0] }}
+                transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}
+                className="flex gap-2 whitespace-nowrap"
+              >
+                {[...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS].reverse().map((chip, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setObjective(chip.prompt)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl 
+                               bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50
+                               hover:bg-zinc-800/60 hover:border-[#CAFF32]/30 
+                               text-zinc-500 hover:text-[#CAFF32]
+                               transition-all duration-200 text-[11px] font-medium 
+                               group shadow-xl whitespace-nowrap flex-shrink-0"
+                  >
+                    <span className="group-hover:translate-x-0.5 transition-transform">{chip.label}</span>
+                  </button>
+                ))}
+              </motion.div>
+            </div>
           </div>
 
-          {error && <p className="font-dm-mono text-xs text-red-400">Erreur : {error}</p>}
+          {error && (
+            <motion.p
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="mt-8 text-red-400 text-sm font-mono text-center"
+            >
+              ⚠ {error}
+            </motion.p>
+          )}
+        </motion.div>
+      </div>
+    )
+  }
 
-          <div className="flex gap-3">
-            <button onClick={() => setStep(1)} className="border border-border text-muted-2 font-syne font-bold text-[0.85rem] px-6 py-3 hover:border-border-2 transition-colors">
-              ← Retour
-            </button>
-            <button onClick={handleSubmit} disabled={loading}
-              className="bg-accent text-bg font-syne font-bold text-[0.88rem] px-8 py-3
-                         tracking-[0.03em] hover:opacity-85 transition-opacity disabled:opacity-40 flex items-center gap-2">
-              {loading ? (
-                <>
-                  <span className="animate-spin inline-block w-3 h-3 border border-bg border-t-transparent rounded-full" />
-                  Analyse en cours...
-                </>
-              ) : 'Générer mon stack →'}
-            </button>
+    // ── LOADING STATE ─────────────────────────────────────────────
+    if (loading) {
+      const logs = [
+        // Step 0
+        [
+          `> initializing neural_engine_v4... [OK]`,
+          `> target_objective: "${objective.slice(0, 40)}${objective.length > 40 ? '...' : ''}"`,
+          `> extracting core requirements...`,
+          `> process_id: 0x${Math.random().toString(16).slice(2, 8).toUpperCase()}`,
+        ],
+        // Step 1
+        [
+          `> querying 200+ specialized agents...`,
+          `> analyzing ROI metrics and scoring...`,
+          `> matching capabilities: 84% coverage`,
+          `> background process: agent_scoring.sh`,
+        ],
+        // Step 2
+        [
+          `> building optimized architectural stack...`,
+          `> applying budget constraints: OK`,
+          `> profiling tool synergy: 0.98 index`,
+          `> finalizing recommendation...`,
+        ]
+      ]
+
+      const displayedLogs = logs.slice(0, loadingStep + 1).flat()
+
+      return (
+        <div className="min-h-[calc(100vh-0px)] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+          <div className="fixed inset-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                            w-[800px] h-[400px] opacity-[0.03] blur-3xl rounded-full"
+                 style={{ background: 'radial-gradient(ellipse, #CAFF32, transparent)' }} />
           </div>
-        </div>
-      )}
 
-      {/* STEP 3 — Résultat */}
-      {step === 3 && result && (
-  <div className="flex flex-col gap-4">
-    {/* Summary */}
-    <StackSummary
-      stackName={result.stack_name}
-      justification={result.justification}
-      total_cost={result.total_cost}
-      roi_estimate={result.roi_estimate}
-      time_saved_per_week={(result as StackResult & { time_saved_per_week?: number }).time_saved_per_week}
-      agentCount={result.agents.length}
-    />
-
-    {/* Workflow visuel */}
-    <StackFlow
-      agents={result.agents}
-      stackName={result.stack_name}
-    />
-
-    {/* Sous-tâches */}
-    {result.subtasks && result.subtasks.length > 0 && (
-
-      <div>
-        <p className="font-dm-mono text-[0.65rem] text-muted uppercase tracking-[0.1em] mb-2">
-          Décomposition du projet
-        </p>
-        <div className="flex flex-col gap-[2px] bg-border">
-          {(result as StackResult & { subtasks?: SubTask[] }).subtasks!.map((task, i) => (
-            <div key={i} className="bg-bg-2 p-4 grid grid-cols-[1fr_60px_1fr] gap-3 items-center">
-              <div>
-                <p className="font-dm-mono text-[0.58rem] text-muted uppercase tracking-[0.06em] mb-1">
-                  Sans IA
-                </p>
-                <p className="font-dm-sans text-sm text-[#666] font-light leading-relaxed">
-                  {task.without_ai}
-                </p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-2xl"
+          >
+            {/* Terminal Window */}
+            <div className="bg-zinc-950/90 backdrop-blur-2xl border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[400px]">
+              {/* Terminal Header */}
+              <div className="bg-zinc-900/50 px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-zinc-800" />
+                  <div className="w-3 h-3 rounded-full bg-zinc-800" />
+                  <div className="w-3 h-3 rounded-full bg-zinc-800" />
+                </div>
+                <div className="w-12" />
               </div>
-              <div className="text-center">
-                <div className="font-syne font-bold text-accent text-base">→</div>
-                <p className="font-dm-mono text-[0.52rem] text-accent uppercase tracking-[0.04em] mt-1 leading-tight">
-                  {task.tool_name}
-                </p>
+
+              {/* Terminal Body */}
+              <div className="p-6 font-mono text-sm overflow-y-auto flex-1 scrollbar-hide">
+                <div className="space-y-1.5 min-h-full">
+                  {displayedLogs.map((log, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={cn(
+                        "transition-all duration-300",
+                        i < displayedLogs.length - 1 ? "text-zinc-500" : "text-[#CAFF32]"
+                      )}
+                    >
+                      {log}
+                    </motion.div>
+                  ))}
+                  
+                  {/* Flickering Cursor */}
+                  <motion.div
+                    animate={{ opacity: [1, 0] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                    className="inline-block w-2.5 h-4.5 bg-[#CAFF32] ml-1 align-middle"
+                  />
+                </div>
               </div>
-              <div>
-                <p className="font-dm-mono text-[0.58rem] text-accent uppercase tracking-[0.06em] mb-1">
-                  Avec IA ✦
-                </p>
-                <p className="font-dm-sans text-sm text-cream font-light leading-relaxed">
-                  {task.with_ai}
-                </p>
+
+              {/* Progress Footer */}
+              <div className="bg-zinc-900/30 px-6 py-4 border-top border-zinc-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">System Status</span>
+                  <span className="text-[10px] font-mono text-[#CAFF32] font-black uppercase">
+                    {loadingStep === 0 ? 'Analyzing' : loadingStep === 1 ? 'Scoring' : 'Finalizing'}...
+                  </span>
+                </div>
+                <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-[#CAFF32]"
+                    animate={{ width: [`${(loadingStep) * 33}%`, `${(loadingStep + 1) * 33}%`] }}
+                    transition={{ duration: 3 }}
+                  />
+                </div>
               </div>
             </div>
-          ))}
+          </motion.div>
         </div>
-      </div>
-    )}
+      )
+    }
 
-    {/* Quick wins + Warnings */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-[2px] bg-border">
-      {result.quick_wins?.length > 0 && (
-        <div className="bg-accent/5 border border-accent/15 p-4">
-          <p className="font-dm-mono text-[0.62rem] text-accent uppercase tracking-[0.1em] mb-3">
-            ✦ Quick wins immédiats
-          </p>
-          <div className="flex flex-col gap-2">
-            {result.quick_wins.map((w, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <span className="text-accent text-xs mt-[2px] flex-shrink-0">{i + 1}.</span>
-                <p className="font-dm-sans text-sm text-cream font-light leading-relaxed">{w}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {result.warnings?.length > 0 && (
-        <div className="bg-accent-2/5 border border-accent-2/15 p-4">
-          <p className="font-dm-mono text-[0.62rem] text-accent-2 uppercase tracking-[0.1em] mb-3">
-            ⚠ Points de vigilance
-          </p>
-          <div className="flex flex-col gap-2">
-            {result.warnings.map((w, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <span className="text-accent-2 text-xs mt-[2px] flex-shrink-0">•</span>
-                <p className="font-dm-sans text-sm text-cream font-light leading-relaxed">{w}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-
-    {/* Agent cards */}
-    <div>
-      <p className="font-dm-mono text-[0.65rem] text-muted uppercase tracking-[0.1em] mb-2">
-        Les agents de ton stack — clique pour les détails
-      </p>
-      <div className="flex flex-col gap-[2px] bg-border">
-        {result.agents.map((agent, i) => (
-          <AgentCard
-            key={i}
-            rank={agent.rank}
-            name={agent.name}
-            category={agent.category}
-            price_from={agent.price_from}
-            role={agent.role}
-            reason={agent.reason}
-            concrete_result={(agent as typeof agent & { concrete_result?: string }).concrete_result}
-            website_domain={agent.website_domain}
-            setup_difficulty={agent.setup_difficulty}
-            time_to_value={agent.time_to_value}
-            score={agent.score}
-          />
-        ))}
-      </div>
-    </div>
-
-    {/* Reset */}
-    <button
-      onClick={() => {
-        setStep(0)
-        setResult(null)
-        setCtx({ objective: '', sector: '', team_size: 'solo', budget: 'low', tech_level: 'intermediate', timeline: 'weeks', current_tools: [] })
-      }}
-      className="border border-border text-muted-2 font-syne font-bold text-[0.85rem]
-                 px-6 py-3 hover:border-accent hover:text-accent transition-colors w-fit"
+  // ── RESULTS ───────────────────────────────────────────────────
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="h-full flex flex-col overflow-hidden"
     >
-      ← Nouveau stack
-    </button>
-  </div>
-)}
-    </div>
+      <div className="flex-shrink-0 flex items-center gap-3 px-8 pt-8 mb-6">
+        <button
+          onClick={() => {
+            setObjective('')
+            setOriginalStack(null)
+            setDisplayStack(null)
+            resetFilters()
+          }}
+          className="text-zinc-500 hover:text-zinc-300 text-sm flex items-center gap-1 transition-colors"
+        >
+          ← Nouveau stack
+        </button>
+        <span className="text-zinc-700">·</span>
+        <span className="text-xs font-mono text-zinc-600 truncate max-w-md">
+          &quot;{objective}&quot;
+        </span>
+      </div>
+
+      {displayStack && (
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-8 pb-8">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 h-full overflow-hidden">
+            {/* Left column - Agents & Subtasks - Independent Scroll */}
+            <div className="h-full overflow-y-auto pr-4 scrollbar-hide flex flex-col">
+              {/* STACK SUMMARY — flex-shrink-0 is critical: prevents this from being squashed to 0 */}
+              <div className="flex-shrink-0 pb-6">
+                <StackSummary
+                  stackName={displayStack.stack_name}
+                  justification={displayStack.justification}
+                  total_cost={displayStack.total_cost}
+                  roi_estimate={displayStack.roi_estimate}
+                  time_saved_per_week={displayStack.time_saved_per_week}
+                  agentCount={displayStack.agents.length}
+                />
+              </div>
+
+              {displayStack.subtasks && displayStack.subtasks.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-2">
+                    Décomposition du projet
+                  </p>
+                  <div className="flex flex-col gap-[2px] overflow-hidden">
+                    {displayStack.subtasks.map((task: SubTask, i: number) => (
+                      <div key={i} className="bg-zinc-900 p-4 grid grid-cols-[1fr_60px_1fr] gap-3 items-center">
+                        <div>
+                          <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.08em] mb-1">Sans IA</p>
+                          <p className="text-sm text-zinc-500 leading-relaxed">{task.without_ai}</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-black text-[#CAFF32] text-base">→</div>
+                          <p className="text-[10px] font-mono text-[#CAFF32]/60 uppercase tracking-[0.04em] mt-1 leading-tight">
+                            {task.tool_name}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-mono text-[#CAFF32] uppercase tracking-[0.08em] mb-1">Avec IA ✦</p>
+                          <p className="text-sm text-zinc-300 leading-relaxed">{task.with_ai}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-2">
+                  Les agents — clique pour les détails
+                </p>
+                <div className="flex flex-col gap-[2px] overflow-hidden">
+                  {displayStack.agents.map((agent, i) => (
+                    <AgentCard
+                      key={i}
+                      rank={agent.rank}
+                      name={agent.name}
+                      category={agent.category}
+                      price_from={agent.price_from}
+                      role={agent.role}
+                      reason={agent.reason}
+                      concrete_result={(agent as typeof agent & { concrete_result?: string }).concrete_result}
+                      website_domain={agent.website_domain}
+                      setup_difficulty={agent.setup_difficulty}
+                      time_to_value={agent.time_to_value}
+                      score={agent.score}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right column - Flow & Filters - Independent Scroll */}
+            <div className="h-full overflow-y-auto pr-2 scrollbar-hide flex flex-col gap-4">
+              <StackFlow agents={displayStack.agents} stackName={displayStack.stack_name} />
+
+              {/* Filtres */}
+              <div className="bg-zinc-900 border border-zinc-800 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em]">
+                    Ajuster le stack
+                  </p>
+                  {hasActiveFilters && (
+                    <button onClick={resetFilters}
+                      className="text-[10px] font-mono text-[#CAFF32] hover:text-[#d4ff50] transition-colors">
+                      Reset ×
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-col gap-4">
+                  {[
+                    { key: 'budget', label: 'Budget', opts: BUDGET_OPTIONS },
+                    { key: 'tech', label: 'Niveau', opts: TECH_OPTIONS },
+                    { key: 'team', label: 'Équipe', opts: TEAM_OPTIONS },
+                    { key: 'timeline', label: 'Urgence', opts: TIMELINE_OPTIONS },
+                  ].map(({ key, label, opts }) => (
+                    <div key={key}>
+                      <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.1em] mb-2">
+                        {label}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {opts.map(opt => (
+                          <button key={opt.value} onClick={() => applyFilter(key, opt.value)}
+                            className={cn(
+                              'text-[10px] font-mono px-2.5 py-1 rounded-lg border transition-all',
+                              filters[key as keyof typeof filters] === opt.value
+                                ? 'bg-[#CAFF32] text-zinc-900 border-[#CAFF32] font-black'
+                                : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:border-zinc-600'
+                            )}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Résumé financier */}
+              <div className="bg-zinc-900 border border-zinc-800 p-4">
+                <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-3">
+                  Résumé financier
+                </p>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: 'Coût mensuel', value: `${displayStack.total_cost}€`, color: 'text-white' },
+                    { label: 'ROI estimé', value: `+${displayStack.roi_estimate}%`, color: 'text-[#CAFF32]' },
+                    { label: 'Temps économisé', value: `${displayStack.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
+                  ].map((m, i) => (
+                    <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-800 last:border-0">
+                      <span className="text-xs text-zinc-500">{m.label}</span>
+                      <span className={cn('font-black text-sm', m.color)}>{m.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick wins */}
+              {displayStack.quick_wins?.length > 0 && (
+                <div className="bg-[#CAFF32]/5 border border-[#CAFF32]/15 p-4">
+                  <p className="text-[10px] font-mono text-[#CAFF32] uppercase tracking-[0.15em] mb-3">
+                    ✦ Quick wins
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {displayStack.quick_wins.map((w, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-[#CAFF32] text-xs mt-0.5 flex-shrink-0">{i + 1}.</span>
+                        <p className="text-xs text-zinc-300 leading-relaxed">{w}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Warnings */}
+              {displayStack.warnings?.length > 0 && (
+                <div className="bg-[#FF6B35]/5 border border-[#FF6B35]/15 p-4">
+                  <p className="text-[10px] font-mono text-[#FF6B35] uppercase tracking-[0.15em] mb-3">
+                    ⚠ Vigilance
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {displayStack.warnings.map((w, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-[#FF6B35] text-xs mt-0.5">•</span>
+                        <p className="text-xs text-zinc-300 leading-relaxed">{w}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
   )
 }

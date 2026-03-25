@@ -39,7 +39,7 @@ const FEATURES = [
             { label: 'Dépenses outils', value: '112€', change: '─ Stable', good: false },
           ].map((c) => (
             <div key={c.label} className="bg-bg-3 border border-border p-3">
-              <p className="font-dm-mono text-[0.58rem] text-muted uppercase tracking-[0.08em]">{c.label}</p>
+              <p className="font-dm-mono text-[0.58rem] text-muted uppercase">{c.label}</p>
               <p className={`font-syne font-extrabold text-[1.6rem] mt-[2px] ${c.good ? 'text-accent' : 'text-cream'}`}>{c.value}</p>
               <span className={`font-dm-mono text-[0.6rem] px-[7px] py-[2px] inline-block mt-1 ${c.good ? 'text-[#3d6e00] bg-accent/8' : 'text-muted bg-bg-3'}`}>{c.change}</span>
             </div>
@@ -94,16 +94,16 @@ export default function Features() {
                             relative after:content-[''] after:absolute after:top-0 after:left-0
                             after:right-0 after:h-[2px] after:bg-transparent
                             hover:after:bg-accent after:transition-colors after:duration-300 h-full">
-              <MockupWindow title={`StackAI — ${f.title}`}>
+              <MockupWindow title={`Raspquery — ${f.title}`}>
                 <div className="h-[220px] overflow-hidden border-b border-border">
                   {f.mock}
                 </div>
               </MockupWindow>
               <div className="p-8 md:p-9">
-                <p className="font-dm-mono text-[0.65rem] text-muted tracking-[0.1em] uppercase mb-3">{f.num}</p>
+                <p className="font-dm-mono text-[0.65rem] text-muted uppercase mb-3">{f.num}</p>
                 <h3 className="font-syne font-extrabold text-[1.25rem] tracking-[-0.02em] text-cream mb-[10px]">{f.title}</h3>
                 <p className="text-[0.88rem] text-muted-2 leading-[1.75] font-light">{f.desc}</p>
-                <span className="inline-block font-dm-mono text-[0.62rem] tracking-[0.1em] uppercase
+                <span className="inline-block font-dm-mono text-[0.62rem] uppercase
                                   text-accent border border-accent/20 px-[10px] py-[3px] mt-[14px]">
                   {f.tag}
                 </span>
@@ -117,19 +117,19 @@ export default function Features() {
       <RevealWrapper delay={0.1} className="mt-px bg-border">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border">
           <div className="bg-bg">
-            <MockupWindow title="StackAI — Stack vs Stack">
+            <MockupWindow title="Raspquery — Stack vs Stack">
               <div className="h-[200px] overflow-hidden">
                 <VSComparison />
               </div>
             </MockupWindow>
           </div>
           <div className="bg-bg p-9 md:p-10 flex flex-col justify-center">
-            <p className="font-dm-mono text-[0.65rem] text-muted tracking-[0.1em] uppercase mb-3">Feature 05</p>
+            <p className="font-dm-mono text-[0.65rem] text-muted uppercase mb-3">Feature 05</p>
             <h3 className="font-syne font-extrabold text-[1.25rem] tracking-[-0.02em] text-cream mb-[10px]">Stack vs Stack</h3>
             <p className="text-[0.88rem] text-muted-2 leading-[1.75] font-light">
               Compare ton stack avec celui d&apos;un concurrent. Vois exactement où tu perds de l&apos;argent ou de l&apos;efficacité. La feature la plus partagée sur LinkedIn.
             </p>
-            <span className="inline-block font-dm-mono text-[0.62rem] tracking-[0.1em] uppercase
+            <span className="inline-block font-dm-mono text-[0.62rem] uppercase
                               text-accent border border-accent/20 px-[10px] py-[3px] mt-4 self-start">
               Growth Hack
             </span>

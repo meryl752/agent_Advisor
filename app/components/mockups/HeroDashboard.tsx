@@ -40,7 +40,7 @@ export default function HeroDashboard() {
 
           {/* Bar chart */}
           <div className="bg-bg-3 border border-border p-4">
-            <p className="font-dm-mono text-[0.6rem] text-muted tracking-[0.08em] uppercase mb-3">
+            <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-3">
               Économies générées — 6 derniers mois
             </p>
             <BarChart bars={BARS} />

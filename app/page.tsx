@@ -1,19 +1,18 @@
-import Navigation from './components/layout/Navigation'
-import Marquee from './components/layout/Marquee'
-import Footer from './components/layout/Footer'
-import Hero from './components/sections/Hero'
-import Features from './components/sections/Features'
-import Pricing from './components/sections/Pricing'
-import CTA from './components/sections/CTA'
+import Navbar from './components/landing/Navbar'
+import Hero from './components/landing/Hero'
+import Features from './components/landing/Features'
+import HowItWorks from './components/landing/HowItWorks'
+import Pricing from './components/landing/Pricing'
+import CTA from './components/landing/CTA'
+import Footer from './components/landing/Footer'
 
 export default function Home() {
   return (
     <main>
-      <Navigation />
-      <Marquee />
+      <Navbar />
       <Hero />
-      <hr className="border-none border-t border-border mx-[52px]" />
       <Features />
+      <HowItWorks />
       <Pricing />
       <CTA />
       <Footer />

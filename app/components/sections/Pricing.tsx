@@ -22,7 +22,7 @@ export default function Pricing() {
             )}>
               {tier.featured && (
                 <span className="font-dm-mono text-[0.62rem] text-accent border border-accent/30
-                                  px-[10px] py-[3px] tracking-[0.1em] uppercase inline-block mb-5 self-start">
+                                  px-[10px] py-[3px] uppercase inline-block mb-5 self-start">
                   ✦ Plus populaire
                 </span>
               )}
@@ -48,7 +48,7 @@ export default function Pricing() {
               </ul>
 
               <button className={cn(
-                'w-full py-[14px] font-syne font-bold text-[0.85rem] tracking-[0.03em]',
+                'w-full py-[14px] font-syne font-bold text-[0.85rem]',
                 'border transition-all duration-200',
                 tier.featured
                   ? 'bg-accent text-bg border-accent hover:opacity-85'

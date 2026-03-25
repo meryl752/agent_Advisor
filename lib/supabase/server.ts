@@ -1,9 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
-// Client côté serveur — utilise la même anon key pour l'instant
-// TODO: Utiliser service_role key pour les opérations admin
-export const supabaseServer = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+// Client non-authentifié (lecture publique : agents, waitlist)
+export const supabaseServer = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+// Client authentifié avec le JWT Clerk — pour les opérations sur les données user
+export function createSupabaseClient(clerkToken: string) {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${clerkToken}`,
+      },
+    },
+  })
+}
