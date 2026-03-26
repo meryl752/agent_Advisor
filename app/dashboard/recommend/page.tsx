@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import AgentCard from '@/app/components/ui/AgentCard'
 import StackFlow from '@/app/components/ui/StackFlow'
 import StackSummary from '@/app/components/ui/StackSummary'
+import StackChat from '@/app/components/ui/StackChat'
 
 
 
@@ -489,6 +490,16 @@ export default function RecommendPage() {
             {/* Right column - Flow & Filters - Independent Scroll */}
             <div className="h-full overflow-y-auto pr-2 scrollbar-hide flex flex-col gap-4">
               <StackFlow agents={displayStack.agents} stackName={displayStack.stack_name} />
+
+              {/* Expert Chat — tuteur conversationnel post-stack */}
+              <StackChat
+                stackContext={{
+                  stack_name: displayStack.stack_name,
+                  objective: objective,
+                  total_cost: displayStack.total_cost,
+                  agents: displayStack.agents.map(a => ({ name: a.name, role: a.role })),
+                }}
+              />
 
               {/* Filtres */}
               <div className="bg-zinc-900 border border-zinc-800 p-4">

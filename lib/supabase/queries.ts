@@ -141,8 +141,6 @@ export async function getUserByClerkId(clerkId: string) {
   return data
 }
 
-// ─── Waitlist ─────────────────────────────────────────────────────────────────
-
 export async function addToWaitlist(email: string): Promise<boolean> {
   const { error } = await (supabaseServer as any)
     .from('waitlist')
@@ -155,4 +153,25 @@ export async function addToWaitlist(email: string): Promise<boolean> {
     return false
   }
   return true
+}
+
+// ─── Reference Stacks ────────────────────────────────────────────────────────
+
+export async function getReferenceStack(useCase: string, sector: string) {
+  const { data } = await (supabaseServer as any)
+    .from('reference_stacks')
+    .select('*')
+    .or(`use_case.ilike.%${useCase}%,sector.ilike.%${sector}%`)
+    .eq('validated', true)
+    .order('usage_count', { ascending: false })
+    .limit(3)
+
+  return (data ?? []) as Array<{ id: string; title: string; agent_names: string[]; description: string; usage_count: number }>
+}
+
+export async function incrementReferenceUsage(id: string) {
+  await (supabaseServer as any)
+    .from('reference_stacks')
+    .update({ usage_count: (supabaseServer as any).rpc('increment', { x: 1 }) })
+    .eq('id', id)
 }

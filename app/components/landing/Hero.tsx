@@ -104,10 +104,18 @@ export default function Hero() {
                     style={{ fontSize: 'clamp(3.5rem, 8vw, 7rem)', animationDelay: '0.1s' }}>
                     Lance ton projet{' '}
                     <br />
-                    <span className="relative inline-block">
-                        <span className="relative z-10 text-transparent bg-clip-text"
-                            style={{ backgroundImage: 'linear-gradient(135deg, #CAFF32, #7FFF00)' }}>
-                            {/* Rotating word */}
+                    <span className="relative inline-block px-6 py-3">
+                        {/* Torn paper background */}
+                        <span
+                            aria-hidden="true"
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                backgroundColor: '#AAEE00',
+                                clipPath: 'polygon(0% 18%, 3% 4%, 7% 20%, 13% 2%, 20% 17%, 27% 1%, 34% 15%, 42% 0%, 50% 14%, 58% 0%, 65% 16%, 72% 1%, 79% 14%, 86% 0%, 92% 13%, 97% 3%, 100% 18%, 100% 82%, 97% 97%, 92% 83%, 86% 100%, 79% 84%, 72% 99%, 65% 83%, 58% 100%, 50% 85%, 42% 100%, 34% 84%, 27% 99%, 20% 82%, 13% 97%, 7% 80%, 3% 96%, 0% 82%)',
+                            }}
+                        />
+                        {/* Rotating word */}
+                        <span className="relative z-10 text-zinc-900 font-black">
                             <span className={cn(
                                 'inline-block transition-all duration-300',
                                 visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'

@@ -21,18 +21,48 @@ const TEAM_DESCRIPTION = {
 export async function buildStack(
   ctx: UserContext,
   query: AnalyzedQuery,
-  candidates: ScoredAgent[]
+  candidates: ScoredAgent[],
+  referenceStacks: Array<{ title: string; agent_names: string[]; description: string }> = []
 ): Promise<FinalStack | null> {
 
   const candidateList = candidates.map((a, i) =>
     `${i + 1}. ID="${a.id}" | NOM="${a.name}" | CATÉGORIE=${a.category} | PRIX=${a.price_from}€/mois | DIFFICULTÉ=${a.setup_difficulty} | DÉLAI_VALEUR=${a.time_to_value} | SCORE_PERTINENCE=${a.relevance_score}/100 | RAISON_SÉLECTION="${a.relevance_reason}"`
   ).join('\n')
 
+  // Ancrage "vérité terrain" — stacks validés par des experts
+  const referenceSection = referenceStacks.length > 0
+    ? `
+<reference_stacks>
+Ces stacks ont été validés par des experts pour des cas similaires.
+Utilise-les comme ANCRAGE de qualité — pas comme copie exacte :
+${referenceStacks.map(r => `• ${r.title}: ${r.agent_names.join(' → ')} — ${r.description}`).join('\n')}
+</reference_stacks>
+`
+    : ''
+
+  // E-COMMERCE EXPERTISE
+  const ECOM_CONTEXT = `
+<ecommerce_expertise>
+Tu es spécialisé dans les stacks e-commerce. Pour chaque requête e-com, tu dois :
+1. Identifier le sous-cas précis : dropshipping / POD / digital / physique / Amazon / B2B
+2. Recommander les outils SPÉCIALISÉS pour ce sous-cas — pas des outils généralistes
+3. Respecter l'ordre logique : Recherche produit → Boutique → Contenu → Marketing → Analytics → Rétention
+4. Toujours inclure un outil de tracking/analytics ET un outil de rétention email
+5. Privilégier les intégrations natives Shopify quand disponibles
+</ecommerce_expertise>
+`
+
+  const isEcom = ['ecommerce', 'boutique', 'shopify', 'dropshipping', 'vendre', 'produit'].some(
+    kw => ctx.objective.toLowerCase().includes(kw) ||
+          query.sector_context?.toLowerCase().includes(kw)
+  )
+
   const prompt = `
+${isEcom ? ECOM_CONTEXT : ''}
 <role>
 Tu es un architecte de solutions IA d'élite. Tu construis des stacks d'outils IA sur mesure qui transforment concrètement les business. Chaque recommandation que tu fais est basée sur le profil EXACT de l'utilisateur — jamais générique, toujours spécifique.
 </role>
-
+${referenceSection}
 <project_context>
 OBJECTIF ANALYSÉ: ${query.original}
 SECTEUR: ${ctx.sector}
@@ -116,7 +146,14 @@ JSON strict uniquement. Zéro markdown. Zéro backtick. Zéro texte avant ou apr
 
   try {
     const text = await callLLM(prompt, 2048)
-    return JSON.parse(text) as FinalStack
+    
+    // Extraction robuste du JSON au cas où le LLM ajoute du texte ou des mardown backticks
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("Aucun objet JSON trouvé dans la réponse du LLM")
+    }
+    
+    return JSON.parse(jsonMatch[0]) as FinalStack
   } catch (err) {
     console.error('StackBuilder error:', err)
     return null

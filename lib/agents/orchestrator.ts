@@ -3,6 +3,7 @@ import type { UserContext, FinalStack } from './types'
 import { analyzeQuery } from './queryAnalyzer'
 import { matchAgents } from './matcher'
 import { buildStack } from './stackBuilder'
+import { getReferenceStack } from '@/lib/supabase/queries'
 
 export interface OrchestratorResult {
     stack: FinalStack
@@ -26,6 +27,15 @@ export async function runOrchestrator(
   const analyzedQuery = await analyzeQuery(ctx)
   console.log('✅ [Agent 1] Subtasks:', analyzedQuery.subtasks.length, '| Categories:', analyzedQuery.required_categories)
 
+  // ── Fetch Reference Stacks — ancrage "vérité terrain" ─────────────────────
+  const referenceStacks = await getReferenceStack(
+    analyzedQuery.required_categories[0] ?? '',
+    analyzedQuery.sector_context ?? ''
+  )
+  if (referenceStacks.length > 0) {
+    console.log(`📚 [Orchestrator] ${referenceStacks.length} reference stacks found for grounding`)
+  }
+
   // ── Agent 2 : Matcher (synchrone — pas de LLM) ────────────────────────────
   console.log('🎯 [Agent 2] Matching agents...')
   const candidates = matchAgents(allAgents, analyzedQuery, ctx)
@@ -38,7 +48,7 @@ export async function runOrchestrator(
 
   // ── Agent 3 : Stack Builder ───────────────────────────────────────────────
   console.log('🏗️ [Agent 3] Building stack...')
-  const stack = await buildStack(ctx, analyzedQuery, candidates)
+  const stack = await buildStack(ctx, analyzedQuery, candidates, referenceStacks)
 
   if (!stack) {
     console.error('❌ [Agent 3] Stack build failed')
