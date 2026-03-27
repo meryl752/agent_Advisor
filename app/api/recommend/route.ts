@@ -18,12 +18,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Objectif requis' }, { status: 400 })
     }
 
-    const agents = await getAllAgents()
-    if (agents.length === 0) {
-      return NextResponse.json({ error: 'Base agents vide' }, { status: 500 })
-    }
-
-    // Le backend construit un UserContext complet pour respecter le type
     const userContext = {
       objective,
       sector: 'général',
@@ -34,7 +28,7 @@ export async function POST(req: NextRequest) {
       current_tools: [],
     }
 
-    const result = await runOrchestrator(userContext, agents)
+    const result = await runOrchestrator(userContext)
     if (!result) {
       return NextResponse.json({ error: 'Recommandation impossible' }, { status: 500 })
     }

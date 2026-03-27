@@ -1,11 +1,17 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { getUserStacks, getTopAgents } from '@/lib/supabase/queries'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import DashboardMetrics from '@/app/components/dashboard/DashboardMetrics'
+import EconomyChart from '@/app/components/dashboard/EconomyChart'
+import StackList from '@/app/components/dashboard/StackList'
+import StackHealthRing from '@/app/components/dashboard/StackHealthRing'
 
 export default async function DashboardPage() {
   const { getToken } = await auth()
   const user = await currentUser()
-  if (!user) return null
+  if (!user) redirect('/sign-in')
+
 
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
   const firstName = user.firstName ?? 'toi'
@@ -18,43 +24,43 @@ export default async function DashboardPage() {
   const stackItems = topAgents.map(a => ({ name: a.name, score: a.score }))
 
   return (
-    <div className="p-8 w-full">
+    <div className="p-8 w-full max-w-7xl mx-auto">
 
       {/* Header */}
-      <div className="mb-10">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-2 h-2 rounded-full bg-[#CAFF32] animate-pulse" />
-          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.2em]">
-            Dashboard actif
-          </span>
+      <div className="mb-10 flex items-end justify-between">
+        <div>
+            <h1 className="font-syne font-black text-5xl dark:text-white text-zinc-900 tracking-tighter mb-2">
+            Bonjour, {firstName}
+            </h1>
+            <p className="font-dm-sans text-sm text-zinc-500 dark:text-zinc-400 font-medium max-w-lg">
+            Ton écosystème IA est optimisé. Voici les dernières performances de ton stack.
+            </p>
         </div>
-        <h1 className="font-black text-4xl text-white tracking-tight mb-1">
-          Bonjour, {firstName}{' '}
-          <span className="text-[#CAFF32]">✦</span>
-        </h1>
-        <p className="text-zinc-500 text-sm">
-          Voici l'état de ton stack IA ce mois-ci.
-        </p>
+      </div>
+
+      {/* Main Feature: Stack Health Ring */}
+      <div className="mb-8">
+        <StackHealthRing score={stackCount > 0 ? 84 : 0} />
       </div>
 
       {/* CTA si pas de stack */}
       {stackCount === 0 && (
-        <div className="relative mb-8 rounded-2xl overflow-hidden border border-[#CAFF32]/20">
-          <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(135deg, rgba(202,255,50,0.05), rgba(107,79,255,0.05))' }} />
-          <div className="relative p-6 flex items-center justify-between">
-            <div>
-              <p className="font-black text-white text-lg mb-1">
-                Tu n'as pas encore de stack ✦
+        <div className="relative mb-8 rounded-none overflow-hidden border border-zinc-200 dark:border-[#CAFF32]/20 dark:bg-zinc-950/40 bg-[var(--bg)] shadow-xl dark:shadow-2xl">
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-200 dark:via-[#CAFF32]/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#CAFF32]/[0.03] to-transparent pointer-events-none" />
+          <div className="relative p-8 flex items-center justify-between">
+            <div className="max-w-md">
+              <p className="font-syne font-black dark:text-white text-zinc-900 text-xl mb-2">
+                Initier ton premier stack
               </p>
-              <p className="text-zinc-400 text-sm">
-                Décris ton objectif — Raspquery construit ton stack optimal en 30 secondes.
+              <p className="font-dm-sans text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
+                Il semble que tu n'aies pas encore d'agents configurés. Décris ton objectif métier pour générer un stack sur-mesure.
               </p>
             </div>
             <Link href="/dashboard/recommend"
-              className="flex-shrink-0 bg-[#CAFF32] text-zinc-900 font-black text-sm
-                         px-6 py-3 rounded-xl hover:bg-[#d4ff50] transition-all
-                         hover:scale-105 hover:shadow-xl ml-6">
+              className="flex-shrink-0 bg-[#CAFF32] text-zinc-900 font-syne font-black text-sm
+                         px-8 py-3.5 rounded-none hover:bg-[#d4ff50] transition-all
+                         hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(202,255,50,0.3)] ml-6">
               Construire →
             </Link>
           </div>
@@ -62,128 +68,82 @@ export default async function DashboardPage() {
       )}
 
       {/* Metrics grid */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label: 'ROI ce mois', value: stackCount > 0 ? '+340€' : '—', sub: '↑ 23% vs mois dernier', color: '#CAFF32' },
-          { label: 'Stacks créés', value: String(stackCount), sub: stackCount === 0 ? 'Lance ton premier' : 'Voir mes stacks' },
-          { label: 'Stack Score', value: stackCount > 0 ? '84' : '—', sub: '/100', color: '#FF6B35' },
-        ].map((m, i) => (
-          <div key={i} className="relative bg-zinc-900 rounded-2xl p-5 border border-zinc-800
-                                   hover:border-zinc-700 transition-colors overflow-hidden group">
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ background: 'radial-gradient(circle at 50% 0%, rgba(202,255,50,0.04), transparent 70%)' }} />
-            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-2">
-              {m.label}
-            </p>
-            <p className="font-black text-3xl mb-1"
-              style={{ color: m.color ?? '#fff' }}>
-              {m.value}
-            </p>
-            <p className="text-xs text-zinc-600">{m.sub}</p>
-          </div>
-        ))}
-      </div>
+      <DashboardMetrics stackCount={stackCount} />
 
       {/* Main grid */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         {/* Chart */}
-        <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-4">
-            Économies générées — 6 mois
+        <div className="bg-[var(--bg)] dark:bg-zinc-900/50 backdrop-blur-xl rounded-none p-6 border border-zinc-100 dark:border-white/[0.05] shadow-sm dark:shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-200 dark:via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="font-dm-mono text-[9px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em] mb-6 font-bold">
+            Économies générées — Projection
           </p>
-          <div className="flex items-end gap-2 h-20">
-            {[35, 52, 45, 70, 63, 90].map((h, i) => (
-              <div key={i} className="flex-1 rounded-t-sm relative overflow-hidden"
-                style={{ height: `${h}%` }}>
-                <div className="absolute inset-0 rounded-t-sm"
-                  style={{
-                    background: i === 5
-                      ? 'linear-gradient(to top, #CAFF32, #7FFF00)'
-                      : 'rgba(202,255,50,0.2)',
-                  }} />
-              </div>
-            ))}
+          <div className="h-28">
+            <EconomyChart />
           </div>
         </div>
 
         {/* Action recommandée */}
-        <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 pointer-events-none opacity-10"
+        <div className="bg-[var(--bg)] dark:bg-zinc-900/50 backdrop-blur-xl rounded-none p-6 border border-zinc-100 dark:border-white/[0.05] shadow-sm dark:shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-200 dark:via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none opacity-[0.05]"
             style={{ background: 'radial-gradient(circle, #FF6B35, transparent)' }} />
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-3">
-            Action recommandée
+          
+          <p className="font-dm-mono text-[9px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em] mb-4 font-bold">
+            Suggestion Optimisation
           </p>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-[#FF6B35]" />
-            <p className="font-black text-white text-base">
-              Remplace Jasper → Claude
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-2 h-2 rounded-full bg-[#FF6B35] shadow-[0_0_8px_#FF6B35]" />
+            <p className="font-syne font-black dark:text-white text-zinc-900 text-lg uppercase tracking-tight">
+              Jasper → Claude
             </p>
           </div>
-          <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-            Tu économises <span className="text-[#CAFF32] font-bold">46€/mois</span>.
-            Claude fait exactement la même chose pour ton copywriting.
+          <p className="font-dm-sans text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
+            Optimisation identifiée : Migration de Jasper vers Claude pour ton copywriting. 
+            Économie estimée : <span className="text-[#CAFF32] font-black">46€ / mois</span>.
           </p>
           <Link href="/dashboard/recommend"
-            className="inline-flex items-center gap-2 text-xs font-bold text-[#CAFF32]
-                       hover:gap-3 transition-all">
-            Voir le détail →
+            className="inline-flex items-center gap-2 font-dm-mono text-[10px] uppercase font-black text-[#CAFF32]
+                       hover:gap-3 transition-all border border-[#CAFF32]/30 px-3 py-1.5 rounded-sm bg-[#CAFF32]/5">
+            Analyser l'impact →
           </Link>
         </div>
       </div>
 
       {/* Stack + Alerts */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Stack actuel */}
-        <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-4">
-            Ton stack actuel
+        <div className="bg-[var(--bg)] dark:bg-zinc-900/50 backdrop-blur-xl rounded-none p-6 border border-zinc-100 dark:border-white/[0.05] shadow-sm dark:shadow-2xl relative overflow-hidden group flex flex-col">
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-200 dark:via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="font-dm-mono text-[9px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em] mb-6 font-bold">
+            Ton Infrastructure IA
           </p>
-          <div className="flex flex-col gap-2">
-            {(stackItems.length > 0 ? stackItems : [
-              { name: 'Claude Sonnet', score: 92 },
-              { name: 'Make.com', score: 85 },
-              { name: 'Perplexity Pro', score: 78 },
-            ]).map((item, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center
-                                text-[10px] font-black text-zinc-400 flex-shrink-0">
-                  {item.name[0]}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs text-zinc-300 font-medium">{item.name}</span>
-                    <span className="text-xs font-black text-[#CAFF32]">{item.score}</span>
-                  </div>
-                  <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-[#CAFF32] opacity-60"
-                      style={{ width: `${item.score}%` }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <StackList items={stackItems} />
         </div>
 
         {/* Alerts */}
-        <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
-          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-4">
-            Stack alerts récentes
+        <div className="bg-[var(--bg)] dark:bg-zinc-900/50 backdrop-blur-xl rounded-none p-6 border border-zinc-100 dark:border-white/[0.05] shadow-sm dark:shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-200 dark:via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="font-dm-mono text-[9px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em] mb-6 font-bold">
+            Stack alerts — Temps réel
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {[
-              { type: 'success', text: 'GPT-4o a baissé ses prix de 50%', time: '2 min', color: '#CAFF32' },
-              { type: 'warning', text: 'Jasper remplaçable par Claude Sonnet', time: '1h', color: '#FF6B35' },
-              { type: 'info', text: 'Nouveau: Perplexity Pages disponible', time: '9h', color: '#38bdf8' },
+              { type: 'success', text: 'GPT-4o a baissé ses prix de 50%', time: '2 min', color: '#CAFF32', icon: '✦' },
+              { type: 'warning', text: 'Jasper remplaçable par Claude Sonnet', time: '1h', color: '#FF6B35', icon: '⚠' },
+              { type: 'info', text: 'Nouveau: Perplexity Pages disponible', time: '9h', color: '#38bdf8', icon: '◎' },
             ].map((alert, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-zinc-800/50">
-                <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
-                  style={{ background: alert.color }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-zinc-300 leading-relaxed">{alert.text}</p>
+              <div key={i} className="flex items-center gap-4 p-4 rounded-none bg-zinc-50 dark:bg-white/[0.02] border border-zinc-100 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-all group/alert">
+                <div className="w-8 h-8 flex items-center justify-center font-bold text-xs rounded-sm border"
+                  style={{ color: alert.color, borderColor: `${alert.color}30`, backgroundColor: `${alert.color}05` }}>
+                  {alert.icon}
                 </div>
-                <span className="text-[10px] text-zinc-600 flex-shrink-0">{alert.time}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs dark:text-zinc-300 text-zinc-800 leading-snug font-medium mb-1 line-clamp-1">{alert.text}</p>
+                  <p className="font-dm-mono text-[9px] text-zinc-500 dark:text-zinc-600 uppercase tracking-widest font-bold">{alert.time}</p>
+                </div>
               </div>
             ))}
           </div>

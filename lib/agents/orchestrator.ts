@@ -3,7 +3,7 @@ import type { UserContext, FinalStack } from './types'
 import { analyzeQuery } from './queryAnalyzer'
 import { matchAgents } from './matcher'
 import { buildStack } from './stackBuilder'
-import { getReferenceStack } from '@/lib/supabase/queries'
+import { getReferenceStack, getAgentsByCategories } from '@/lib/supabase/queries'
 
 export interface OrchestratorResult {
     stack: FinalStack
@@ -16,8 +16,7 @@ export interface OrchestratorResult {
 }
 
 export async function runOrchestrator(
-  ctx: UserContext,
-  allAgents: Agent[]
+  ctx: UserContext
 ): Promise<OrchestratorResult | null> {
   const startTime = Date.now()
   console.log('🎯 [Orchestrator] Starting pipeline for:', ctx.objective)
@@ -36,10 +35,11 @@ export async function runOrchestrator(
     console.log(`📚 [Orchestrator] ${referenceStacks.length} reference stacks found for grounding`)
   }
 
-  // ── Agent 2 : Matcher (synchrone — pas de LLM) ────────────────────────────
-  console.log('🎯 [Agent 2] Matching agents...')
-  const candidates = matchAgents(allAgents, analyzedQuery, ctx)
-  console.log(`✅ [Agent 2] ${candidates.length} candidates from ${allAgents.length}`)
+  // ── Agent 2 : Matcher (synchrone — fetch agents) ──────────────────────────
+  console.log('🎯 [Agent 2] Fetching & Matching agents...')
+  const relevantAgents = await getAgentsByCategories(analyzedQuery.required_categories)
+  const candidates = matchAgents(relevantAgents, analyzedQuery, ctx)
+  console.log(`✅ [Agent 2] ${candidates.length} candidates from ${relevantAgents.length} in categories:`, analyzedQuery.required_categories)
 
   if (candidates.length === 0) {
     console.error('❌ [Agent 2] No candidates — check DB and budget filter')
@@ -55,9 +55,9 @@ export async function runOrchestrator(
     return null
   }
 
-  // Inject accurate website domains from database for logos (Gemini hallucinates them or leaves them empty)
+  // Inject accurate website domains from database for logos
   stack.agents = stack.agents.map(agent => {
-    const dbAgent = allAgents.find(a => String(a.id) === String(agent.id))
+    const dbAgent = relevantAgents.find(a => String(a.id) === String(agent.id))
     if (dbAgent && dbAgent.url) {
       let domain = agent.website_domain || ''
       try {
@@ -77,7 +77,7 @@ export async function runOrchestrator(
   return {
     stack,
     meta: {
-      agents_analyzed: allAgents.length,
+      agents_analyzed: relevantAgents.length,
       agents_shortlisted: candidates.length,
       subtasks_detected: analyzedQuery.subtasks.length,
       processing_time_ms: processingTime,

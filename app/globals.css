@@ -2,16 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  * {
+    @apply border-zinc-200 dark:border-zinc-800 transition-colors duration-200;
+  }
+}
+
 :root {
+  --bg: #FBFCF5; /* Ultra-light lime tint */
+  --bg2: #F7F9E8; /* Subtle dirty white with lime undertones */
+  --bg3: #F2F5DB; /* Slightly more saturated tint for depth */
+  --accent: #8fb824; /* Adjusted accent for better legibility on tinted bg */
+  --accent2: #ff6b2b;
+  --accent3: #0ea5e9;
+  --text: #09090b;
+  --text-muted: #71717a;
+  --border: #e4e4e7;
+  --border2: #f4f4f5;
+}
+
+.dark {
   --bg: #080808;
   --bg2: #0d0d0d;
   --bg3: #111111;
   --accent: #C8F135;
   --accent2: #ff6b2b;
   --accent3: #38bdf8;
-  --white: #f0ede6;
-  --muted: #444444;
-  --muted2: #666666;
+  --text: #f0ede6;
+  --text-muted: #71717a;
   --border: #1a1a1a;
   --border2: #222222;
 }
@@ -26,9 +44,10 @@
 
 body {
   background: var(--bg);
-  color: var(--white);
+  color: var(--text);
   font-family: var(--font-dm-sans), sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Noise overlay */
@@ -189,4 +208,30 @@ body::before {
   60%  { width: 65%; }
   85%  { width: 88%; }
   100% { width: 95%; }
+}
+
+/* ─── Shimmer skeleton ───────────────────────────────────────────────────── */
+@keyframes shimmer-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #1a1a1a 25%,
+    #272727 50%,
+    #1a1a1a 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-sweep 1.6s ease-in-out infinite;
+}
+
+/* ─── Scrollbar hide ─────────────────────────────────────────────────────── */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

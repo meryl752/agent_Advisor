@@ -1,4 +1,4 @@
-import { supabaseServer, createSupabaseClient } from './server'
+import { supabaseServer, createSupabaseClient, supabaseService } from './server'
 import { createClient } from '@supabase/supabase-js'
 import type { Agent, Stack } from './types'
 
@@ -26,14 +26,16 @@ export async function getAllAgents(): Promise<Agent[]> {
   return data ?? []
 }
 
-export async function getAgentsByCategory(category: string): Promise<Agent[]> {
+export async function getAgentsByCategories(categories: string[]): Promise<Agent[]> {
+  if (categories.length === 0) return getAllAgents()
+
   const { data, error } = await supabaseServer
     .from('agents')
     .select('*')
-    .eq('category', category)
+    .in('category', categories)
     .order('score', { ascending: false })
 
-  if (error) { console.error('getAgentsByCategory error:', JSON.stringify(error, null, 2)); return [] }
+  if (error) { console.error('getAgentsByCategories error:', JSON.stringify(error, null, 2)); return [] }
   return data ?? []
 }
 
@@ -127,6 +129,20 @@ export async function upsertUser(clerkId: string, email: string, clerkToken: str
     .single()
 
   if (error) { console.error('upsertUser error:', error); return null }
+  return data
+}
+
+export async function syncUserWithServiceRole(clerkId: string, email: string, metadata?: any) {
+  const { data, error } = await (supabaseService as any)
+    .from('users')
+    .upsert(
+      { clerk_id: clerkId, email, ...metadata }, 
+      { onConflict: 'clerk_id' }
+    )
+    .select()
+    .single()
+
+  if (error) { console.error('syncUserWithServiceRole error:', error); return null }
   return data
 }
 

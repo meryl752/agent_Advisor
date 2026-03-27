@@ -55,38 +55,43 @@ export default function CTA() {
                     </p>
 
                     {sent ? (
-                        <div className="bg-zinc-900 border border-[#CAFF32]/30 rounded-2xl p-6 inline-flex items-center gap-3">
+                        <div className="bg-zinc-900 border border-[#CAFF32]/30 rounded-2xl p-6 flex items-center justify-center gap-3">
                             <div className="w-8 h-8 bg-[#CAFF32] rounded-full flex items-center justify-center">
                                 <span className="text-zinc-900 font-black text-sm">✓</span>
                             </div>
                             <p className="text-white font-semibold">Tu es sur la liste. On te contacte en premier.</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-6">
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                                placeholder="ton@email.com"
-                                className="flex-1 bg-zinc-900 border border-zinc-700 text-white px-5 py-3.5
-                           rounded-xl outline-none focus:border-[#CAFF32] transition-colors
-                           placeholder:text-zinc-500 text-sm"
-                            />
-                            <button
-                                onClick={handleSubmit}
-                                className="bg-[#CAFF32] text-zinc-900 font-bold px-6 py-3.5 rounded-xl
-                           hover:bg-[#d4ff50] transition-all hover:scale-105 hover:shadow-xl
-                           whitespace-nowrap text-sm"
-                            >
-                                Rejoindre →
-                            </button>
+                        <div className="flex flex-col gap-6 max-w-md mx-auto mb-10">
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                                    placeholder="ton@email.com"
+                                    className="flex-1 bg-zinc-900 border border-zinc-700 text-white px-5 py-3.5
+                               rounded-xl outline-none focus:border-[#CAFF32] transition-colors
+                               placeholder:text-zinc-500 text-sm"
+                                />
+                                <button
+                                    onClick={handleSubmit}
+                                    className="bg-[#CAFF32] text-zinc-900 font-bold px-6 py-3.5 rounded-xl
+                               hover:bg-[#d4ff50] transition-all hover:scale-105 hover:shadow-xl
+                               whitespace-nowrap text-sm"
+                                >
+                                    Rejoindre →
+                                </button>
+                            </div>
+                            
+                            {/* Social Proof Outline */}
+                            <div className="flex flex-row items-center justify-center">
+                                <p className="text-zinc-400 text-sm font-medium">
+                                    Rejoint par <span className="text-white font-bold">200+</span> entrepreneurs
+                                </p>
+                            </div>
                         </div>
                     )}
-
-                    <p className="text-zinc-600 text-xs">
-                        ✦ Bêta privée · Aucun spam · Désabonnement en 1 clic
-                    </p>
                 </motion.div>
             </div>
         </section>

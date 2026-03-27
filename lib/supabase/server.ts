@@ -7,6 +7,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 // Client non-authentifié (lecture publique : agents, waitlist)
 export const supabaseServer = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
+// Client avec Service Role (à utiliser pour les webhooks et opérations critiques sans JWT user)
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+export const supabaseService = supabaseServiceKey 
+  ? createClient<Database>(supabaseUrl, supabaseServiceKey)
+  : supabaseServer // Fallback sur anon-key
+
 // Client authentifié avec le JWT Clerk — pour les opérations sur les données user
 export function createSupabaseClient(clerkToken: string) {
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {

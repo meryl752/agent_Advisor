@@ -3,6 +3,7 @@ import { Syne, DM_Mono, DM_Sans } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import './globals.css'
+import { ThemeProvider } from '@/app/components/ThemeProvider'
 
 const syne = Syne({
   subsets: ['latin'],
@@ -52,8 +53,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         },
       }}
     >
-      <html lang="fr" className={`${syne.variable} ${dmMono.variable} ${dmSans.variable}`}>
-        <body>{children}</body>
+      <html lang="fr" className={`${syne.variable} ${dmMono.variable} ${dmSans.variable}`} suppressHydrationWarning>
+        <body className="antialiased">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+          >
+            {children}
+          </ThemeProvider>
+        </body>
       </html>
     </ClerkProvider>
   )

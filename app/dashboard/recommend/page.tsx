@@ -8,6 +8,7 @@ import AgentCard from '@/app/components/ui/AgentCard'
 import StackFlow from '@/app/components/ui/StackFlow'
 import StackSummary from '@/app/components/ui/StackSummary'
 import StackChat from '@/app/components/ui/StackChat'
+import { SkeletonAgentCard, SkeletonSummary, SkeletonRightColumn } from '@/app/components/ui/Skeleton'
 
 
 
@@ -83,6 +84,7 @@ export default function RecommendPage() {
   const [objective, setObjective] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
+  const [transitioning, setTransitioning] = useState(false)
   const [originalStack, setOriginalStack] = useState<StackResult | null>(null)
   const [displayStack, setDisplayStack] = useState<StackResult | null>(null)
   const [error, setError] = useState('')
@@ -112,9 +114,13 @@ export default function RecommendPage() {
       const data = await res.json()
       clearTimeout(t1); clearTimeout(t2)
       if (!res.ok) { setError(data.error); return }
+
+      // Show shimmer skeleton for 600ms before revealing results
+      setTransitioning(true)
       setOriginalStack(data.result)
       setDisplayStack(data.result)
       setFilters({ budget: 'all', tech: 'all', team: 'all', timeline: 'all' })
+      setTimeout(() => setTransitioning(false), 600)
     } catch {
       setError('Erreur réseau')
     } finally {
@@ -171,24 +177,23 @@ export default function RecommendPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 w-full max-w-2xl"
+          className="relative z-10 w-full max-w-2xl px-4 md:px-0"
         >
           {/* Header */}
           <div className="text-center mb-10">
-            <h1 className="font-black text-5xl text-white tracking-tight mb-4 leading-tight">
-              Construis ton stack <br />
+            <h1 className="font-syne font-black text-4xl md:text-5xl dark:text-white text-zinc-900 tracking-tight mb-4 leading-tight">
+              Construis ton stack <br className="hidden md:block" />
               de <span className="text-[#CAFF32]">super-pouvoirs</span> IA
             </h1>
-            <p className="text-zinc-500 text-lg font-medium max-w-lg mx-auto leading-relaxed">
+            <p className="font-dm-sans text-zinc-500 dark:text-zinc-400 text-base md:text-lg font-medium max-w-lg mx-auto leading-relaxed">
               Décris ton objectif métier — notre IA assemble le combo optimal d'outils en 30 secondes.
             </p>
           </div>
 
           {/* Main input - Glassmorphism style */}
-          <div className="relative mb-8 group">
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-[#CAFF32]/20 via-zinc-800 to-[#6B4FFF]/20 rounded-2xl blur-sm opacity-50 group-focus-within:opacity-100 transition-opacity" />
-            <div className="relative bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-2xl overflow-hidden
-                            focus-within:border-[#CAFF32]/40 transition-all duration-500 shadow-2xl">
+          <div className="relative mb-10 group">
+            <div className="relative bg-[var(--bg)] dark:bg-zinc-950/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden
+                            focus-within:border-[#CAFF32]/60 transition-all duration-500 shadow-2xl">
               <textarea
                 value={objective}
                 onChange={e => setObjective(e.target.value)}
@@ -200,8 +205,8 @@ export default function RecommendPage() {
                 }}
                 placeholder="Ex: Je veux lancer une boutique Shopify et automatiser mon service client..."
                 rows={4}
-                className="w-full bg-transparent text-zinc-100 font-medium text-lg
-                           px-6 pt-6 pb-2 outline-none resize-none placeholder:text-zinc-700
+                className="w-full bg-transparent dark:text-zinc-100 text-zinc-900 font-medium text-lg
+                           px-6 pt-6 pb-2 outline-none resize-none placeholder:text-zinc-500/60 dark:placeholder:text-zinc-700
                            leading-relaxed"
               />
               <div className="flex items-center justify-end px-6 pb-4">
@@ -209,15 +214,21 @@ export default function RecommendPage() {
                   onClick={handleSubmit}
                   disabled={!objective.trim()}
                   className={cn(
-                    'flex items-center gap-3 px-6 py-3 rounded-xl font-black text-sm',
-                    'transition-all duration-300 relative overflow-hidden group/btn',
+                    'flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs tracking-tight',
+                    'transition-all duration-500 relative overflow-hidden group/btn font-syne',
                     objective.trim()
-                      ? 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] hover:scale-105 hover:shadow-[0_0_20px_rgba(202,255,50,0.3)]'
-                      : 'bg-zinc-900 text-zinc-700 border border-zinc-800 cursor-not-allowed'
+                      ? 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] hover:scale-105 hover:shadow-[0_0_15px_rgba(202,255,50,0.2)]'
+                      : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-700 border border-zinc-200 dark:border-zinc-800 cursor-not-allowed opacity-50'
                   )}
                 >
                   <span className="relative z-10">Générer mon stack</span>
-                  <span className="text-lg relative z-10 group-hover/btn:translate-x-1 transition-transform">→</span>
+                  <motion.span 
+                    animate={objective.trim() ? { x: [0, 2, 0] } : {}}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="text-base relative z-10 transition-transform"
+                  >
+                    →
+                  </motion.span>
                 </button>
               </div>
             </div>
@@ -237,12 +248,12 @@ export default function RecommendPage() {
                   <button
                     key={i}
                     onClick={() => setObjective(chip.prompt)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl 
-                               bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50
-                               hover:bg-zinc-800/60 hover:border-[#CAFF32]/30 
-                               text-zinc-500 hover:text-[#CAFF32]
-                               transition-all duration-200 text-[11px] font-medium 
-                               group shadow-xl whitespace-nowrap flex-shrink-0"
+                    className="flex items-center gap-2 px-6 py-3.5 rounded-xl 
+                               bg-transparent border border-zinc-200/50 dark:border-zinc-800/50
+                               hover:bg-[var(--bg2)] dark:hover:bg-zinc-800/40 hover:border-[#CAFF32]/30 
+                               dark:text-zinc-500 text-zinc-500 hover:text-zinc-900
+                               transition-all duration-300 text-xs md:text-[13px] font-bold 
+                               group hover:shadow-lg whitespace-nowrap flex-shrink-0"
                   >
                     <span className="group-hover:translate-x-0.5 transition-transform">{chip.label}</span>
                   </button>
@@ -261,12 +272,12 @@ export default function RecommendPage() {
                   <button
                     key={i}
                     onClick={() => setObjective(chip.prompt)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl 
-                               bg-zinc-900/40 backdrop-blur-md border border-zinc-800/50
-                               hover:bg-zinc-800/60 hover:border-[#CAFF32]/30 
-                               text-zinc-500 hover:text-[#CAFF32]
-                               transition-all duration-200 text-[11px] font-medium 
-                               group shadow-xl whitespace-nowrap flex-shrink-0"
+                    className="flex items-center gap-2 px-6 py-3.5 rounded-xl 
+                               bg-transparent border border-zinc-200/50 dark:border-zinc-800/50
+                               hover:bg-[var(--bg2)] dark:hover:bg-zinc-800/40 hover:border-[#CAFF32]/30 
+                               dark:text-zinc-500 text-zinc-500 hover:text-zinc-900
+                               transition-all duration-300 text-xs md:text-[13px] font-bold 
+                               group hover:shadow-lg whitespace-nowrap flex-shrink-0"
                   >
                     <span className="group-hover:translate-x-0.5 transition-transform">{chip.label}</span>
                   </button>
@@ -390,6 +401,34 @@ export default function RecommendPage() {
         </div>
       )
     }
+
+  // ── SHIMMER TRANSITION ────────────────────────────────────────
+  if (transitioning) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="h-full flex flex-col overflow-hidden"
+      >
+        <div className="flex-shrink-0 px-8 pt-8 mb-6">
+          <div className="shimmer h-4 w-40" />
+        </div>
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-8 pb-8">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 h-full overflow-hidden">
+            <div className="h-full overflow-y-auto pr-4 scrollbar-hide flex flex-col">
+              <SkeletonSummary />
+              <div className="flex flex-col gap-4">
+                {[0, 1, 2, 3].map(i => <SkeletonAgentCard key={i} />)}
+              </div>
+            </div>
+            <div className="h-full overflow-y-auto pr-2 scrollbar-hide">
+              <SkeletonRightColumn />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
 
   // ── RESULTS ───────────────────────────────────────────────────
   return (

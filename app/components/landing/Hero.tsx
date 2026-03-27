@@ -13,6 +13,33 @@ const TOOLS = [
     { name: 'HubSpot', domain: 'hubspot.com', color: '#FF7A59' },
     { name: 'Taplio', domain: 'taplio.com', color: '#4F8EF7' },
     { name: 'Perplexity', domain: 'perplexity.ai', color: '#20B8CD' },
+    { name: 'Jasper', domain: 'jasper.ai', color: '#6B4FFF' },
+    { name: 'Copy.ai', domain: 'copy.ai', color: '#20B8CD' },
+    { name: 'Synthesia', domain: 'synthesia.io', color: '#FF6B35' },
+    { name: 'ElevenLabs', domain: 'elevenlabs.io', color: '#000' },
+    { name: 'Klaviyo', domain: 'klaviyo.com', color: '#20B8CD' },
+    { name: 'Zapier', domain: 'zapier.com', color: '#FF6B35' },
+    { name: 'Gorgias', domain: 'gorgias.com', color: '#4F8EF7' },
+    { name: 'Tidio', domain: 'tidio.com', color: '#4F8EF7' },
+    { name: 'Figma', domain: 'figma.com', color: '#FF6B35' },
+    { name: 'Vercel', domain: 'vercel.com', color: '#000' },
+    { name: 'Supabase', domain: 'supabase.com', color: '#3ECF8E' },
+    { name: 'Stripe', domain: 'stripe.com', color: '#6B4FFF' },
+    { name: 'OpenAI', domain: 'openai.com', color: '#10A37F' },
+    { name: 'Mistral', domain: 'mistral.ai', color: '#FF6B35' },
+    { name: 'Groq', domain: 'groq.com', color: '#FF6B35' },
+    { name: 'Gumroad', domain: 'gumroad.com', color: '#000' },
+    { name: 'Manychat', domain: 'manychat.com', color: '#4F8EF7' },
+    { name: 'Minea', domain: 'minea.com', color: '#6B4FFF' },
+    { name: 'Zendrop', domain: 'zendrop.com', color: '#6B4FFF' },
+    { name: 'DSers', domain: 'dsers.com', color: '#FF6B35' },
+    { name: 'Triple Whale', domain: 'triplewhale.com', color: '#20B8CD' },
+    { name: 'Canva', domain: 'canva.com', color: '#4F8EF7' },
+    { name: 'CapCut', domain: 'capcut.com', color: '#000' },
+    { name: 'Mailchimp', domain: 'mailchimp.com', color: '#FFE01B' },
+    { name: 'Airtable', domain: 'airtable.com', color: '#FF6B35' },
+    { name: 'Linear', domain: 'linear.app', color: '#5E6AD2' },
+    { name: 'Intercom', domain: 'intercom.com', color: '#4F8EF7' },
 ]
 
 const WORDS = ['Shopify', 'LinkedIn', 'Prospection', 'YouTube', 'SAV', 'SEO', 'SaaS']
@@ -20,7 +47,7 @@ const WORDS = ['Shopify', 'LinkedIn', 'Prospection', 'YouTube', 'SAV', 'SEO', 'S
 function RawLogo({ tool }: { tool: typeof TOOLS[0] }) {
     const [imgErr, setImgErr] = useState(false)
     return (
-        <div className="w-16 h-16 flex items-center justify-center shrink-0 opacity-40 hover:opacity-100 blur-[2px] hover:blur-none transition-all duration-300 cursor-default">
+        <div className="w-16 h-16 flex items-center justify-center shrink-0 opacity-80 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-default">
             {!imgErr ? (
                 <img
                     src={`https://img.logo.dev/${tool.domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
@@ -75,14 +102,14 @@ export default function Hero() {
             {/* Aceternity Vertical Marquee - Left Side */}
             <div className="absolute left-0 top-0 bottom-0 w-64 hidden xl:flex justify-end gap-12 py-10 px-8 mask-vertical-faded pointer-events-auto z-20">
                 {/* Colonne 1 : Défilement vers le haut */}
-                <div className="flex flex-col gap-14 h-max animate-marquee-vertical mt-10">
+                <div className="flex flex-col gap-12 h-max animate-marquee-vertical mt-10">
                     {[...TOOLS, ...TOOLS, ...TOOLS, ...TOOLS].map((tool, i) => (
                         <RawLogo key={i} tool={tool} />
                     ))}
                 </div>
 
                 {/* Colonne 2 : Défilement vers le bas */}
-                <div className="flex flex-col gap-14 h-max animate-marquee-vertical-reverse -mt-32">
+                <div className="flex flex-col gap-12 h-max animate-marquee-vertical-reverse -mt-32">
                     {[...TOOLS, ...TOOLS, ...TOOLS, ...TOOLS].map((tool, i) => (
                         <RawLogo key={i} tool={tool} />
                     ))}
@@ -95,7 +122,7 @@ export default function Hero() {
                         px-4 py-2 mb-8 shadow-sm animate-fadeUp">
                     <div className="w-2 h-2 rounded-full bg-[#CAFF32] animate-pulse" />
                     <span className="text-xs font-semibold text-zinc-600 tracking-wide uppercase">
-                        200+ agents IA indexés · Mis à jour chaque semaine
+                        200+ agents IA validés · Benchmark en temps réel
                     </span>
                 </div>
 
@@ -104,7 +131,7 @@ export default function Hero() {
                     style={{ fontSize: 'clamp(3.5rem, 8vw, 7rem)', animationDelay: '0.1s' }}>
                     Lance ton projet{' '}
                     <br />
-                    <span className="relative inline-block px-6 py-3">
+                    <span className="relative inline-block px-6 py-3 mt-1">
                         {/* Torn paper background */}
                         <span
                             aria-hidden="true"

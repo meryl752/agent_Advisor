@@ -143,6 +143,47 @@ export default function Pricing() {
                         </motion.div>
                     ))}
                 </div>
+
+                {/* Reassurance text */}
+                <div className="mt-10 flex items-center justify-center gap-2 text-sm text-zinc-500 font-medium">
+                    <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Annule quand tu veux &middot; Aucune carte requise pour le Free
+                </div>
+
+                {/* Minimalist FAQ */}
+                <div className="mt-32 max-w-3xl mx-auto">
+                    <div className="text-center mb-12">
+                        <h3 className="font-black text-2xl text-zinc-900 mb-4">Questions fréquentes</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[
+                            {
+                                q: "Puis-je annuler mon abonnement ?",
+                                a: "Absolument. Tu peux annuler ton plan à tout moment depuis ton espace en un seul clic. Sans condition."
+                            },
+                            {
+                                q: "Quelles sont les limites du Free ?",
+                                a: "Le plan Free permet de créer 1 stack par mois. Il est limité en analyse et ne donne pas accès aux Stack Alerts ni au Tracker de ROI."
+                            },
+                            {
+                                q: "Et pour l'essai gratuit Pro ?",
+                                a: "Tu as 14 jours pour utiliser toutes les fonctionnalités métiers. Sans engagement, annule avant la fin pour ne rien payer."
+                            },
+                            {
+                                q: "Politique de remboursement ?",
+                                a: "Si tu n'es pas satisfait de ta première facture, contacte-nous dans les 7 jours pour un remboursement intégral."
+                            }
+                        ].map((faq, i) => (
+                            <div key={i} className="bg-white rounded-2xl p-6 border border-zinc-200 hover:border-zinc-300 transition-colors">
+                                <h4 className="font-bold text-zinc-900 mb-2">{faq.q}</h4>
+                                <p className="text-zinc-600 text-sm leading-relaxed">{faq.a}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
             </div>
         </section>
     )
