@@ -131,13 +131,13 @@ export default async function SettingsPage() {
           <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-5">Mon compte</p>
           <div className="flex flex-col gap-3">
             <p className="text-zinc-400 text-sm leading-relaxed">
-              Pour modifier ton email, mot de passe ou méthodes de connexion, accède à ton espace Clerk.
+              Modifie ton email, mot de passe ou tes méthodes de connexion.
             </p>
             <div className="flex gap-3 pt-2">
-              <a href="https://accounts.clerk.dev/user" target="_blank" rel="noopener noreferrer"
+              <Link href="/dashboard/account"
                 className="border border-zinc-700 text-zinc-300 text-xs font-bold px-4 py-2 hover:border-zinc-500 transition-colors">
                 Gérer mon compte →
-              </a>
+              </Link>
             </div>
           </div>
         </section>
