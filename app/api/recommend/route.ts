@@ -3,8 +3,9 @@ import { currentUser, auth } from '@clerk/nextjs/server'
 import { saveStack } from '@/lib/supabase/queries'
 import { runOrchestrator } from '@/lib/agents/orchestrator'
 import { recommendSchema } from '@/lib/validators/api'
+import { getRateLimiter, withRateLimit } from '@/lib/rate-limit'
 
-export async function POST(req: NextRequest) {
+async function recommendHandler(req: NextRequest) {
   try {
     const user = await currentUser()
     const { getToken } = await auth()
@@ -61,3 +62,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
+
+// Apply rate limiting middleware
+const rateLimiter = getRateLimiter()
+
+export const POST = rateLimiter
+  ? withRateLimit(recommendHandler, { limiter: rateLimiter, endpoint: 'recommend' })
+  : recommendHandler

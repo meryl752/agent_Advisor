@@ -56,9 +56,89 @@ stackai/
 
 ```env
 # À créer dans .env.local
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+CLERK_WEBHOOK_SECRET=
+
+# Supabase Database
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-ANTHROPIC_API_KEY=
-CLERK_SECRET_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# LLM Providers
+GEMINI_API_KEY=
+GROQ_API_KEY=
+
+# Upstash Redis (Rate Limiting)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+RATE_LIMIT_ENABLED=true
+
+# Stripe (Optional)
 STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+```
+
+## Rate Limiting
+
+L'API `/api/recommend` est protégée par un système de rate limiting basé sur Upstash Redis.
+
+### Limites par tier
+
+| Plan | Limite | Période |
+|------|--------|---------|
+| Free | 1 requête | 30 jours |
+| Pro | 10 requêtes | 1 heure |
+| Agency | 50 requêtes | 1 heure |
+
+### Headers de réponse
+
+Toutes les réponses incluent les headers suivants :
+
+- `X-RateLimit-Limit`: Nombre maximum de requêtes autorisées
+- `X-RateLimit-Remaining`: Nombre de requêtes restantes
+- `X-RateLimit-Reset`: Timestamp Unix de réinitialisation du compteur
+
+### Erreur 429 (Rate Limit Exceeded)
+
+Quand la limite est atteinte, l'API retourne :
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "message": "Rate limit exceeded for free tier: 1 request per 30 days",
+  "limit": 1,
+  "remaining": 0,
+  "reset": "2024-01-31T12:00:00.000Z",
+  "retryAfter": 2592000
+}
+```
+
+Header additionnel : `Retry-After` (secondes avant de pouvoir réessayer)
+
+### Configuration
+
+Pour désactiver le rate limiting (développement uniquement) :
+
+```env
+RATE_LIMIT_ENABLED=false
+```
+
+### Health Check
+
+Vérifier l'état du rate limiting :
+
+```bash
+GET /api/health/rate-limit
+```
+
+Réponse :
+```json
+{
+  "status": "healthy",
+  "redis": "connected",
+  "timestamp": "2024-01-01T12:00:00.000Z"
+}
 ```
