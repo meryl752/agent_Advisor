@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { waitlistSchema } from '@/lib/validators/api'
+import { anonymizeEmail } from '@/lib/utils/logger'
 
 // TODO: Replace with Supabase insert when DB layer is connected
 // supabase.from('waitlist').insert({ email, created_at: new Date() })
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
     const { email } = validation.data
 
     // Placeholder — log for now
-    console.log('New waitlist signup:', email)
+    console.log('New waitlist signup:', anonymizeEmail(email))
 
     return NextResponse.json({ success: true, message: 'Inscrit avec succès' })
   } catch {

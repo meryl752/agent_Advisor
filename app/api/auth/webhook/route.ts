@@ -2,6 +2,7 @@ import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { syncUserWithServiceRole } from '@/lib/supabase/queries'
+import { anonymizeId } from '@/lib/utils/logger'
 
 export async function POST(req: Request) {
   // Obtenir le secret du webhook Clerk depuis les variables d'environnement
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
         avatar_url: image_url,
         last_signed_in_at: new Date().toISOString()
       })
-      console.log(`✅ Webhook: User ${id} synced to Supabase`)
+      console.log(`✅ Webhook: User ${anonymizeId(id)} synced to Supabase`)
     }
   }
 

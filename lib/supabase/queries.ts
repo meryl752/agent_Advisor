@@ -1,6 +1,7 @@
 import { supabaseServer, createSupabaseClient, supabaseService } from './server'
 import { createClient } from '@supabase/supabase-js'
 import type { Agent, Stack } from './types'
+import { anonymizeEmail, anonymizeId } from '@/lib/utils/logger'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 async function getInternalUserId(clerkId: string): Promise<string | null> {
@@ -11,7 +12,7 @@ async function getInternalUserId(clerkId: string): Promise<string | null> {
     .single()
 
   if (error || !data) {
-    console.warn(`User not found in 'users' table for Clerk ID: ${clerkId}`)
+    console.warn(`User not found in 'users' table for Clerk ID: ${anonymizeId(clerkId)}`)
     return null
   }
   return (data as any).id
@@ -21,7 +22,7 @@ async function ensureUserExists(clerkId: string, email?: string): Promise<string
   // Try to get existing user
   let userId = await getInternalUserId(clerkId)
   
-  console.log(`[ensureUserExists] Checking user: ${clerkId}, found: ${userId ? 'YES' : 'NO'}`)
+  console.log(`[ensureUserExists] Checking user: ${anonymizeId(clerkId)}, found: ${userId ? 'YES' : 'NO'}`)
   
   if (!userId) {
     // Check if service role key is configured
@@ -35,9 +36,9 @@ async function ensureUserExists(clerkId: string, email?: string): Promise<string
     const userData: any = { clerk_id: clerkId, plan: 'free' }
     if (email) {
       userData.email = email
-      console.log(`[ensureUserExists] Creating user with email: ${email}`)
+      console.log(`[ensureUserExists] Creating user with email: ${anonymizeEmail(email)}`)
     } else {
-      console.warn(`[ensureUserExists] Creating user WITHOUT email for: ${clerkId}`)
+      console.warn(`[ensureUserExists] Creating user WITHOUT email for: ${anonymizeId(clerkId)}`)
     }
     
     const { data, error } = await (supabaseService as any)
@@ -48,15 +49,15 @@ async function ensureUserExists(clerkId: string, email?: string): Promise<string
     
     if (!error && data) {
       userId = data.id
-      console.log(`✅ Auto-created user for Clerk ID: ${clerkId} → UUID: ${userId}`)
+      console.log(`✅ Auto-created user for Clerk ID: ${anonymizeId(clerkId)} → UUID: ${anonymizeId(userId)}`)
     } else {
-      console.error(`❌ Failed to create user for Clerk ID: ${clerkId}`)
+      console.error(`❌ Failed to create user for Clerk ID: ${anonymizeId(clerkId)}`)
       console.error('   Supabase error:', JSON.stringify(error, null, 2))
       return null
     }
   }
   
-  console.log(`[ensureUserExists] Returning UUID: ${userId}`)
+  console.log(`[ensureUserExists] Returning UUID: ${anonymizeId(userId)}`)
   return userId
 }
 
@@ -114,10 +115,10 @@ export async function getUserStacks(userId: string, clerkToken: string, email?: 
   // Mapping Clerk ID -> Supabase Internal UUID (with auto-creation)
   const internalId = await ensureUserExists(userId, email)
   
-  console.log(`[getUserStacks] Clerk ID: ${userId} → Internal UUID: ${internalId}`)
+  console.log(`[getUserStacks] Clerk ID: ${anonymizeId(userId)} → Internal UUID: ${anonymizeId(internalId)}`)
   
   if (!internalId) {
-    console.error(`Cannot get stacks: User creation failed for Clerk ID: ${userId}`)
+    console.error(`Cannot get stacks: User creation failed for Clerk ID: ${anonymizeId(userId)}`)
     return []
   }
 
@@ -130,7 +131,7 @@ export async function getUserStacks(userId: string, clerkToken: string, email?: 
 
   if (error) {
     console.error(`getUserStacks error (${error.code}): ${error.message}`)
-    console.error(`   Attempted to query with user_id: ${internalId}`)
+    console.error(`   Attempted to query with user_id: ${anonymizeId(internalId)}`)
     return []
   }
   return data ?? []
@@ -148,7 +149,7 @@ export async function saveStack(stack: {
   // Mapping Clerk ID -> Supabase Internal UUID (with auto-creation)
   const internalId = await ensureUserExists(stack.user_id, email)
   if (!internalId) {
-    console.error(`Cannot save stack: User creation failed for Clerk ID: ${stack.user_id}`)
+    console.error(`Cannot save stack: User creation failed for Clerk ID: ${anonymizeId(stack.user_id)}`)
     return null
   }
 
