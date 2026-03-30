@@ -28,13 +28,41 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Raspquery — La plateforme IA qui maximise ton ROI',
-  description: "Tu décris ton objectif. Raspquery analyse 200+ agents IA et t'assemble le combo exact.",
-  keywords: ['IA', 'agents IA', 'stack IA', 'ROI', 'automatisation'],
+  title: {
+    default: 'Raspquery — La plateforme IA qui maximise ton ROI',
+    template: '%s | Raspquery',
+  },
+  description: "Tu décris ton objectif. Raspquery analyse 200+ agents IA et t'assemble le combo exact pour maximiser ton ROI.",
+  keywords: ['IA', 'agents IA', 'stack IA', 'ROI', 'automatisation', 'intelligence artificielle', 'outils IA', 'productivité'],
+  authors: [{ name: 'Raspquery' }],
+  creator: 'Raspquery',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://raspquery.com'),
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'Raspquery — Construis le stack parfait. Gagne plus.',
-    description: 'Trouve les agents IA exacts pour ton objectif en 30 secondes.',
+    description: 'Trouve les agents IA exacts pour ton objectif en 30 secondes. 200+ outils analysés, ROI calculé.',
     type: 'website',
+    locale: 'fr_FR',
+    siteName: 'Raspquery',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Raspquery — La plateforme IA qui maximise ton ROI',
+    description: 'Trouve les agents IA exacts pour ton objectif en 30 secondes.',
+    creator: '@raspquery',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 
