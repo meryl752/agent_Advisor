@@ -19,7 +19,5 @@ module.exports = withSentryConfig(nextConfig, {
   silent: !process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: true,
   hideSourceMaps: true,
-  disableLogger: true,
-  // automaticVercelMonitors disabled — project uses proxy.ts instead of middleware.ts
   automaticVercelMonitors: false,
 })
