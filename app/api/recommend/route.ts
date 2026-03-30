@@ -4,6 +4,7 @@ import { saveStack } from '@/lib/supabase/queries'
 import { runOrchestrator } from '@/lib/agents/orchestrator'
 import { recommendSchema } from '@/lib/validators/api'
 import { getRateLimiter, withRateLimit } from '@/lib/rate-limit'
+import { captureError, setSentryUser } from '@/lib/monitoring/sentry'
 
 async function recommendHandler(req: NextRequest) {
   try {
@@ -14,6 +15,9 @@ async function recommendHandler(req: NextRequest) {
     if (!user || !token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
+
+    // Set Sentry user context (anonymized)
+    setSentryUser(user.id)
 
     const body = await req.json()
     const validation = recommendSchema.safeParse(body)
@@ -58,6 +62,7 @@ async function recommendHandler(req: NextRequest) {
 
     return NextResponse.json({ success: true, result: result.stack, meta: result.meta })
   } catch (err) {
+    captureError(err, { endpoint: '/api/recommend', action: 'generate_recommendation' })
     console.error('Recommend API error:', err)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
