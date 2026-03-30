@@ -11,10 +11,9 @@ import ROIChart from '@/app/components/ui/ROIChart'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Phase = 'idle' | 'questioning' | 'reasoning' | 'results' | 'error'
-
 interface ChipOption { label: string; value: string }
 interface Question { id: string; text: string; type: 'free-text' | 'chips'; chips?: ChipOption[] }
-interface ChatEntry { role: 'ai' | 'user'; text: string; isTyping?: boolean }
+interface ChatEntry { role: 'ai' | 'user'; text: string }
 interface ApiError { type: 'rate-limit' | 'server'; message: string; plan?: string; resetAt?: string }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -51,91 +50,152 @@ const QUESTIONS: Question[] = [
   },
 ]
 
-const REASONING_AGENTS = [
-  { icon: '◈', name: 'Analyzer',   message: 'Analyse de 200+ agents IA...' },
-  { icon: '↑', name: 'ROI Engine', message: 'Calcul du ROI pour ton profil...' },
-  { icon: '⚙', name: 'Optimizer',  message: 'Optimisation du budget...' },
-  { icon: '✦', name: 'Builder',    message: 'Assemblage du stack final...' },
+const REASONING_STEPS = [
+  { label: 'Analyse de ton objectif', sub: ['Extraction des mots-clés métier', 'Identification des cas d\'usage', 'Détection du secteur et contexte'] },
+  { label: 'Recherche dans la base d\'agents', sub: ['Scan de 200+ outils IA', 'Filtrage par budget et niveau technique', 'Scoring ROI par profil'] },
+  { label: 'Optimisation du stack', sub: ['Calcul des synergies entre outils', 'Vérification de la compatibilité', 'Ajustement au budget'] },
+  { label: 'Assemblage du stack final', sub: ['Classement par priorité d\'implémentation', 'Génération des quick wins', 'Calcul du ROI projeté'] },
 ]
 
-// ─── Small components ─────────────────────────────────────────────────────────
+// ─── Siri Orb ─────────────────────────────────────────────────────────────────
 
-function TypingDots() {
+function SiriOrb() {
   return (
-    <div className="flex items-center gap-1 py-1">
+    <div className="relative flex items-center justify-center w-48 h-48 mx-auto">
+      {/* Outer glow rings */}
       {[0, 1, 2].map(i => (
-        <motion.div key={i} className="w-2 h-2 rounded-full bg-[#CAFF32]/60"
-          animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }} />
+        <motion.div key={i}
+          className="absolute rounded-full"
+          style={{
+            width: `${100 + i * 40}px`,
+            height: `${100 + i * 40}px`,
+            background: `radial-gradient(circle, transparent 40%, rgba(202,255,50,${0.06 - i * 0.015}) 100%)`,
+          }}
+          animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 2.5 + i * 0.7, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
+        />
+      ))}
+
+      {/* Core orb */}
+      <motion.div
+        className="relative w-24 h-24 rounded-full"
+        animate={{ scale: [1, 1.05, 0.97, 1.03, 1] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          background: 'radial-gradient(circle at 35% 35%, #e8ff80, #CAFF32 30%, #4ade80 55%, #06b6d4 75%, #6366f1 100%)',
+          boxShadow: '0 0 40px rgba(202,255,50,0.5), 0 0 80px rgba(202,255,50,0.2), 0 0 120px rgba(99,102,241,0.15)',
+        }}
+      >
+        {/* Inner shimmer */}
+        <motion.div className="absolute inset-0 rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+          style={{
+            background: 'conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.3) 20%, transparent 40%, rgba(255,255,255,0.15) 60%, transparent 80%)',
+          }}
+        />
+        {/* Specular highlight */}
+        <div className="absolute top-3 left-4 w-6 h-4 rounded-full bg-white/40 blur-sm" />
+      </motion.div>
+
+      {/* Floating particles */}
+      {[...Array(6)].map((_, i) => (
+        <motion.div key={i}
+          className="absolute w-1 h-1 rounded-full bg-[#CAFF32]"
+          style={{ left: `${20 + i * 12}%`, top: `${15 + (i % 3) * 25}%` }}
+          animate={{
+            y: [0, -12, 0, 8, 0],
+            opacity: [0, 1, 0.5, 1, 0],
+            scale: [0.5, 1, 0.7, 1, 0.5],
+          }}
+          transition={{ duration: 2 + i * 0.5, repeat: Infinity, delay: i * 0.3 }}
+        />
       ))}
     </div>
   )
 }
 
-function AIBubble({ text, isTyping }: { text?: string; isTyping?: boolean }) {
+// ─── Reasoning Steps (Manus-style) ────────────────────────────────────────────
+
+function ReasoningSteps({ visibleStep }: { visibleStep: number }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="flex items-start gap-3 max-w-[85%]">
-      <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center
-                      bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-full mt-0.5">
-        <span className="text-[#CAFF32] text-[8px] font-black">AI</span>
-      </div>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-sm px-4 py-3
-                      text-sm text-zinc-200 leading-relaxed">
-        {isTyping ? <TypingDots /> : text}
-      </div>
-    </motion.div>
+    <div className="flex flex-col gap-1 w-full max-w-sm mx-auto">
+      {REASONING_STEPS.map((step, i) => {
+        const done = i < visibleStep
+        const active = i === visibleStep
+        return (
+          <motion.div key={i}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: i <= visibleStep ? 1 : 0.25, x: 0 }}
+            transition={{ duration: 0.4, delay: i * 0.1 }}
+          >
+            {/* Step header */}
+            <div className="flex items-center gap-2 py-1.5">
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                done ? 'bg-[#CAFF32]' : active ? 'border border-[#CAFF32] bg-[#CAFF32]/10' : 'border border-zinc-700'
+              }`}>
+                {done
+                  ? <span className="text-zinc-900 text-[8px] font-black">✓</span>
+                  : active
+                    ? <motion.div className="w-1.5 h-1.5 rounded-full bg-[#CAFF32]"
+                        animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
+                    : null
+                }
+              </div>
+              <span className={`text-sm font-medium ${done ? 'text-zinc-300' : active ? 'text-white' : 'text-zinc-600'}`}>
+                {step.label}
+              </span>
+            </div>
+
+            {/* Sub-steps — only show for active/done */}
+            <AnimatePresence>
+              {(done || active) && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
+                  className="ml-6 border-l border-zinc-800 pl-3 mb-1 overflow-hidden">
+                  {step.sub.map((s, j) => (
+                    <motion.div key={j}
+                      initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: j * 0.15 }}
+                      className="flex items-center gap-2 py-0.5">
+                      <div className="w-1 h-1 rounded-full bg-zinc-600 flex-shrink-0" />
+                      <span className="text-xs text-zinc-500">{s}</span>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )
+      })}
+    </div>
   )
 }
 
-function UserBubble({ text }: { text: string }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="flex justify-end">
-      <div className="bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-2xl rounded-tr-sm
-                      px-4 py-3 text-sm text-[#CAFF32] max-w-[75%]">
-        {text}
-      </div>
-    </motion.div>
-  )
-}
+// ─── Right Panel (Reasoning + Results) ───────────────────────────────────────
 
-function ChipRow({ chips, onSelect }: { chips: ChipOption[]; onSelect: (c: ChipOption) => void }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      className="flex flex-wrap gap-2 pl-10">
-      {chips.map(chip => (
-        <button key={chip.value} onClick={() => onSelect(chip)}
-          className="px-4 py-2 rounded-full border border-zinc-700 text-xs text-zinc-300 font-dm-mono
-                     hover:border-[#CAFF32]/50 hover:text-[#CAFF32] hover:bg-[#CAFF32]/5 transition-all">
-          {chip.label}
-        </button>
-      ))}
-    </motion.div>
-  )
-}
-
-// ─── Reasoning Panel ──────────────────────────────────────────────────────────
-
-function ReasoningPanel({ answers, onComplete, onError }: {
+function RightPanel({ phase, answers, result, onComplete, onError }: {
+  phase: 'reasoning' | 'results'
   answers: Record<string, string>
+  result: FinalStack | null
   onComplete: (r: FinalStack) => void
   onError: (e: ApiError) => void
 }) {
-  const [visible, setVisible] = useState<number[]>([])
-  const [done, setDone] = useState(false)
+  const [visibleStep, setVisibleStep] = useState(0)
+  const [apiDone, setApiDone] = useState(false)
   const resultRef = useRef<FinalStack | null>(null)
-  const apiDone = useRef(false)
   const allShown = useRef(false)
 
   const tryComplete = useCallback(() => {
-    if (apiDone.current && allShown.current && resultRef.current) {
-      setDone(true)
-      setTimeout(() => onComplete(resultRef.current!), 500)
+    if (apiDone && allShown.current && resultRef.current) {
+      setTimeout(() => onComplete(resultRef.current!), 600)
     }
-  }, [onComplete])
+  }, [apiDone, onComplete])
 
   useEffect(() => {
+    if (phase !== 'reasoning') return
+
+    // Fire API
     fetch('/api/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -153,137 +213,119 @@ function ReasoningPanel({ answers, onComplete, onError }: {
         return
       }
       resultRef.current = data.result
-      apiDone.current = true
-      tryComplete()
+      setApiDone(true)
     }).catch(() => onError({ type: 'server', message: 'Erreur réseau' }))
 
-    REASONING_AGENTS.forEach((_, i) => {
+    // Advance steps
+    REASONING_STEPS.forEach((_, i) => {
       setTimeout(() => {
-        setVisible(prev => [...prev, i])
-        if (i === REASONING_AGENTS.length - 1) { allShown.current = true; tryComplete() }
-      }, 600 + i * 1200)
+        setVisibleStep(i)
+        if (i === REASONING_STEPS.length - 1) {
+          allShown.current = true
+        }
+      }, 800 + i * 1400)
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [phase])
+
+  useEffect(() => { tryComplete() }, [apiDone, tryComplete])
+
+  if (phase === 'results' && result) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="h-full overflow-y-auto px-6 py-6 scrollbar-hide">
+        <ArtifactGrid stack={result} />
+      </motion.div>
+    )
+  }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="flex items-start gap-3">
-      <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center
-                      bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-full mt-0.5">
-        <span className="text-[#CAFF32] text-[8px] font-black">AI</span>
+    <div className="h-full flex flex-col items-center justify-center px-8 py-10 gap-8">
+      <div className="text-center">
+        <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-2">
+          Raspquery AI · En cours
+        </p>
+        <p className="font-syne font-black text-white text-xl">
+          Construction de ton stack
+        </p>
       </div>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-sm px-4 py-4 flex-1">
-        <div className="flex flex-col gap-3">
-          {visible.length === 0 && <TypingDots />}
-          {REASONING_AGENTS.map((agent, i) => (
-            <AnimatePresence key={i}>
-              {visible.includes(i) && (
-                <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-3">
-                  <span className="text-[#CAFF32] w-5 text-center text-sm">{agent.icon}</span>
-                  <div className="flex-1">
-                    <p className="font-dm-mono text-[9px] text-[#CAFF32]/50 uppercase tracking-wider">{agent.name}</p>
-                    <p className="text-sm text-zinc-300">{agent.message}</p>
-                  </div>
-                  {i === visible[visible.length - 1] && !done && (
-                    <div className="flex gap-1">
-                      {[0,1,2].map(j => (
-                        <motion.div key={j} className="w-1.5 h-1.5 rounded-full bg-[#CAFF32]/40"
-                          animate={{ opacity: [0.3, 1, 0.3] }}
-                          transition={{ duration: 0.8, repeat: Infinity, delay: j * 0.2 }} />
-                      ))}
-                    </div>
-                  )}
-                  {done && i === REASONING_AGENTS.length - 1 && (
-                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                      className="text-[#CAFF32] text-sm">✓</motion.span>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          ))}
-        </div>
-      </div>
-    </motion.div>
+
+      <SiriOrb />
+
+      <ReasoningSteps visibleStep={visibleStep} />
+    </div>
   )
 }
 
 // ─── Artifact Grid ────────────────────────────────────────────────────────────
 
 function ArtifactGrid({ stack }: { stack: FinalStack }) {
-  return (
-    <div className="flex flex-col gap-6 w-full">
-      {[
-        <StackSummary key="summary" stackName={stack.stack_name} justification={stack.justification}
-          total_cost={stack.total_cost} roi_estimate={stack.roi_estimate}
-          time_saved_per_week={stack.time_saved_per_week} agentCount={stack.agents.length} />,
-
-        <div key="agents">
-          <p className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.15em] mb-3">Les agents recommandés</p>
-          <div className="flex flex-col gap-1">
-            {stack.agents.map((a, i) => (
-              <AgentCard key={i} rank={a.rank} name={a.name} category={a.category}
-                price_from={a.price_from} role={a.role} reason={a.reason}
-                concrete_result={(a as any).concrete_result} website_domain={a.website_domain}
-                setup_difficulty={a.setup_difficulty} time_to_value={a.time_to_value} score={a.score} />
-            ))}
-          </div>
-        </div>,
-
-        <ROIChart key="roi" roiEstimate={stack.roi_estimate} totalCost={stack.total_cost} />,
-
-        <StackFlow key="flow" agents={stack.agents} stackName={stack.stack_name} />,
-
-        <div key="wins" className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stack.quick_wins?.length > 0 && (
-            <div className="bg-[#CAFF32]/5 border border-[#CAFF32]/15 rounded-xl p-5">
-              <p className="font-dm-mono text-[9px] text-[#CAFF32] uppercase tracking-[0.15em] mb-3">✦ Quick wins</p>
-              {stack.quick_wins.map((w, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <span className="text-[#CAFF32] text-xs font-dm-mono flex-shrink-0">{i+1}.</span>
-                  <p className="text-xs text-zinc-300 leading-relaxed">{w}</p>
-                </div>
-              ))}
+  const sections = [
+    <StackSummary key="s" stackName={stack.stack_name} justification={stack.justification}
+      total_cost={stack.total_cost} roi_estimate={stack.roi_estimate}
+      time_saved_per_week={stack.time_saved_per_week} agentCount={stack.agents.length} />,
+    <div key="a">
+      <p className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.15em] mb-3">Agents recommandés</p>
+      <div className="flex flex-col gap-1">
+        {stack.agents.map((a, i) => (
+          <AgentCard key={i} rank={a.rank} name={a.name} category={a.category}
+            price_from={a.price_from} role={a.role} reason={a.reason}
+            concrete_result={(a as any).concrete_result} website_domain={a.website_domain}
+            setup_difficulty={a.setup_difficulty} time_to_value={a.time_to_value} score={a.score} />
+        ))}
+      </div>
+    </div>,
+    <ROIChart key="r" roiEstimate={stack.roi_estimate} totalCost={stack.total_cost} />,
+    <StackFlow key="f" agents={stack.agents} stackName={stack.stack_name} />,
+    <div key="w" className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {stack.quick_wins?.length > 0 && (
+        <div className="bg-[#CAFF32]/5 border border-[#CAFF32]/15 rounded-xl p-5">
+          <p className="font-dm-mono text-[9px] text-[#CAFF32] uppercase tracking-[0.15em] mb-3">✦ Quick wins</p>
+          {stack.quick_wins.map((w, i) => (
+            <div key={i} className="flex gap-2 mb-2">
+              <span className="text-[#CAFF32] text-xs font-dm-mono flex-shrink-0">{i+1}.</span>
+              <p className="text-xs text-zinc-300 leading-relaxed">{w}</p>
             </div>
-          )}
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
-            <p className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.15em] mb-4">Résumé financier</p>
-            {[
-              { label: 'Coût mensuel', value: `${stack.total_cost}€`, color: 'text-white' },
-              { label: 'ROI estimé', value: `+${stack.roi_estimate}%`, color: 'text-[#CAFF32]' },
-              { label: 'Temps économisé', value: `${stack.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
-            ].map((m, i) => (
-              <div key={i} className="flex justify-between py-2 border-b border-zinc-800 last:border-0">
-                <span className="text-xs text-zinc-500 font-dm-mono">{m.label}</span>
-                <span className={`font-syne font-black text-sm ${m.color}`}>{m.value}</span>
-              </div>
-            ))}
+          ))}
+        </div>
+      )}
+      <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
+        <p className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.15em] mb-4">Résumé financier</p>
+        {[
+          { label: 'Coût mensuel', value: `${stack.total_cost}€`, color: 'text-white' },
+          { label: 'ROI estimé', value: `+${stack.roi_estimate}%`, color: 'text-[#CAFF32]' },
+          { label: 'Temps économisé', value: `${stack.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
+        ].map((m, i) => (
+          <div key={i} className="flex justify-between py-2 border-b border-zinc-800 last:border-0">
+            <span className="text-xs text-zinc-500 font-dm-mono">{m.label}</span>
+            <span className={`font-syne font-black text-sm ${m.color}`}>{m.value}</span>
           </div>
-        </div>,
-      ].map((section, i) => (
-        <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+        ))}
+      </div>
+    </div>,
+  ]
+
+  return (
+    <div className="flex flex-col gap-6">
+      {sections.map((s, i) => (
+        <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: i * 0.1 }}>
-          {section}
+          {s}
         </motion.div>
       ))}
     </div>
   )
 }
 
-// ─── IDLE STATE — Centered input like before ──────────────────────────────────
+// ─── Idle Screen ──────────────────────────────────────────────────────────────
 
 function IdleScreen({ onSubmit }: { onSubmit: (text: string) => void }) {
   const [value, setValue] = useState('')
-
-  const submit = () => {
-    if (value.trim().length >= 10) onSubmit(value.trim())
-  }
+  const submit = () => { if (value.trim().length >= 10) onSubmit(value.trim()) }
 
   return (
-    <div className="min-h-full flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      {/* Background orb */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+    <div className="h-full flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none">
         <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.03, 0.06, 0.03] }}
           transition={{ duration: 10, repeat: Infinity }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] blur-3xl rounded-full"
@@ -292,7 +334,6 @@ function IdleScreen({ onSubmit }: { onSubmit: (text: string) => void }) {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-2xl">
-        {/* Title */}
         <div className="text-center mb-10">
           <h1 className="font-syne font-black text-4xl md:text-5xl text-white tracking-tight mb-4 leading-tight">
             Construis ton stack de<br /><span className="text-[#CAFF32]">super-pouvoirs</span> IA
@@ -302,7 +343,6 @@ function IdleScreen({ onSubmit }: { onSubmit: (text: string) => void }) {
           </p>
         </div>
 
-        {/* Input */}
         <div className="relative bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden
                         focus-within:border-[#CAFF32]/50 transition-all duration-300 shadow-2xl mb-8">
           <textarea value={value} onChange={e => setValue(e.target.value)}
@@ -314,14 +354,14 @@ function IdleScreen({ onSubmit }: { onSubmit: (text: string) => void }) {
           <div className="flex justify-end px-5 pb-4">
             <button onClick={submit} disabled={value.trim().length < 10}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-syne font-bold text-sm
-                         transition-all bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50]
+                         bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] transition-all
                          disabled:opacity-30 disabled:cursor-not-allowed">
               Générer mon stack →
             </button>
           </div>
         </div>
 
-        {/* Suggestion carousel — two rows auto-scrolling */}
+        {/* Suggestion carousel */}
         <div className="w-full overflow-hidden"
           style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}>
           {[0, 1].map(row => (
@@ -347,7 +387,7 @@ function IdleScreen({ onSubmit }: { onSubmit: (text: string) => void }) {
   )
 }
 
-// ─── CHAT STATE — After first message sent ────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function RecommendPage() {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -357,14 +397,15 @@ export default function RecommendPage() {
   const [showTyping, setShowTyping] = useState(false)
   const [result, setResult] = useState<FinalStack | null>(null)
   const [error, setError] = useState<ApiError | null>(null)
+  const [inputValue, setInputValue] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll
+  const showRightPanel = phase === 'reasoning' || phase === 'results'
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [chat, phase, showTyping])
+  }, [chat, showTyping])
 
-  // Start chat after idle submit
   const startChat = useCallback((objective: string) => {
     setAnswers({ objective })
     setChat([{ role: 'user', text: objective }])
@@ -374,17 +415,13 @@ export default function RecommendPage() {
     setTimeout(() => setShowTyping(false), 900)
   }, [])
 
-  // Submit a chat answer
   const submitAnswer = useCallback((label: string, value?: string) => {
     const q = QUESTIONS[qIndex]
-    const apiValue = value ?? label
-
-    setAnswers(prev => ({ ...prev, [q.id]: apiValue }))
-    setChat(prev => [...prev, { role: 'user', text: label }])
-
+    setAnswers(prev => ({ ...prev, [q.id]: value ?? label }))
+    setChat(prev => [...prev, { role: 'ai', text: q.text }, { role: 'user', text: label }])
     const next = qIndex + 1
     if (next >= QUESTIONS.length) {
-      setTimeout(() => setPhase('reasoning'), 400)
+      setTimeout(() => setPhase('reasoning'), 300)
     } else {
       setQIndex(next)
       setShowTyping(true)
@@ -393,159 +430,165 @@ export default function RecommendPage() {
   }, [qIndex])
 
   const reset = () => {
-    setPhase('idle')
-    setQIndex(0)
-    setAnswers({})
-    setChat([])
-    setResult(null)
-    setError(null)
-    setShowTyping(false)
+    setPhase('idle'); setQIndex(0); setAnswers({}); setChat([])
+    setResult(null); setError(null); setShowTyping(false); setInputValue('')
   }
 
-  // ── IDLE ──────────────────────────────────────────────────────────────────
-  if (phase === 'idle') {
-    return (
-      <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }} className="h-full">
-        <IdleScreen onSubmit={startChat} />
-      </motion.div>
-    )
-  }
+  if (phase === 'idle') return <IdleScreen onSubmit={startChat} />
 
-  // ── CHAT MODE (questioning / reasoning / results / error) ─────────────────
   return (
-    <AnimatePresence mode="wait">
-      <motion.div key="chat" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col h-full bg-zinc-950">
+    <div className="flex h-full overflow-hidden">
+
+      {/* ── LEFT: Chat column ── */}
+      <motion.div
+        animate={{ width: showRightPanel ? '38%' : '100%' }}
+        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        className="flex flex-col h-full border-r border-zinc-800/60 flex-shrink-0">
 
         {/* Top bar */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-3
-                        border-b border-zinc-900">
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-zinc-800/60">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-[#CAFF32] animate-pulse" />
             <span className="font-syne font-bold text-sm text-zinc-300">Raspquery AI</span>
           </div>
           <button onClick={reset}
-            className="font-dm-mono text-xs text-zinc-600 hover:text-[#CAFF32] transition-colors
-                       border border-zinc-800 hover:border-[#CAFF32]/30 px-3 py-1.5 rounded-lg">
+            className="font-dm-mono text-[10px] text-zinc-600 hover:text-zinc-300 transition-colors
+                       border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg">
             ↺ Nouveau
           </button>
         </div>
 
         {/* Messages */}
         <div ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 md:px-8 py-6 flex flex-col gap-4
-                     max-w-3xl mx-auto w-full scrollbar-hide">
+          className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-3 scrollbar-hide">
 
-          {/* Chat history */}
-          {chat.map((entry, i) =>
-            entry.role === 'ai'
-              ? <AIBubble key={i} text={entry.text} />
-              : <UserBubble key={i} text={entry.text} />
+          {chat.map((entry, i) => (
+            entry.role === 'user' ? (
+              // User bubble — white/light
+              <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                className="flex justify-end">
+                <div className="bg-white/90 text-zinc-900 rounded-2xl rounded-tr-sm px-4 py-2.5
+                               text-sm max-w-[80%] leading-relaxed font-medium shadow-sm">
+                  {entry.text}
+                </div>
+              </motion.div>
+            ) : (
+              // AI message — plain text, no bubble
+              <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                className="text-zinc-400 text-sm leading-relaxed px-1 max-w-[90%]">
+                {entry.text}
+              </motion.div>
+            )
+          ))}
+
+          {/* Typing indicator */}
+          {phase === 'questioning' && showTyping && (
+            <div className="flex gap-1 px-1 py-2">
+              {[0,1,2].map(i => (
+                <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-zinc-600"
+                  animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
+                  transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }} />
+              ))}
+            </div>
           )}
 
-          {/* Typing indicator before next AI question */}
-          {phase === 'questioning' && showTyping && <AIBubble isTyping />}
-
-          {/* Current AI question */}
+          {/* Current question */}
           {phase === 'questioning' && !showTyping && (
-            <AIBubble text={QUESTIONS[qIndex].text} />
-          )}
-
-          {/* Reasoning */}
-          {phase === 'reasoning' && (
-            <ReasoningPanel answers={answers}
-              onComplete={r => { setResult(r); setPhase('results') }}
-              onError={e => { setError(e); setPhase('error') }} />
-          )}
-
-          {/* Results */}
-          {phase === 'results' && result && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full">
-              <ArtifactGrid stack={result} />
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              className="text-zinc-300 text-sm leading-relaxed px-1 font-medium">
+              {QUESTIONS[qIndex].text}
             </motion.div>
           )}
 
-          {/* Error */}
+          {/* Error in chat */}
           {phase === 'error' && error && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-start gap-3 max-w-[85%]">
-              <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center
-                              bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-full mt-0.5">
-                <span className="text-[#CAFF32] text-[8px] font-black">AI</span>
-              </div>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-sm px-4 py-4 flex flex-col gap-3">
-                {error.type === 'rate-limit' ? (
-                  <>
-                    <p className="text-sm text-zinc-200">
-                      Tu as atteint ta limite {error.plan ? `(plan ${error.plan})` : ''}.
-                      Passe en Pro pour continuer.
-                    </p>
-                    {error.resetAt && (
-                      <p className="font-dm-mono text-xs text-zinc-500">
-                        Disponible le {new Date(error.resetAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
-                      </p>
-                    )}
-                    <a href="/dashboard/settings"
-                      className="inline-flex items-center gap-2 bg-[#CAFF32] text-zinc-900 font-bold
-                                 text-xs px-4 py-2 rounded-lg hover:bg-[#d4ff50] transition-colors w-fit">
-                      Passer en Pro →
-                    </a>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-zinc-200">Une erreur est survenue : {error.message}</p>
-                    <button onClick={() => { setError(null); setPhase('reasoning') }}
-                      className="border border-zinc-700 text-zinc-300 font-dm-mono text-xs px-4 py-2
-                                 rounded-lg hover:border-[#CAFF32]/40 hover:text-[#CAFF32] transition-colors w-fit">
-                      ↺ Réessayer
-                    </button>
-                  </>
-                )}
-              </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
+              {error.type === 'rate-limit' ? (
+                <>
+                  <p className="text-sm text-zinc-300">
+                    Limite atteinte {error.plan ? `(plan ${error.plan})` : ''}.
+                    {error.resetAt && ` Disponible le ${new Date(error.resetAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.`}
+                  </p>
+                  <a href="/dashboard/settings"
+                    className="inline-flex items-center gap-1 bg-[#CAFF32] text-zinc-900 font-bold
+                               text-xs px-4 py-2 rounded-lg hover:bg-[#d4ff50] transition-colors w-fit">
+                    Passer en Pro →
+                  </a>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-zinc-300">{error.message}</p>
+                  <button onClick={() => { setError(null); setPhase('reasoning') }}
+                    className="border border-zinc-700 text-zinc-400 font-dm-mono text-xs px-4 py-2
+                               rounded-lg hover:border-zinc-500 transition-colors w-fit">
+                    ↺ Réessayer
+                  </button>
+                </>
+              )}
             </motion.div>
           )}
         </div>
 
-        {/* Input bar — only during questioning */}
+        {/* Input area */}
         <AnimatePresence>
           {phase === 'questioning' && !showTyping && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              className="flex-shrink-0 border-t border-zinc-900 px-4 md:px-8 py-4
-                         max-w-3xl mx-auto w-full">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              className="flex-shrink-0 border-t border-zinc-800/60 px-4 py-4">
               {QUESTIONS[qIndex].type === 'chips' && QUESTIONS[qIndex].chips ? (
-                <ChipRow chips={QUESTIONS[qIndex].chips!}
-                  onSelect={c => submitAnswer(c.label, c.value)} />
+                <div className="flex flex-wrap gap-2">
+                  {QUESTIONS[qIndex].chips!.map(chip => (
+                    <button key={chip.value} onClick={() => submitAnswer(chip.label, chip.value)}
+                      className="px-4 py-2 rounded-full border border-zinc-700 text-xs text-zinc-400
+                                 hover:border-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50
+                                 transition-all font-dm-mono">
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               ) : (
-                <ChatInput onSubmit={submitAnswer} />
+                <div className="flex gap-2">
+                  <input autoFocus value={inputValue}
+                    onChange={e => setInputValue(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey && inputValue.trim()) {
+                        e.preventDefault(); submitAnswer(inputValue.trim()); setInputValue('')
+                      }
+                    }}
+                    placeholder="Envoyer un message..."
+                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm
+                               text-zinc-200 outline-none focus:border-zinc-600 placeholder:text-zinc-600
+                               transition-colors" />
+                  <button onClick={() => { if (inputValue.trim()) { submitAnswer(inputValue.trim()); setInputValue('') } }}
+                    disabled={!inputValue.trim()}
+                    className="bg-white text-zinc-900 font-bold px-4 py-2.5 rounded-xl text-sm
+                               hover:bg-zinc-100 transition-colors disabled:opacity-30">
+                    →
+                  </button>
+                </div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
-    </AnimatePresence>
-  )
-}
 
-function ChatInput({ onSubmit }: { onSubmit: (label: string) => void }) {
-  const [value, setValue] = useState('')
-  return (
-    <div className="flex gap-2">
-      <input autoFocus value={value}
-        onChange={e => setValue(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && value.trim()) { e.preventDefault(); onSubmit(value.trim()); setValue('') } }}
-        placeholder="Envoyer un message..."
-        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm
-                   text-zinc-200 outline-none focus:border-[#CAFF32]/40 placeholder:text-zinc-600
-                   transition-colors font-dm-mono" />
-      <button onClick={() => { if (value.trim()) { onSubmit(value.trim()); setValue('') } }}
-        disabled={!value.trim()}
-        className="bg-[#CAFF32] text-zinc-900 font-bold px-5 py-3 rounded-xl
-                   hover:bg-[#d4ff50] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-        →
-      </button>
+      {/* ── RIGHT: Reasoning / Results panel ── */}
+      <AnimatePresence>
+        {showRightPanel && (
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+            className="flex-1 h-full overflow-hidden bg-zinc-950">
+            <RightPanel phase={phase as 'reasoning' | 'results'} answers={answers}
+              result={result}
+              onComplete={r => { setResult(r); setPhase('results') }}
+              onError={e => { setError(e); setPhase('error') }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
