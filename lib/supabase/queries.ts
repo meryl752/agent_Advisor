@@ -3,8 +3,17 @@ import { createClient } from '@supabase/supabase-js'
 import type { Agent, Stack } from './types'
 import { anonymizeEmail, anonymizeId } from '@/lib/utils/logger'
 
+// ─── In-memory cache for Clerk ID → Supabase UUID mapping ────────────────────
+// Avoids redundant Supabase lookups on every dashboard load
+const userIdCache = new Map<string, string>()
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 async function getInternalUserId(clerkId: string): Promise<string | null> {
+  // Check cache first
+  if (userIdCache.has(clerkId)) {
+    return userIdCache.get(clerkId)!
+  }
+
   const { data, error } = await supabaseServer
     .from('users')
     .select('id')
@@ -15,24 +24,26 @@ async function getInternalUserId(clerkId: string): Promise<string | null> {
     console.warn(`User not found in 'users' table for Clerk ID: ${anonymizeId(clerkId)}`)
     return null
   }
-  return (data as any).id
+
+  const id = (data as any).id
+  userIdCache.set(clerkId, id) // Cache for subsequent requests
+  return id
 }
 
 async function ensureUserExists(clerkId: string, email?: string): Promise<string | null> {
-  // Try to get existing user
+  // Check cache first — skip DB lookup entirely if we've seen this user
+  if (userIdCache.has(clerkId)) {
+    return userIdCache.get(clerkId)!
+  }
+
   let userId = await getInternalUserId(clerkId)
   
-  console.log(`[ensureUserExists] Checking user: ${anonymizeId(clerkId)}, found: ${userId ? 'YES' : 'NO'}`)
-  
   if (!userId) {
-    // Check if service role key is configured
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('❌ SUPABASE_SERVICE_ROLE_KEY is missing - cannot auto-create users')
-      console.error('   Add it to .env.local from Supabase Dashboard → Settings → API → service_role key')
       return null
     }
     
-    // Auto-create user if not exists
     const userData: any = { clerk_id: clerkId, plan: 'free' }
     if (email) {
       userData.email = email
@@ -49,7 +60,8 @@ async function ensureUserExists(clerkId: string, email?: string): Promise<string
     
     if (!error && data) {
       userId = data.id
-      console.log(`✅ Auto-created user for Clerk ID: ${anonymizeId(clerkId)} → UUID: ${anonymizeId(userId)}`)
+      userIdCache.set(clerkId, userId!) // Cache the new user
+      console.log(`✅ Auto-created user for Clerk ID: ${anonymizeId(clerkId)}`)
     } else {
       console.error(`❌ Failed to create user for Clerk ID: ${anonymizeId(clerkId)}`)
       console.error('   Supabase error:', JSON.stringify(error, null, 2))
@@ -57,7 +69,6 @@ async function ensureUserExists(clerkId: string, email?: string): Promise<string
     }
   }
   
-  console.log(`[ensureUserExists] Returning UUID: ${anonymizeId(userId)}`)
   return userId
 }
 
@@ -112,18 +123,14 @@ export async function getTopAgents(limit = 10): Promise<Agent[]> {
 // ─── Stacks ──────────────────────────────────────────────────────────────────
 
 export async function getUserStacks(userId: string, clerkToken: string, email?: string): Promise<Stack[]> {
-  // Mapping Clerk ID -> Supabase Internal UUID (with auto-creation)
   const internalId = await ensureUserExists(userId, email)
   
-  console.log(`[getUserStacks] Clerk ID: ${anonymizeId(userId)} → Internal UUID: ${anonymizeId(internalId)}`)
-  
   if (!internalId) {
-    console.error(`Cannot get stacks: User creation failed for Clerk ID: ${anonymizeId(userId)}`)
     return []
   }
 
   // Use service role to bypass JWT issues
-  const { data, error} = await (supabaseService as any)
+  const { data, error } = await (supabaseService as any)
     .from('stacks')
     .select('*')
     .eq('user_id', internalId)
@@ -131,7 +138,6 @@ export async function getUserStacks(userId: string, clerkToken: string, email?: 
 
   if (error) {
     console.error(`getUserStacks error (${error.code}): ${error.message}`)
-    console.error(`   Attempted to query with user_id: ${anonymizeId(internalId)}`)
     return []
   }
   return data ?? []
