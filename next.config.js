@@ -16,15 +16,10 @@ const nextConfig = {
 module.exports = withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-
-  // Silent during builds unless SENTRY_AUTH_TOKEN is set
   silent: !process.env.SENTRY_AUTH_TOKEN,
-
-  // Upload source maps only in CI/production
   widenClientFileUpload: true,
   hideSourceMaps: true,
   disableLogger: true,
-
-  // Automatically tree-shake Sentry logger statements
-  automaticVercelMonitors: true,
+  // automaticVercelMonitors disabled — project uses proxy.ts instead of middleware.ts
+  automaticVercelMonitors: false,
 })
