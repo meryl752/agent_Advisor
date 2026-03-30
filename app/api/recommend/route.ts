@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { currentUser, auth } from '@clerk/nextjs/server'
-import { getAllAgents, saveStack } from '@/lib/supabase/queries'
+import { saveStack } from '@/lib/supabase/queries'
 import { runOrchestrator } from '@/lib/agents/orchestrator'
+import { recommendSchema } from '@/lib/validators/api'
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,10 +14,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const { objective } = await req.json()
-    if (!objective?.trim()) {
-      return NextResponse.json({ error: 'Objectif requis' }, { status: 400 })
+    const body = await req.json()
+    const validation = recommendSchema.safeParse(body)
+
+    if (!validation.success) {
+      const errors = validation.error.errors.map((e) => ({
+        field: e.path.join('.'),
+        message: e.message,
+      }))
+      return NextResponse.json({ error: 'Validation échouée', details: errors }, { status: 400 })
     }
+
+    const { objective } = validation.data
 
     const userContext = {
       objective,
@@ -33,6 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Recommandation impossible' }, { status: 500 })
     }
 
+    const userEmail = user.emailAddresses[0]?.emailAddress
     await saveStack({
       user_id: user.id,
       name: result.stack.stack_name,
@@ -43,7 +53,7 @@ export async function POST(req: NextRequest) {
       score: Math.round(
         result.stack.agents.reduce((acc, a) => acc + a.score, 0) / result.stack.agents.length
       ),
-    }, token)
+    }, token, userEmail)
 
     return NextResponse.json({ success: true, result: result.stack, meta: result.meta })
   } catch (err) {

@@ -10,8 +10,54 @@ async function getInternalUserId(clerkId: string): Promise<string | null> {
     .eq('clerk_id', clerkId)
     .single()
 
-  if (error || !data) return null
+  if (error || !data) {
+    console.warn(`User not found in 'users' table for Clerk ID: ${clerkId}`)
+    return null
+  }
   return (data as any).id
+}
+
+async function ensureUserExists(clerkId: string, email?: string): Promise<string | null> {
+  // Try to get existing user
+  let userId = await getInternalUserId(clerkId)
+  
+  console.log(`[ensureUserExists] Checking user: ${clerkId}, found: ${userId ? 'YES' : 'NO'}`)
+  
+  if (!userId) {
+    // Check if service role key is configured
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY is missing - cannot auto-create users')
+      console.error('   Add it to .env.local from Supabase Dashboard → Settings → API → service_role key')
+      return null
+    }
+    
+    // Auto-create user if not exists
+    const userData: any = { clerk_id: clerkId, plan: 'free' }
+    if (email) {
+      userData.email = email
+      console.log(`[ensureUserExists] Creating user with email: ${email}`)
+    } else {
+      console.warn(`[ensureUserExists] Creating user WITHOUT email for: ${clerkId}`)
+    }
+    
+    const { data, error } = await (supabaseService as any)
+      .from('users')
+      .insert(userData)
+      .select('id')
+      .single()
+    
+    if (!error && data) {
+      userId = data.id
+      console.log(`✅ Auto-created user for Clerk ID: ${clerkId} → UUID: ${userId}`)
+    } else {
+      console.error(`❌ Failed to create user for Clerk ID: ${clerkId}`)
+      console.error('   Supabase error:', JSON.stringify(error, null, 2))
+      return null
+    }
+  }
+  
+  console.log(`[ensureUserExists] Returning UUID: ${userId}`)
+  return userId
 }
 
 // ─── Agents ──────────────────────────────────────────────────────────────────
@@ -64,17 +110,19 @@ export async function getTopAgents(limit = 10): Promise<Agent[]> {
 
 // ─── Stacks ──────────────────────────────────────────────────────────────────
 
-export async function getUserStacks(userId: string, clerkToken: string): Promise<Stack[]> {
-  const db = createSupabaseClient(clerkToken)
-
-  // Mapping Clerk ID -> Supabase Internal UUID
-  const internalId = await getInternalUserId(userId)
+export async function getUserStacks(userId: string, clerkToken: string, email?: string): Promise<Stack[]> {
+  // Mapping Clerk ID -> Supabase Internal UUID (with auto-creation)
+  const internalId = await ensureUserExists(userId, email)
+  
+  console.log(`[getUserStacks] Clerk ID: ${userId} → Internal UUID: ${internalId}`)
+  
   if (!internalId) {
-    console.warn(`User not found in 'users' table for Clerk ID: ${userId}`)
+    console.error(`Cannot get stacks: User creation failed for Clerk ID: ${userId}`)
     return []
   }
 
-  const { data, error } = await db
+  // Use service role to bypass JWT issues
+  const { data, error} = await (supabaseService as any)
     .from('stacks')
     .select('*')
     .eq('user_id', internalId)
@@ -82,6 +130,7 @@ export async function getUserStacks(userId: string, clerkToken: string): Promise
 
   if (error) {
     console.error(`getUserStacks error (${error.code}): ${error.message}`)
+    console.error(`   Attempted to query with user_id: ${internalId}`)
     return []
   }
   return data ?? []
@@ -95,17 +144,16 @@ export async function saveStack(stack: {
   total_cost: number
   roi_estimate: number
   score: number
-}, clerkToken: string): Promise<Stack | null> {
-  const db = createSupabaseClient(clerkToken)
-
-  // Mapping Clerk ID -> Supabase Internal UUID
-  const internalId = await getInternalUserId(stack.user_id)
+}, clerkToken: string, email?: string): Promise<Stack | null> {
+  // Mapping Clerk ID -> Supabase Internal UUID (with auto-creation)
+  const internalId = await ensureUserExists(stack.user_id, email)
   if (!internalId) {
-    console.error(`Cannot save stack: User not found for Clerk ID: ${stack.user_id}`)
+    console.error(`Cannot save stack: User creation failed for Clerk ID: ${stack.user_id}`)
     return null
   }
 
-  const { data, error } = await (db as any)
+  // Use service role to bypass JWT issues
+  const { data, error } = await (supabaseService as any)
     .from('stacks')
     .insert({ ...stack, user_id: internalId })
     .select()

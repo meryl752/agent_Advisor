@@ -19,68 +19,74 @@ export async function runOrchestrator(
   ctx: UserContext
 ): Promise<OrchestratorResult | null> {
   const startTime = Date.now()
-  console.log('🎯 [Orchestrator] Starting pipeline for:', ctx.objective)
-
-  // ── Agent 1 : Query Analyzer ──────────────────────────────────────────────
-  console.log('🔍 [Agent 1] Analyzing query...')
-  const analyzedQuery = await analyzeQuery(ctx)
-  console.log('✅ [Agent 1] Subtasks:', analyzedQuery.subtasks.length, '| Categories:', analyzedQuery.required_categories)
-
-  // ── Fetch Reference Stacks — ancrage "vérité terrain" ─────────────────────
-  const referenceStacks = await getReferenceStack(
-    analyzedQuery.required_categories[0] ?? '',
-    analyzedQuery.sector_context ?? ''
-  )
-  if (referenceStacks.length > 0) {
-    console.log(`📚 [Orchestrator] ${referenceStacks.length} reference stacks found for grounding`)
-  }
-
-  // ── Agent 2 : Matcher (synchrone — fetch agents) ──────────────────────────
-  console.log('🎯 [Agent 2] Fetching & Matching agents...')
-  const relevantAgents = await getAgentsByCategories(analyzedQuery.required_categories)
-  const candidates = matchAgents(relevantAgents, analyzedQuery, ctx)
-  console.log(`✅ [Agent 2] ${candidates.length} candidates from ${relevantAgents.length} in categories:`, analyzedQuery.required_categories)
-
-  if (candidates.length === 0) {
-    console.error('❌ [Agent 2] No candidates — check DB and budget filter')
-    return null
-  }
-
-  // ── Agent 3 : Stack Builder ───────────────────────────────────────────────
-  console.log('🏗️ [Agent 3] Building stack...')
-  const stack = await buildStack(ctx, analyzedQuery, candidates, referenceStacks)
-
-  if (!stack) {
-    console.error('❌ [Agent 3] Stack build failed')
-    return null
-  }
-
-  // Inject accurate website domains from database for logos
-  stack.agents = stack.agents.map(agent => {
-    const dbAgent = relevantAgents.find(a => String(a.id) === String(agent.id))
-    if (dbAgent && dbAgent.url) {
-      let domain = agent.website_domain || ''
-      try {
-        let urlStr = dbAgent.url
-        if (!urlStr.startsWith('http')) urlStr = 'https://' + urlStr
-        domain = new URL(urlStr).hostname.replace('www.', '')
-      } catch (e) {}
-      return { ...agent, website_domain: domain }
-    }
-    return agent
+  
+  // Global timeout for entire orchestration (2 minutes max)
+  const timeoutPromise = new Promise<null>((resolve) => {
+    setTimeout(() => {
+      console.error('❌ [Orchestrator] Global timeout after 120s')
+      resolve(null)
+    }, 120000)
   })
 
-  const processingTime = Date.now() - startTime
-  console.log(`✅ [Agent 3] "${stack.stack_name}" | ${stack.agents.length} agents | ${stack.total_cost}€/mois`)
-  console.log(`⚡ [Orchestrator] Done in ${processingTime}ms`)
+  const orchestrationPromise = (async () => {
+    try {
+      // ── Agent 1 : Query Analyzer ──────────────────────────────────────────────
+      const analyzedQuery = await analyzeQuery(ctx)
 
-  return {
-    stack,
-    meta: {
-      agents_analyzed: relevantAgents.length,
-      agents_shortlisted: candidates.length,
-      subtasks_detected: analyzedQuery.subtasks.length,
-      processing_time_ms: processingTime,
-    },
-  }
+      // ── Fetch Reference Stacks — ancrage "vérité terrain" ─────────────────────
+      const referenceStacks = await getReferenceStack(
+        analyzedQuery.required_categories[0] ?? '',
+        analyzedQuery.sector_context ?? ''
+      )
+
+      // ── Agent 2 : Matcher (synchrone — fetch agents) ──────────────────────────
+      const relevantAgents = await getAgentsByCategories(analyzedQuery.required_categories)
+      const candidates = matchAgents(relevantAgents, analyzedQuery, ctx)
+
+      if (candidates.length === 0) {
+        console.error('❌ [Agent 2] No candidates')
+        return null
+      }
+
+      // ── Agent 3 : Stack Builder ───────────────────────────────────────────────
+      const stack = await buildStack(ctx, analyzedQuery, candidates, referenceStacks)
+
+      if (!stack) {
+        console.error('❌ [Agent 3] Stack build failed')
+        return null
+      }
+
+      // Inject accurate website domains from database for logos
+      stack.agents = stack.agents.map(agent => {
+        const dbAgent = relevantAgents.find(a => String(a.id) === String(agent.id))
+        if (dbAgent && dbAgent.url) {
+          let domain = agent.website_domain || ''
+          try {
+            let urlStr = dbAgent.url
+            if (!urlStr.startsWith('http')) urlStr = 'https://' + urlStr
+            domain = new URL(urlStr).hostname.replace('www.', '')
+          } catch (e) {}
+          return { ...agent, website_domain: domain }
+        }
+        return agent
+      })
+
+      const processingTime = Date.now() - startTime
+
+      return {
+        stack,
+        meta: {
+          agents_analyzed: relevantAgents.length,
+          agents_shortlisted: candidates.length,
+          subtasks_detected: analyzedQuery.subtasks.length,
+          processing_time_ms: processingTime,
+        },
+      }
+    } catch (err) {
+      console.error('❌ [Orchestrator] Error:', err instanceof Error ? err.message : 'Unknown')
+      return null
+    }
+  })()
+
+  return Promise.race([orchestrationPromise, timeoutPromise])
 }

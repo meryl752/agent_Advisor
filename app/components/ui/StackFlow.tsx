@@ -1,5 +1,8 @@
 'use client'
 
+import { useState } from 'react'
+import { getLogoUrl } from '@/lib/utils/logo'
+
 interface FlowAgent {
   name: string
   role: string
@@ -44,7 +47,7 @@ export default function StackFlow({ agents, stackName }: StackFlowProps) {
                 <div className="w-14 h-14 flex items-center justify-center relative">
                   {agent.website_domain && !imgErrors[i] ? (
                     <img
-                      src={`https://img.logo.dev/${agent.website_domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+                      src={getLogoUrl(agent.website_domain)}
                       alt={agent.name}
                       className="w-12 h-12 object-contain"
                       onError={() => setImgErrors(prev => ({ ...prev, [i]: true }))}
@@ -93,6 +96,3 @@ export default function StackFlow({ agents, stackName }: StackFlowProps) {
     </div>
   )
 }
-
-// Need to import useState
-import { useState } from 'react'

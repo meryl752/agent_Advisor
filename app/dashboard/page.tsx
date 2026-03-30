@@ -15,8 +15,9 @@ export default async function DashboardPage() {
 
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
   const firstName = user.firstName ?? 'toi'
+  const userEmail = user.emailAddresses[0]?.emailAddress
   const [stacks, topAgents] = await Promise.all([
-    getUserStacks(user.id, clerkToken),
+    getUserStacks(user.id, clerkToken, userEmail),
     getTopAgents(3),
   ])
 

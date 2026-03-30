@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { getLogoUrl } from '@/lib/utils/logo'
 
 interface AgentCardProps {
   rank: number
@@ -89,7 +90,7 @@ export default function AgentCard({
                         justify-center overflow-hidden flex-shrink-0 rounded-lg backdrop-blur-md shadow-inner">
           {website_domain && !imgError ? (
             <img
-              src={`https://img.logo.dev/${website_domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+              src={getLogoUrl(website_domain)}
               alt={name}
               className="w-7 h-7 object-contain"
               onError={() => setImgError(true)}

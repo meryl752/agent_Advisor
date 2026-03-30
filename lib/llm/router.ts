@@ -1,80 +1,59 @@
-import Groq from 'groq-sdk'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { groq, GROQ_MODEL } from '@/lib/groq/client'
+import { geminiFlash } from '@/lib/gemini/client'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const LLM_TIMEOUT_MS = 30000 // 30 seconds max
+const MAX_RETRIES = 2
 
-export type LLMProvider = 'gemini' | 'groq'
-
-// État du switcher — persiste en mémoire serveur
-let currentProvider: LLMProvider = 'gemini'
-let geminiFailedAt: number | null = null
-const GEMINI_RETRY_AFTER_MS = 60 * 60 * 1000 // 1 heure avant de retenter Gemini
-
-function shouldRetryGemini(): boolean {
-    if (!geminiFailedAt) return false
-    return Date.now() - geminiFailedAt > GEMINI_RETRY_AFTER_MS
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('LLM timeout')), timeoutMs)
+    ),
+  ])
 }
 
-export async function callLLM(prompt: string, maxTokens = 2048): Promise<string> {
-    // Retenter Gemini si le cooldown est passé
-    if (currentProvider === 'groq' && shouldRetryGemini()) {
-        console.log('🔄 [LLM Router] Retrying Gemini after cooldown...')
-        currentProvider = 'gemini'
-        geminiFailedAt = null
-    }
+export async function callLLM(prompt: string, maxTokens = 1024): Promise<string> {
+  let lastError: Error | null = null
 
-    // Tenter avec le provider actuel
-    if (currentProvider === 'gemini') {
-        try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-            const result = await model.generateContent(prompt)
-            const text = result.response.text().trim()
-            console.log('✅ [LLM Router] Gemini responded')
-            return cleanJSON(text)
-        } catch (err: unknown) {
-            const error = err as { status?: number; message?: string }
-            const isQuotaError = error?.status === 429 || error?.message?.includes('quota')
-
-            if (isQuotaError) {
-                console.warn('⚠️ [LLM Router] Gemini quota exceeded — switching to Groq')
-                currentProvider = 'groq'
-                geminiFailedAt = Date.now()
-            } else {
-                console.error('❌ [LLM Router] Gemini error:', error?.message)
-                // Fallback Groq même pour erreurs non-quota
-                currentProvider = 'groq'
-                geminiFailedAt = Date.now()
-            }
-        }
-    }
-
-    // Fallback Groq
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-        console.log('🟣 [LLM Router] Using Groq (llama-3.3-70b-versatile)')
-        const completion = await groq.chat.completions.create({
-            model: 'llama-3.3-70b-versatile',
+      // Try Groq first (faster)
+      if (process.env.GROQ_API_KEY) {
+        const response = await withTimeout(
+          groq.chat.completions.create({
+            model: GROQ_MODEL,
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.2,
             max_tokens: maxTokens,
-        })
-        const text = completion.choices[0]?.message?.content?.trim() ?? ''
-        console.log('✅ [LLM Router] Groq responded')
-        return cleanJSON(text)
+            temperature: 0.7,
+          }),
+          LLM_TIMEOUT_MS
+        )
+        
+        const text = response.choices[0]?.message?.content?.trim()
+        if (text) return text
+      }
+
+      // Fallback to Gemini
+      if (process.env.GEMINI_API_KEY) {
+        const result = await withTimeout(
+          geminiFlash.generateContent(prompt),
+          LLM_TIMEOUT_MS
+        )
+        
+        const text = result.response.text().trim()
+        if (text) return text
+      }
+
+      throw new Error('No LLM API keys configured')
     } catch (err) {
-        console.error('❌ [LLM Router] Groq error:', err)
-        throw new Error('All LLM providers failed')
+      lastError = err as Error
+      if (attempt < MAX_RETRIES - 1) {
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+      }
     }
-}
+  }
 
-export function getCurrentProvider(): LLMProvider {
-    return currentProvider
-}
-
-function cleanJSON(text: string): string {
-    return text
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```$/i, '')
-        .trim()
+  throw lastError || new Error('LLM call failed')
 }

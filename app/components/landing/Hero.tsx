@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { getLogoUrl } from '@/lib/utils/logo'
 
 const TOOLS = [
     { name: 'Claude', domain: 'claude.ai', color: '#FF6B35' },
@@ -50,7 +51,7 @@ function RawLogo({ tool }: { tool: typeof TOOLS[0] }) {
         <div className="w-16 h-16 flex items-center justify-center shrink-0 opacity-80 hover:opacity-100 hover:scale-110 transition-all duration-300 cursor-default">
             {!imgErr ? (
                 <img
-                    src={`https://img.logo.dev/${tool.domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+                    src={getLogoUrl(tool.domain)}
                     alt={tool.name}
                     className="w-12 h-12 object-contain"
                     onError={() => setImgErr(true)}
@@ -255,7 +256,7 @@ export default function Hero() {
                     <div className="flex items-center justify-center gap-8 flex-wrap opacity-40 grayscale">
                         {['openai.com', 'anthropic.com', 'google.com', 'groq.com', 'mistral.ai'].map(domain => (
                             <img key={domain}
-                                src={`https://img.logo.dev/${domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+                                src={getLogoUrl(domain)}
                                 alt={domain}
                                 className="h-6 object-contain"
                                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
@@ -278,7 +279,7 @@ function DemoCard({ tool, delay }: { tool: { name: string; role: string; price: 
                       flex items-center justify-center mx-auto mb-2">
                 {!imgErr ? (
                     <img
-                        src={`https://img.logo.dev/${tool.domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+                        src={getLogoUrl(tool.domain)}
                         alt={tool.name}
                         className="w-6 h-6 object-contain"
                         onError={() => setImgErr(true)}

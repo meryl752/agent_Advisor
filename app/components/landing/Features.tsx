@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { Spotlight } from '../ui/spotlight'
 import { AnimatedBeam } from '../ui/animated-beam'
+import { getLogoUrl } from '@/lib/utils/logo'
 
 const FEATURES = [
     {
@@ -94,7 +95,7 @@ function FeatureVisual({ type, accent }: { type: string, accent: string }) {
                                 >
                                     <div className="w-7 h-7 rounded-md mx-auto mb-1 flex items-center justify-center overflow-hidden bg-zinc-50 border border-zinc-100">
                                         <img
-                                            src={`https://img.logo.dev/${t.domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+                                            src={getLogoUrl(t.domain)}
                                             alt={t.name}
                                             className="w-5 h-5 object-contain"
                                             onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
@@ -154,7 +155,7 @@ function FeatureVisual({ type, accent }: { type: string, accent: string }) {
                     <div key={t.name} ref={t.ref} className="z-10 w-10 h-10 bg-white border-2 rounded-full flex items-center justify-center shadow-md overflow-hidden"
                         style={{ borderColor: accent + '80' }}>
                         <img
-                            src={`https://img.logo.dev/${t.domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+                            src={getLogoUrl(t.domain)}
                             alt={t.name}
                             className="w-6 h-6 object-contain"
                             onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}

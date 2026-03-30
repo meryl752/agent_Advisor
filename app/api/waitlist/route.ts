@@ -1,15 +1,23 @@
 import { NextResponse } from 'next/server'
+import { waitlistSchema } from '@/lib/validators/api'
 
 // TODO: Replace with Supabase insert when DB layer is connected
 // supabase.from('waitlist').insert({ email, created_at: new Date() })
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json()
+    const body = await req.json()
+    const validation = waitlistSchema.safeParse(body)
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
+    if (!validation.success) {
+      const errors = validation.error.errors.map((e) => ({
+        field: e.path.join('.'),
+        message: e.message,
+      }))
+      return NextResponse.json({ error: 'Validation échouée', details: errors }, { status: 400 })
     }
+
+    const { email } = validation.data
 
     // Placeholder — log for now
     console.log('New waitlist signup:', email)

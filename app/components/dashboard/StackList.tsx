@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { getLogoUrl } from '@/lib/utils/logo'
 
 interface StackItem {
     name: string
@@ -74,7 +75,7 @@ export default function StackList({ items }: { items: StackItem[] }) {
                                         shadow-inner relative z-10">
                             {domain && !hasError ? (
                                 <img
-                                    src={`https://img.logo.dev/${domain}?token=pk_aJ8Bl7ROS6-FE3fLWji9tQ`}
+                                    src={getLogoUrl(domain)}
                                     alt={item.name}
                                     className="w-7 h-7 object-contain"
                                     onError={() => setImgErrors(prev => ({ ...prev, [item.name]: true }))}

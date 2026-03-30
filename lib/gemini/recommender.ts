@@ -206,13 +206,26 @@ Réponds UNIQUEMENT avec un JSON valide sans markdown :
 }`
 
   try {
-    const result = await geminiFlash.generateContent(prompt)
+    // Timeout protection
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini timeout')), 30000)
+    )
+    
+    const result = await Promise.race([
+      geminiFlash.generateContent(prompt),
+      timeoutPromise
+    ])
+    
     let text = result.response.text().trim()
     text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim()
     const parsed: StackResult = JSON.parse(text)
+    
+    // Clear large objects from memory
+    text = ''
+    
     return parsed
   } catch (err) {
-    console.error('Gemini refinement error:', err)
+    console.error('Gemini refinement error:', err instanceof Error ? err.message : 'Unknown error')
     return null
   }
 }
