@@ -13,6 +13,7 @@ const NAV = [
   { href: '/dashboard/roi', label: 'ROI Tracker', icon: '↑' },
   { href: '/dashboard/alerts', label: 'Stack Alerts', icon: '◎' },
   { href: '/dashboard/score', label: 'Stack Score', icon: '◐' },
+  { href: '/dashboard/settings', label: 'Paramètres', icon: '⚙' },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

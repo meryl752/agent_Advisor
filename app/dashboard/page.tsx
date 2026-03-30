@@ -9,7 +9,14 @@ import StackHealthRing from '@/app/components/dashboard/StackHealthRing'
 
 export default async function DashboardPage() {
   const { getToken } = await auth()
-  const user = await currentUser()
+  let user = null
+  try {
+    user = await currentUser()
+  } catch (err) {
+    // Clerk dev keys have strict rate limits — redirect to sign-in on failure
+    console.error('Clerk currentUser() failed:', err instanceof Error ? err.message : 'Unknown')
+    redirect('/sign-in')
+  }
   if (!user) redirect('/sign-in')
 
 
