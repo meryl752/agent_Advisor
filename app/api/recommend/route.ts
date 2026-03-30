@@ -30,16 +30,16 @@ async function recommendHandler(req: NextRequest) {
       return NextResponse.json({ error: 'Validation échouée', details: errors }, { status: 400 })
     }
 
-    const { objective } = validation.data
+    const { objective, sector, budget, tech_level, team_size, timeline, current_tools } = validation.data
 
     const userContext = {
       objective,
-      sector: 'général',
-      team_size: 'solo' as const,
-      budget: 'medium' as const,
-      tech_level: 'intermediate' as const,
-      timeline: 'weeks' as const,
-      current_tools: [],
+      sector,
+      team_size,
+      budget,
+      tech_level,
+      timeline,
+      current_tools: current_tools ?? [],
     }
 
     const result = await runOrchestrator(userContext)

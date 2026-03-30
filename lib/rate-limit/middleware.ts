@@ -51,6 +51,8 @@ export function createRateLimitResponse(result: RateLimitResult): NextResponse {
     {
       error: 'Rate limit exceeded',
       message: `Rate limit exceeded${planLabel}: ${result.limit} requests per ${config}`,
+      plan: result.plan ?? 'free',
+      reset_at: new Date(result.reset * 1000).toISOString(),
       limit: result.limit,
       remaining: 0,
       reset: new Date(result.reset * 1000).toISOString(),

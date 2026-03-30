@@ -1,643 +1,664 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { FinalStack as StackResult, SubTask } from '@/lib/agents/types'
-import { cn } from '@/lib/utils'
+import type { FinalStack } from '@/lib/agents/types'
 import AgentCard from '@/app/components/ui/AgentCard'
 import StackFlow from '@/app/components/ui/StackFlow'
 import StackSummary from '@/app/components/ui/StackSummary'
-import StackChat from '@/app/components/ui/StackChat'
-import { SkeletonAgentCard, SkeletonSummary, SkeletonRightColumn } from '@/app/components/ui/Skeleton'
+import ROIChart from '@/app/components/ui/ROIChart'
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 
+type ConversationPhase = 'questioning' | 'reasoning' | 'results' | 'error'
 
-const EXAMPLE_CHIPS = [
-  { label: 'Aide j\'aimerais automatiser mon service de receptions pour mon business', prompt: 'Aide j\'aimerais automatiser mon service de receptions pour mon business' },
-  { label: 'J\'aimerais augmenter la rapidité à laquelle j\'atteint mes clients dans mon business', prompt: 'J\'aimerais augmenter la rapidité à laquelle j\'atteint mes clients dans mon business' },
-  { label: 'J\'aimerais automatiser le service client au niveau de ma plateforme Shopify', prompt: 'J\'aimerais automatiser le service client au niveau de ma plateforme Shopify' },
-  { label: 'Optimiser mes processus de vente avec l\'IA pour gagner du temps', prompt: 'Je souhaite optimiser mes processus de vente avec l\'IA pour gagner du temps au quotidien' },
-  { label: 'Analyser mes données clients pour prédire les futures tendances', prompt: 'J\'aimerais analyser mes données clients pour prédire les futures tendances et anticiper la demande' },
-  { label: 'Automatiser ma gestion d\'inventaire e-commerce intelligemment', prompt: 'Mettre en place un système intelligent pour automatiser ma gestion d\'inventaire et mes commandes' },
-]
-
-const BUDGET_OPTIONS = [
-  { value: 'all', label: 'Tous' },
-  { value: 'zero', label: 'Gratuit' },
-  { value: 'low', label: '<50€' },
-  { value: 'medium', label: '<200€' },
-  { value: 'high', label: '200€+' },
-]
-
-const TECH_OPTIONS = [
-  { value: 'all', label: 'Tous' },
-  { value: 'beginner', label: 'Débutant' },
-  { value: 'intermediate', label: 'Intermédiaire' },
-  { value: 'advanced', label: 'Avancé' },
-]
-
-const TEAM_OPTIONS = [
-  { value: 'all', label: 'Tous' },
-  { value: 'solo', label: 'Solo' },
-  { value: 'small', label: '2-10' },
-  { value: 'medium', label: '10-50' },
-  { value: 'large', label: '50+' },
-]
-
-const TIMELINE_OPTIONS = [
-  { value: 'all', label: 'Tous' },
-  { value: 'asap', label: 'Urgent' },
-  { value: 'weeks', label: 'Semaines' },
-  { value: 'months', label: 'Mois' },
-]
-
-const BUDGET_LIMITS: Record<string, number> = {
-  all: 999999, zero: 0, low: 50, medium: 200, high: 999999,
+interface ChipOption {
+  label: string
+  value: string
 }
 
-const DIFFICULTY_MAP: Record<string, string[]> = {
-  all: ['easy', 'medium', 'hard'],
-  beginner: ['easy'],
-  intermediate: ['easy', 'medium'],
-  advanced: ['easy', 'medium', 'hard'],
+interface Question {
+  id: string
+  text: string
+  type: 'free-text' | 'chips'
+  chips?: ChipOption[]
 }
 
-function filterStack(stack: StackResult, filters: Record<string, string>): StackResult {
-  const budgetLimit = BUDGET_LIMITS[filters.budget]
-  const allowedDiff = DIFFICULTY_MAP[filters.tech]
-
-  const filteredAgents = stack.agents.filter(agent => {
-    if (filters.budget !== 'all' && agent.price_from > budgetLimit) return false
-    if (filters.tech !== 'all' && agent.setup_difficulty &&
-        !allowedDiff.includes(agent.setup_difficulty)) return false
-    return true
-  })
-
-  return {
-    ...stack,
-    agents: filteredAgents.map((a, i) => ({ ...a, rank: i + 1 })),
-    total_cost: filteredAgents.reduce((sum, a) => sum + a.price_from, 0),
-  }
+interface ConversationEntry {
+  role: 'question' | 'answer'
+  text: string
 }
 
-export default function RecommendPage() {
-  const [objective, setObjective] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [loadingStep, setLoadingStep] = useState(0)
-  const [transitioning, setTransitioning] = useState(false)
-  const [originalStack, setOriginalStack] = useState<StackResult | null>(null)
-  const [displayStack, setDisplayStack] = useState<StackResult | null>(null)
-  const [error, setError] = useState('')
-  const [filters, setFilters] = useState({
-    budget: 'all', tech: 'all', team: 'all', timeline: 'all',
-  })
+interface ApiError {
+  type: 'rate-limit' | 'server'
+  message: string
+  plan?: string
+  resetAt?: string
+}
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== 'all')
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-  const handleSubmit = async () => {
-    if (!objective.trim()) return
-    setLoading(true)
-    setLoadingStep(0)
-    setError('')
-    setOriginalStack(null)
-    setDisplayStack(null)
+const QUESTIONS: Question[] = [
+  { id: 'objective', text: "Quel est ton objectif principal ?", type: 'free-text' },
+  {
+    id: 'sector', text: "Dans quel secteur opères-tu ?", type: 'chips',
+    chips: [
+      { label: 'E-commerce', value: 'e-commerce' },
+      { label: 'SaaS', value: 'saas' },
+      { label: 'Agence', value: 'agence' },
+      { label: 'Consultant', value: 'consultant' },
+      { label: 'Créateur', value: 'createur' },
+      { label: 'B2B', value: 'b2b' },
+    ],
+  },
+  {
+    id: 'budget', text: "Quel est ton budget mensuel pour les outils IA ?", type: 'chips',
+    chips: [
+      { label: 'Gratuit', value: 'zero' },
+      { label: '<50€', value: 'low' },
+      { label: '<200€', value: 'medium' },
+      { label: '200€+', value: 'high' },
+    ],
+  },
+  {
+    id: 'tech_level', text: "Quel est ton niveau technique ?", type: 'chips',
+    chips: [
+      { label: 'Débutant', value: 'beginner' },
+      { label: 'Intermédiaire', value: 'intermediate' },
+      { label: 'Avancé', value: 'advanced' },
+    ],
+  },
+]
 
-    const t1 = setTimeout(() => setLoadingStep(1), 3000)
-    const t2 = setTimeout(() => setLoadingStep(2), 6000)
+const REASONING_AGENTS = [
+  { icon: '◈', name: 'Analyzer',   message: 'Analyse de 200+ agents IA...' },
+  { icon: '↑', name: 'ROI Engine', message: 'Calcul du ROI pour ton profil...' },
+  { icon: '⚙', name: 'Optimizer',  message: 'Optimisation du budget...' },
+  { icon: '✦', name: 'Builder',    message: 'Assemblage du stack final...' },
+]
 
-    try {
-      const res = await fetch('/api/recommend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ objective }),
-      })
-      const data = await res.json()
-      clearTimeout(t1); clearTimeout(t2)
-      if (!res.ok) { setError(data.error); return }
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-      // Show shimmer skeleton for 600ms before revealing results
-      setTransitioning(true)
-      setOriginalStack(data.result)
-      setDisplayStack(data.result)
-      setFilters({ budget: 'all', tech: 'all', team: 'all', timeline: 'all' })
-      setTimeout(() => setTransitioning(false), 600)
-    } catch {
-      setError('Erreur réseau')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const applyFilter = (key: string, value: string) => {
-    const newFilters = { ...filters, [key]: value }
-    setFilters(newFilters)
-    if (originalStack) setDisplayStack(filterStack(originalStack, newFilters))
-  }
-
-  const resetFilters = () => {
-    setFilters({ budget: 'all', tech: 'all', team: 'all', timeline: 'all' })
-    setDisplayStack(originalStack)
-  }
-
-  // ── IDLE STATE ────────────────────────────────────────────────
-  if (!displayStack && !loading) {
-    return (
-      <div className="min-h-[calc(100vh-0px)] flex flex-col items-center justify-center p-8 relative overflow-hidden">
-        {/* Animated Background orbs */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <motion.div
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.03, 0.05, 0.03],
-              x: [-20, 20, -20],
-              y: [-20, 20, -20],
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                          w-[800px] h-[400px] blur-3xl rounded-full"
-            style={{ background: 'radial-gradient(ellipse, #CAFF32, transparent 70%)' }}
-          />
-          {/* Strategic subtle green gradients */}
-          <div className="absolute top-10 left-10 w-96 h-96 bg-[#CAFF32]/[0.02] blur-[120px] rounded-full" />
-          <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-[#CAFF32]/[0.01] blur-[150px] rounded-full" />
-          
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.02, 0.04, 0.02],
-              x: [20, -20, 20],
-              y: [20, -20, 20],
-            }}
-            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-1/4 right-1/4 w-[400px] h-[400px] blur-3xl rounded-full"
-            style={{ background: 'radial-gradient(circle, #6B4FFF, transparent 70%)' }}
-          />
-        </div>
-
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-4 py-3">
+      {[0, 1, 2].map(i => (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 w-full max-w-2xl px-4 md:px-0"
-        >
-          {/* Header */}
-          <div className="text-center mb-10">
-            <h1 className="font-syne font-black text-4xl md:text-5xl dark:text-white text-zinc-900 tracking-tight mb-4 leading-tight">
-              Construis ton stack <br className="hidden md:block" />
-              de <span className="text-[#CAFF32]">super-pouvoirs</span> IA
-            </h1>
-            <p className="font-dm-sans text-zinc-500 dark:text-zinc-400 text-base md:text-lg font-medium max-w-lg mx-auto leading-relaxed">
-              Décris ton objectif métier — notre IA assemble le combo optimal d'outils en 30 secondes.
-            </p>
-          </div>
+          key={i}
+          className="w-2 h-2 rounded-full bg-[#CAFF32]/60"
+          animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }}
+        />
+      ))}
+    </div>
+  )
+}
 
-          {/* Main input - Glassmorphism style */}
-          <div className="relative mb-10 group">
-            <div className="relative bg-[var(--bg)] dark:bg-zinc-950/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden
-                            focus-within:border-[#CAFF32]/60 transition-all duration-500 shadow-2xl">
-              <textarea
-                value={objective}
-                onChange={e => setObjective(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSubmit()
-                  }
-                }}
-                placeholder="Ex: Je veux lancer une boutique Shopify et automatiser mon service client..."
-                rows={4}
-                className="w-full bg-transparent dark:text-zinc-100 text-zinc-900 font-medium text-lg
-                           px-6 pt-6 pb-2 outline-none resize-none placeholder:text-zinc-500/60 dark:placeholder:text-zinc-700
-                           leading-relaxed"
-              />
-              <div className="flex items-center justify-end px-6 pb-4">
-                <button
-                  onClick={handleSubmit}
-                  disabled={!objective.trim()}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs tracking-tight',
-                    'transition-all duration-500 relative overflow-hidden group/btn font-syne',
-                    objective.trim()
-                      ? 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] hover:scale-105 hover:shadow-[0_0_15px_rgba(202,255,50,0.2)]'
-                      : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-700 border border-zinc-200 dark:border-zinc-800 cursor-not-allowed opacity-50'
-                  )}
-                >
-                  <span className="relative z-10">Générer mon stack</span>
-                  <motion.span 
-                    animate={objective.trim() ? { x: [0, 2, 0] } : {}}
-                    transition={{ duration: 1, repeat: Infinity }}
-                    className="text-base relative z-10 transition-transform"
-                  >
-                    →
-                  </motion.span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Suggestion Chips - Infinite Auto-scroll */}
-          <div className="w-full relative px-1 flex flex-col gap-3 overflow-hidden" 
-               style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
-            {/* Row 1 */}
-            <div className="flex overflow-hidden relative">
-              <motion.div
-                animate={{ x: [0, -1000] }}
-                transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
-                className="flex gap-2 whitespace-nowrap"
-              >
-                {[...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS].map((chip, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setObjective(chip.prompt)}
-                    className="flex items-center gap-2 px-6 py-3.5 rounded-xl 
-                               bg-transparent border border-zinc-200/50 dark:border-zinc-800/50
-                               hover:bg-[var(--bg2)] dark:hover:bg-zinc-800/40 hover:border-[#CAFF32]/30 
-                               dark:text-zinc-500 text-zinc-500 hover:text-zinc-900
-                               transition-all duration-300 text-xs md:text-[13px] font-bold 
-                               group hover:shadow-lg whitespace-nowrap flex-shrink-0"
-                  >
-                    <span className="group-hover:translate-x-0.5 transition-transform">{chip.label}</span>
-                  </button>
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Row 2 */}
-            <div className="flex overflow-hidden relative">
-              <motion.div
-                animate={{ x: [-1000, 0] }}
-                transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}
-                className="flex gap-2 whitespace-nowrap"
-              >
-                {[...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS, ...EXAMPLE_CHIPS].reverse().map((chip, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setObjective(chip.prompt)}
-                    className="flex items-center gap-2 px-6 py-3.5 rounded-xl 
-                               bg-transparent border border-zinc-200/50 dark:border-zinc-800/50
-                               hover:bg-[var(--bg2)] dark:hover:bg-zinc-800/40 hover:border-[#CAFF32]/30 
-                               dark:text-zinc-500 text-zinc-500 hover:text-zinc-900
-                               transition-all duration-300 text-xs md:text-[13px] font-bold 
-                               group hover:shadow-lg whitespace-nowrap flex-shrink-0"
-                  >
-                    <span className="group-hover:translate-x-0.5 transition-transform">{chip.label}</span>
-                  </button>
-                ))}
-              </motion.div>
-            </div>
-          </div>
-
-          {error && (
-            <motion.p
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="mt-8 text-red-400 text-sm font-mono text-center"
-            >
-              ⚠ {error}
-            </motion.p>
-          )}
-        </motion.div>
-      </div>
-    )
-  }
-
-    // ── LOADING STATE ─────────────────────────────────────────────
-    if (loading) {
-      const logs = [
-        // Step 0
-        [
-          `> initializing neural_engine_v4... [OK]`,
-          `> target_objective: "${objective.slice(0, 40)}${objective.length > 40 ? '...' : ''}"`,
-          `> extracting core requirements...`,
-          `> process_id: 0x${Math.random().toString(16).slice(2, 8).toUpperCase()}`,
-        ],
-        // Step 1
-        [
-          `> querying 200+ specialized agents...`,
-          `> analyzing ROI metrics and scoring...`,
-          `> matching capabilities: 84% coverage`,
-          `> background process: agent_scoring.sh`,
-        ],
-        // Step 2
-        [
-          `> building optimized architectural stack...`,
-          `> applying budget constraints: OK`,
-          `> profiling tool synergy: 0.98 index`,
-          `> finalizing recommendation...`,
-        ]
-      ]
-
-      const displayedLogs = logs.slice(0, loadingStep + 1).flat()
-
-      return (
-        <div className="min-h-[calc(100vh-0px)] flex flex-col items-center justify-center p-8 relative overflow-hidden">
-          <div className="fixed inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                            w-[800px] h-[400px] opacity-[0.03] blur-3xl rounded-full"
-                 style={{ background: 'radial-gradient(ellipse, #CAFF32, transparent)' }} />
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-2xl"
-          >
-            {/* Terminal Window */}
-            <div className="bg-zinc-950/90 backdrop-blur-2xl border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[400px]">
-              {/* Terminal Header */}
-              <div className="bg-zinc-900/50 px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-zinc-800" />
-                  <div className="w-3 h-3 rounded-full bg-zinc-800" />
-                  <div className="w-3 h-3 rounded-full bg-zinc-800" />
-                </div>
-                <div className="w-12" />
-              </div>
-
-              {/* Terminal Body */}
-              <div className="p-6 font-mono text-sm overflow-y-auto flex-1 scrollbar-hide">
-                <div className="space-y-1.5 min-h-full">
-                  {displayedLogs.map((log, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={cn(
-                        "transition-all duration-300",
-                        i < displayedLogs.length - 1 ? "text-zinc-500" : "text-[#CAFF32]"
-                      )}
-                    >
-                      {log}
-                    </motion.div>
-                  ))}
-                  
-                  {/* Flickering Cursor */}
-                  <motion.div
-                    animate={{ opacity: [1, 0] }}
-                    transition={{ duration: 0.8, repeat: Infinity }}
-                    className="inline-block w-2.5 h-4.5 bg-[#CAFF32] ml-1 align-middle"
-                  />
-                </div>
-              </div>
-
-              {/* Progress Footer */}
-              <div className="bg-zinc-900/30 px-6 py-4 border-top border-zinc-800">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">System Status</span>
-                  <span className="text-[10px] font-mono text-[#CAFF32] font-black uppercase">
-                    {loadingStep === 0 ? 'Analyzing' : loadingStep === 1 ? 'Scoring' : 'Finalizing'}...
-                  </span>
-                </div>
-                <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-[#CAFF32]"
-                    animate={{ width: [`${(loadingStep) * 33}%`, `${(loadingStep + 1) * 33}%`] }}
-                    transition={{ duration: 3 }}
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )
-    }
-
-  // ── SHIMMER TRANSITION ────────────────────────────────────────
-  if (transitioning) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="h-full flex flex-col overflow-hidden"
-      >
-        <div className="flex-shrink-0 px-8 pt-8 mb-6">
-          <div className="shimmer h-4 w-40" />
-        </div>
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-8 pb-8">
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 h-full overflow-hidden">
-            <div className="h-full overflow-y-auto pr-4 scrollbar-hide flex flex-col">
-              <SkeletonSummary />
-              <div className="flex flex-col gap-4">
-                {[0, 1, 2, 3].map(i => <SkeletonAgentCard key={i} />)}
-              </div>
-            </div>
-            <div className="h-full overflow-y-auto pr-2 scrollbar-hide">
-              <SkeletonRightColumn />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // ── RESULTS ───────────────────────────────────────────────────
+function QuestionBubble({ text, isTyping }: { text: string; isTyping?: boolean }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="h-full flex flex-col overflow-hidden"
+      transition={{ duration: 0.3 }}
+      className="flex items-start gap-2 max-w-[80%]"
     >
-      <div className="flex-shrink-0 flex items-center gap-3 px-8 pt-8 mb-6">
-        <button
-          onClick={() => {
-            setObjective('')
-            setOriginalStack(null)
-            setDisplayStack(null)
-            resetFilters()
-          }}
-          className="text-zinc-500 hover:text-zinc-300 text-sm flex items-center gap-1 transition-colors"
-        >
-          ← Nouveau stack
-        </button>
-        <span className="text-zinc-700">·</span>
-        <span className="text-xs font-mono text-zinc-600 truncate max-w-md">
-          &quot;{objective}&quot;
-        </span>
+      <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center
+                      bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-full mt-1">
+        <span className="text-[#CAFF32] text-[7px] font-black">AI</span>
       </div>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-sm px-4 py-3
+                      text-sm text-zinc-200 leading-relaxed">
+        {isTyping ? <TypingIndicator /> : text}
+      </div>
+    </motion.div>
+  )
+}
 
-      {displayStack && (
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-8 pb-8">
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 h-full overflow-hidden">
-            {/* Left column - Agents & Subtasks - Independent Scroll */}
-            <div className="h-full overflow-y-auto pr-4 scrollbar-hide flex flex-col">
-              {/* STACK SUMMARY — flex-shrink-0 is critical: prevents this from being squashed to 0 */}
-              <div className="flex-shrink-0 pb-6">
-                <StackSummary
-                  stackName={displayStack.stack_name}
-                  justification={displayStack.justification}
-                  total_cost={displayStack.total_cost}
-                  roi_estimate={displayStack.roi_estimate}
-                  time_saved_per_week={displayStack.time_saved_per_week}
-                  agentCount={displayStack.agents.length}
-                />
-              </div>
+function AnswerBubble({ text }: { text: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex justify-end"
+    >
+      <div className="bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-2xl rounded-tr-sm
+                      px-4 py-3 text-sm text-[#CAFF32] max-w-[70%]">
+        {text}
+      </div>
+    </motion.div>
+  )
+}
 
-              {displayStack.subtasks && displayStack.subtasks.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-2">
-                    Décomposition du projet
-                  </p>
-                  <div className="flex flex-col gap-[2px] overflow-hidden">
-                    {displayStack.subtasks.map((task: SubTask, i: number) => (
-                      <div key={i} className="bg-zinc-900 p-4 grid grid-cols-[1fr_60px_1fr] gap-3 items-center">
-                        <div>
-                          <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.08em] mb-1">Sans IA</p>
-                          <p className="text-sm text-zinc-500 leading-relaxed">{task.without_ai}</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-black text-[#CAFF32] text-base">→</div>
-                          <p className="text-[10px] font-mono text-[#CAFF32]/60 uppercase tracking-[0.04em] mt-1 leading-tight">
-                            {task.tool_name}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-mono text-[#CAFF32] uppercase tracking-[0.08em] mb-1">Avec IA ✦</p>
-                          <p className="text-sm text-zinc-300 leading-relaxed">{task.with_ai}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+function ChipSelector({ chips, onSelect, disabled }: {
+  chips: ChipOption[]
+  onSelect: (chip: ChipOption) => void
+  disabled?: boolean
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-wrap gap-2 pl-8"
+    >
+      {chips.map(chip => (
+        <button
+          key={chip.value}
+          onClick={() => !disabled && onSelect(chip)}
+          disabled={disabled}
+          className="px-4 py-2 rounded-full border border-zinc-700 text-sm text-zinc-300
+                     hover:border-[#CAFF32]/50 hover:text-[#CAFF32] hover:bg-[#CAFF32]/5
+                     transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
+                     font-dm-mono text-xs"
+        >
+          {chip.label}
+        </button>
+      ))}
+    </motion.div>
+  )
+}
 
-              <div>
-                <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-2">
-                  Les agents — clique pour les détails
-                </p>
-                <div className="flex flex-col gap-[2px] overflow-hidden">
-                  {displayStack.agents.map((agent, i) => (
-                    <AgentCard
-                      key={i}
-                      rank={agent.rank}
-                      name={agent.name}
-                      category={agent.category}
-                      price_from={agent.price_from}
-                      role={agent.role}
-                      reason={agent.reason}
-                      concrete_result={(agent as typeof agent & { concrete_result?: string }).concrete_result}
-                      website_domain={agent.website_domain}
-                      setup_difficulty={agent.setup_difficulty}
-                      time_to_value={agent.time_to_value}
-                      score={agent.score}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+// ─── ReasoningPanel ───────────────────────────────────────────────────────────
 
-            {/* Right column - Flow & Filters - Independent Scroll */}
-            <div className="h-full overflow-y-auto pr-2 scrollbar-hide flex flex-col gap-4">
-              <StackFlow agents={displayStack.agents} stackName={displayStack.stack_name} />
+function ReasoningPanel({
+  answers,
+  onComplete,
+  onError,
+}: {
+  answers: Record<string, string>
+  onComplete: (result: FinalStack) => void
+  onError: (err: ApiError) => void
+}) {
+  const [visibleAgents, setVisibleAgents] = useState<number[]>([])
+  const [done, setDone] = useState(false)
+  const apiResultRef = useRef<FinalStack | null>(null)
+  const apiDoneRef = useRef(false)
+  const allShownRef = useRef(false)
 
-              {/* Expert Chat — tuteur conversationnel post-stack */}
-              <StackChat
-                stackContext={{
-                  stack_name: displayStack.stack_name,
-                  objective: objective,
-                  total_cost: displayStack.total_cost,
-                  agents: displayStack.agents.map(a => ({ name: a.name, role: a.role })),
-                }}
-              />
+  const tryComplete = useCallback(() => {
+    if (apiDoneRef.current && allShownRef.current && apiResultRef.current) {
+      setDone(true)
+      setTimeout(() => onComplete(apiResultRef.current!), 400)
+    }
+  }, [onComplete])
 
-              {/* Filtres */}
-              <div className="bg-zinc-900 border border-zinc-800 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em]">
-                    Ajuster le stack
-                  </p>
-                  {hasActiveFilters && (
-                    <button onClick={resetFilters}
-                      className="text-[10px] font-mono text-[#CAFF32] hover:text-[#d4ff50] transition-colors">
-                      Reset ×
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-col gap-4">
-                  {[
-                    { key: 'budget', label: 'Budget', opts: BUDGET_OPTIONS },
-                    { key: 'tech', label: 'Niveau', opts: TECH_OPTIONS },
-                    { key: 'team', label: 'Équipe', opts: TEAM_OPTIONS },
-                    { key: 'timeline', label: 'Urgence', opts: TIMELINE_OPTIONS },
-                  ].map(({ key, label, opts }) => (
-                    <div key={key}>
-                      <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.1em] mb-2">
-                        {label}
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {opts.map(opt => (
-                          <button key={opt.value} onClick={() => applyFilter(key, opt.value)}
-                            className={cn(
-                              'text-[10px] font-mono px-2.5 py-1 rounded-lg border transition-all',
-                              filters[key as keyof typeof filters] === opt.value
-                                ? 'bg-[#CAFF32] text-zinc-900 border-[#CAFF32] font-black'
-                                : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:border-zinc-600'
-                            )}>
-                            {opt.label}
-                          </button>
+  useEffect(() => {
+    // Fire API call
+    const payload = {
+      objective: answers.objective,
+      sector: answers.sector,
+      budget: answers.budget,
+      tech_level: answers.tech_level,
+      team_size: 'solo',
+      timeline: 'weeks',
+      current_tools: [],
+    }
+
+    fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then(async res => {
+        const data = await res.json()
+        if (!res.ok) {
+          if (res.status === 429) {
+            onError({
+              type: 'rate-limit',
+              message: data.error ?? 'Limite atteinte',
+              plan: data.plan,
+              resetAt: data.reset_at,
+            })
+          } else {
+            onError({ type: 'server', message: data.error ?? 'Erreur serveur' })
+          }
+          return
+        }
+        apiResultRef.current = data.result
+        apiDoneRef.current = true
+        tryComplete()
+      })
+      .catch(() => {
+        onError({ type: 'server', message: 'Erreur réseau' })
+      })
+
+    // Show agents sequentially
+    REASONING_AGENTS.forEach((_, i) => {
+      setTimeout(() => {
+        setVisibleAgents(prev => [...prev, i])
+        if (i === REASONING_AGENTS.length - 1) {
+          allShownRef.current = true
+          tryComplete()
+        }
+      }, 800 + i * 1200)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col gap-4 py-4"
+    >
+      <div className="flex items-start gap-2">
+        <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center
+                        bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-full mt-1">
+          <span className="text-[#CAFF32] text-[7px] font-black">AI</span>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-sm px-4 py-3 flex-1">
+          <div className="flex flex-col gap-3">
+            {visibleAgents.length === 0 && <TypingIndicator />}
+            {REASONING_AGENTS.map((agent, i) => (
+              <AnimatePresence key={i}>
+                {visibleAgents.includes(i) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="text-[#CAFF32] text-base w-5 text-center">{agent.icon}</span>
+                    <div>
+                      <span className="font-dm-mono text-[0.6rem] text-[#CAFF32]/60 uppercase tracking-wider">
+                        {agent.name}
+                      </span>
+                      <p className="text-sm text-zinc-300">{agent.message}</p>
+                    </div>
+                    {i === visibleAgents[visibleAgents.length - 1] && !done && (
+                      <div className="ml-auto flex gap-1">
+                        {[0, 1, 2].map(j => (
+                          <motion.div
+                            key={j}
+                            className="w-1.5 h-1.5 rounded-full bg-[#CAFF32]/40"
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 0.8, repeat: Infinity, delay: j * 0.2 }}
+                          />
                         ))}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    )}
+                    {done && i === REASONING_AGENTS.length - 1 && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="ml-auto text-[#CAFF32] text-sm"
+                      >
+                        ✓
+                      </motion.span>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
 
-              {/* Résumé financier */}
-              <div className="bg-zinc-900 border border-zinc-800 p-4">
-                <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.15em] mb-3">
-                  Résumé financier
-                </p>
-                <div className="flex flex-col gap-2">
-                  {[
-                    { label: 'Coût mensuel', value: `${displayStack.total_cost}€`, color: 'text-white' },
-                    { label: 'ROI estimé', value: `+${displayStack.roi_estimate}%`, color: 'text-[#CAFF32]' },
-                    { label: 'Temps économisé', value: `${displayStack.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
-                  ].map((m, i) => (
-                    <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-800 last:border-0">
-                      <span className="text-xs text-zinc-500">{m.label}</span>
-                      <span className={cn('font-black text-sm', m.color)}>{m.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+// ─── ArtifactGrid ─────────────────────────────────────────────────────────────
 
-              {/* Quick wins */}
-              {displayStack.quick_wins?.length > 0 && (
-                <div className="bg-[#CAFF32]/5 border border-[#CAFF32]/15 p-4">
-                  <p className="text-[10px] font-mono text-[#CAFF32] uppercase tracking-[0.15em] mb-3">
+function FinancialSummary({ stack }: { stack: FinalStack }) {
+  return (
+    <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
+      <p className="font-dm-mono text-[0.6rem] text-zinc-500 uppercase tracking-[0.15em] mb-4">
+        Résumé financier
+      </p>
+      <div className="flex flex-col gap-3">
+        {[
+          { label: 'Coût mensuel', value: `${stack.total_cost}€`, color: 'text-white' },
+          { label: 'ROI estimé', value: `+${stack.roi_estimate}%`, color: 'text-[#CAFF32]' },
+          { label: 'Temps économisé', value: `${stack.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
+        ].map((m, i) => (
+          <div key={i} className="flex justify-between items-center py-2 border-b border-zinc-800 last:border-0">
+            <span className="text-xs text-zinc-500 font-dm-mono">{m.label}</span>
+            <span className={`font-syne font-black text-sm ${m.color}`}>{m.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ArtifactGrid({ stack }: { stack: FinalStack }) {
+  const sections = [
+    'summary', 'agents', 'roi', 'flow', 'wins',
+  ]
+
+  return (
+    <div className="flex flex-col gap-6">
+      {sections.map((section, i) => (
+        <motion.div
+          key={section}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: i * 0.1 }}
+        >
+          {section === 'summary' && (
+            <StackSummary
+              stackName={stack.stack_name}
+              justification={stack.justification}
+              total_cost={stack.total_cost}
+              roi_estimate={stack.roi_estimate}
+              time_saved_per_week={stack.time_saved_per_week}
+              agentCount={stack.agents.length}
+            />
+          )}
+
+          {section === 'agents' && (
+            <div>
+              <p className="font-dm-mono text-[0.6rem] text-zinc-500 uppercase tracking-[0.15em] mb-3">
+                Les agents recommandés
+              </p>
+              <div className="flex flex-col gap-1">
+                {stack.agents.map((agent, j) => (
+                  <AgentCard
+                    key={j}
+                    rank={agent.rank}
+                    name={agent.name}
+                    category={agent.category}
+                    price_from={agent.price_from}
+                    role={agent.role}
+                    reason={agent.reason}
+                    concrete_result={(agent as typeof agent & { concrete_result?: string }).concrete_result}
+                    website_domain={agent.website_domain}
+                    setup_difficulty={agent.setup_difficulty}
+                    time_to_value={agent.time_to_value}
+                    score={agent.score}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {section === 'roi' && (
+            <ROIChart roiEstimate={stack.roi_estimate} totalCost={stack.total_cost} />
+          )}
+
+          {section === 'flow' && (
+            <StackFlow agents={stack.agents} stackName={stack.stack_name} />
+          )}
+
+          {section === 'wins' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stack.quick_wins?.length > 0 && (
+                <div className="bg-[#CAFF32]/5 border border-[#CAFF32]/15 rounded-xl p-5">
+                  <p className="font-dm-mono text-[0.6rem] text-[#CAFF32] uppercase tracking-[0.15em] mb-3">
                     ✦ Quick wins
                   </p>
                   <div className="flex flex-col gap-2">
-                    {displayStack.quick_wins.map((w, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className="text-[#CAFF32] text-xs mt-0.5 flex-shrink-0">{i + 1}.</span>
+                    {stack.quick_wins.map((w, j) => (
+                      <div key={j} className="flex items-start gap-2">
+                        <span className="text-[#CAFF32] text-xs mt-0.5 flex-shrink-0 font-dm-mono">{j + 1}.</span>
                         <p className="text-xs text-zinc-300 leading-relaxed">{w}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+              <FinancialSummary stack={stack} />
+            </div>
+          )}
+        </motion.div>
+      ))}
+    </div>
+  )
+}
 
-              {/* Warnings */}
-              {displayStack.warnings?.length > 0 && (
-                <div className="bg-[#FF6B35]/5 border border-[#FF6B35]/15 p-4">
-                  <p className="text-[10px] font-mono text-[#FF6B35] uppercase tracking-[0.15em] mb-3">
-                    ⚠ Vigilance
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function ChatRecommendPage() {
+  const [phase, setPhase] = useState<ConversationPhase>('questioning')
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [history, setHistory] = useState<ConversationEntry[]>([])
+  const [showTyping, setShowTyping] = useState(true)
+  const [inputValue, setInputValue] = useState('')
+  const [inputError, setInputError] = useState('')
+  const [result, setResult] = useState<FinalStack | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Show first question after mount
+  useEffect(() => {
+    const t = setTimeout(() => setShowTyping(false), 800)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [history, showTyping, phase])
+
+  const submitAnswer = useCallback((label: string, value?: string) => {
+    const trimmed = label.trim()
+    if (!trimmed) {
+      setInputError('Merci de saisir une réponse.')
+      return
+    }
+    setInputError('')
+
+    const apiValue = value ?? trimmed
+    const questionId = QUESTIONS[currentQuestionIndex].id
+
+    const newAnswers = { ...answers, [questionId]: apiValue }
+    setAnswers(newAnswers)
+
+    setHistory(prev => [
+      ...prev,
+      { role: 'question', text: QUESTIONS[currentQuestionIndex].text },
+      { role: 'answer', text: label },
+    ])
+
+    const nextIndex = currentQuestionIndex + 1
+
+    if (nextIndex >= QUESTIONS.length) {
+      // All questions answered — go to reasoning
+      setTimeout(() => setPhase('reasoning'), 400)
+    } else {
+      setCurrentQuestionIndex(nextIndex)
+      setShowTyping(true)
+      setTimeout(() => setShowTyping(false), 800)
+    }
+
+    setInputValue('')
+  }, [answers, currentQuestionIndex])
+
+  const handleTextSubmit = () => {
+    submitAnswer(inputValue)
+  }
+
+  const reset = () => {
+    setPhase('questioning')
+    setCurrentQuestionIndex(0)
+    setAnswers({})
+    setHistory([])
+    setShowTyping(true)
+    setInputValue('')
+    setInputError('')
+    setResult(null)
+    setError(null)
+    setTimeout(() => setShowTyping(false), 800)
+  }
+
+  const retry = () => {
+    setError(null)
+    setPhase('reasoning')
+  }
+
+  const currentQuestion = QUESTIONS[currentQuestionIndex]
+
+  return (
+    <div className="min-h-screen bg-zinc-950 flex flex-col">
+      {/* Header */}
+      <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-zinc-900">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-[#CAFF32] animate-pulse" />
+          <span className="font-syne font-bold text-sm text-zinc-300">Raspquery AI</span>
+        </div>
+        {(phase === 'results' || phase === 'error') && (
+          <button
+            onClick={reset}
+            className="font-dm-mono text-xs text-zinc-500 hover:text-[#CAFF32] transition-colors
+                       border border-zinc-800 hover:border-[#CAFF32]/30 px-3 py-1.5 rounded-lg"
+          >
+            ↺ Recommencer
+          </button>
+        )}
+      </div>
+
+      {/* Chat area */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 md:px-8 py-6 flex flex-col gap-4 max-w-3xl mx-auto w-full"
+      >
+        {/* Conversation history */}
+        {history.map((entry, i) => (
+          entry.role === 'question'
+            ? <QuestionBubble key={i} text={entry.text} />
+            : <AnswerBubble key={i} text={entry.text} />
+        ))}
+
+        {/* Current question / active phase */}
+        {phase === 'questioning' && (
+          <>
+            {showTyping
+              ? <QuestionBubble text="" isTyping />
+              : <QuestionBubble text={currentQuestion.text} />
+            }
+          </>
+        )}
+
+        {phase === 'reasoning' && (
+          <ReasoningPanel
+            answers={answers}
+            onComplete={(stack) => {
+              setResult(stack)
+              setPhase('results')
+            }}
+            onError={(err) => {
+              setError(err)
+              setPhase('error')
+            }}
+          />
+        )}
+
+        {phase === 'results' && result && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full"
+          >
+            <ArtifactGrid stack={result} />
+          </motion.div>
+        )}
+
+        {phase === 'error' && error && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-2 max-w-[85%]"
+          >
+            <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center
+                            bg-[#CAFF32]/10 border border-[#CAFF32]/20 rounded-full mt-1">
+              <span className="text-[#CAFF32] text-[7px] font-black">AI</span>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-sm px-4 py-4 flex flex-col gap-3">
+              {error.type === 'rate-limit' ? (
+                <>
+                  <p className="text-sm text-zinc-200">
+                    Tu as atteint ta limite mensuelle
+                    {error.plan ? ` (plan ${error.plan})` : ''}.
+                    Passe en Pro pour continuer sans limite.
                   </p>
-                  <div className="flex flex-col gap-2">
-                    {displayStack.warnings.map((w, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className="text-[#FF6B35] text-xs mt-0.5">•</span>
-                        <p className="text-xs text-zinc-300 leading-relaxed">{w}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  {error.resetAt && (
+                    <p className="font-dm-mono text-xs text-zinc-500">
+                      Disponible le {new Date(error.resetAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric', month: 'long',
+                      })}
+                    </p>
+                  )}
+                  <a
+                    href="/pricing"
+                    className="inline-flex items-center gap-2 bg-[#CAFF32] text-zinc-900 font-syne font-bold
+                               text-xs px-4 py-2 rounded-lg hover:bg-[#d4ff50] transition-colors w-fit"
+                  >
+                    Passer en Pro →
+                  </a>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-zinc-200">
+                    Une erreur est survenue : {error.message}
+                  </p>
+                  <button
+                    onClick={retry}
+                    className="inline-flex items-center gap-2 border border-zinc-700 text-zinc-300
+                               font-dm-mono text-xs px-4 py-2 rounded-lg hover:border-[#CAFF32]/40
+                               hover:text-[#CAFF32] transition-colors w-fit"
+                  >
+                    ↺ Réessayer
+                  </button>
+                </>
               )}
             </div>
-          </div>
-        </div>
-      )}
-    </motion.div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Input area — only shown during questioning */}
+      <AnimatePresence>
+        {phase === 'questioning' && !showTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="flex-shrink-0 border-t border-zinc-900 px-4 md:px-8 py-4 max-w-3xl mx-auto w-full"
+          >
+            {currentQuestion.type === 'chips' && currentQuestion.chips ? (
+              <ChipSelector
+                chips={currentQuestion.chips}
+                onSelect={(chip) => submitAnswer(chip.label, chip.value)}
+              />
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={inputValue}
+                    onChange={e => { setInputValue(e.target.value); setInputError('') }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleTextSubmit()
+                      }
+                    }}
+                    placeholder="Décris ton objectif..."
+                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3
+                               text-sm text-zinc-200 outline-none focus:border-[#CAFF32]/40
+                               placeholder:text-zinc-600 transition-colors font-dm-mono"
+                  />
+                  <button
+                    onClick={handleTextSubmit}
+                    disabled={!inputValue.trim()}
+                    className="bg-[#CAFF32] text-zinc-900 font-syne font-bold text-sm px-5 py-3
+                               rounded-xl hover:bg-[#d4ff50] transition-colors
+                               disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    →
+                  </button>
+                </div>
+                {inputError && (
+                  <p className="font-dm-mono text-xs text-red-400 pl-1">{inputError}</p>
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
