@@ -1,7 +1,16 @@
 import Groq from 'groq-sdk'
 
-export const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!,
-})
+// Lazy initialization - create client only when needed
+let groqInstance: Groq | null = null
+
+export function getGroqClient(): Groq | null {
+  if (!process.env.GROQ_API_KEY) {
+    return null
+  }
+  if (!groqInstance) {
+    groqInstance = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  }
+  return groqInstance
+}
 
 export const GROQ_MODEL = 'llama-3.3-70b-versatile'

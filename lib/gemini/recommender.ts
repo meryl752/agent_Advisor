@@ -1,4 +1,4 @@
-import { geminiFlash } from './client'
+import { getGeminiClient } from './client'
 import type { Agent } from '@/lib/supabase/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -206,13 +206,19 @@ Réponds UNIQUEMENT avec un JSON valide sans markdown :
 }`
 
   try {
+    const geminiClient = getGeminiClient()
+    if (!geminiClient) {
+      console.error('Gemini client not available - API key missing')
+      return null
+    }
+
     // Timeout protection
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Gemini timeout')), 30000)
     )
     
     const result = await Promise.race([
-      geminiFlash.generateContent(prompt),
+      geminiClient.generateContent(prompt),
       timeoutPromise
     ])
     

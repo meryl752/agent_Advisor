@@ -1,5 +1,5 @@
-import { groq, GROQ_MODEL } from '@/lib/groq/client'
-import { geminiFlash } from '@/lib/gemini/client'
+import { getGroqClient, GROQ_MODEL } from '@/lib/groq/client'
+import { getGeminiClient } from '@/lib/gemini/client'
 
 const LLM_TIMEOUT_MS = 30000 // 30 seconds max
 const MAX_RETRIES = 2
@@ -18,26 +18,32 @@ export async function callLLM(prompt: string, maxTokens = 1024): Promise<string>
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      // Try Groq first (faster)
-      if (process.env.GROQ_API_KEY) {
-        const response = await withTimeout(
-          groq.chat.completions.create({
-            model: GROQ_MODEL,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: maxTokens,
-            temperature: 0.7,
-          }),
-          LLM_TIMEOUT_MS
-        )
-        
-        const text = response.choices[0]?.message?.content?.trim()
-        if (text) return text
+      // Try Groq first (faster) - only if API key is configured
+      const groqClient = getGroqClient()
+      if (groqClient) {
+        try {
+          const response = await withTimeout(
+            groqClient.chat.completions.create({
+              model: GROQ_MODEL,
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: maxTokens,
+              temperature: 0.7,
+            }),
+            LLM_TIMEOUT_MS
+          )
+          
+          const text = response.choices[0]?.message?.content?.trim()
+          if (text) return text
+        } catch (groqError) {
+          console.warn('Groq failed, trying Gemini:', groqError instanceof Error ? groqError.message : 'Unknown')
+        }
       }
 
       // Fallback to Gemini
-      if (process.env.GEMINI_API_KEY) {
+      const geminiClient = getGeminiClient()
+      if (geminiClient) {
         const result = await withTimeout(
-          geminiFlash.generateContent(prompt),
+          geminiClient.generateContent(prompt),
           LLM_TIMEOUT_MS
         )
         
