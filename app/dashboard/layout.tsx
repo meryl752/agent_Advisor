@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* User */}
+        {/* User + ThemeToggle */}
         <div className="border-t border-zinc-200 dark:border-zinc-800/60 px-4 py-4 flex items-center gap-3">
           <UserButton appearance={{
             elements: {
@@ -90,6 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {user?.emailAddresses[0]?.emailAddress ?? ''}
             </p>
           </div>
+          <ThemeToggle />
         </div>
       </aside>
 
@@ -102,9 +103,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             backgroundSize: '32px 32px',
           }} />
         <div className="flex-1 overflow-y-auto relative z-10 scrollbar-hide px-8 py-8">
-          <div className="absolute top-8 right-8 z-50">
-            <ThemeToggle />
-          </div>
           {children}
         </div>
       </main>
