@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import CoverageRing from '@/app/components/blueprint/CoverageRing'
 import BlueprintTaskCard from '@/app/components/blueprint/BlueprintTaskCard'
@@ -58,7 +57,11 @@ export default function BlueprintSectorPage({ params }: { params: Promise<{ sect
     setError(null)
     fetch(`/api/blueprint/${sectorSlug}`)
       .then(async res => {
-        if (res.status === 404) { notFound(); return }
+        if (res.status === 404) {
+          setError('Secteur introuvable')
+          setLoading(false)
+          return
+        }
         if (!res.ok) throw new Error('Erreur serveur')
         return res.json()
       })
