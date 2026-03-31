@@ -5,6 +5,10 @@ import { runOrchestrator } from '@/lib/agents/orchestrator'
 import { recommendSchema } from '@/lib/validators/api'
 import { getRateLimiter, withRateLimit } from '@/lib/rate-limit'
 import { captureError, setSentryUser } from '@/lib/monitoring/sentry'
+import { assertEnv } from '@/lib/utils/env'
+
+// Fail fast if critical env vars are missing
+assertEnv(['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'])
 
 async function recommendHandler(req: NextRequest) {
   try {

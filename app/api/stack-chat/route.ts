@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { callLLM } from '@/lib/llm/router'
 import { captureError, setSentryUser } from '@/lib/monitoring/sentry'
+import { z } from 'zod'
+
+const stackChatSchema = z.object({
+  message: z.string().min(1).max(2000).trim(),
+  stackContext: z.object({
+    stack_name: z.string().min(1).max(200),
+    objective: z.string().min(1).max(1000),
+    total_cost: z.number().min(0),
+    agents: z.array(z.object({
+      name: z.string().min(1),
+      role: z.string().min(1),
+    })).min(1).max(20),
+  }),
+})
 
 export async function POST(req: NextRequest) {
   const user = await currentUser()
@@ -9,7 +23,20 @@ export async function POST(req: NextRequest) {
 
   setSentryUser(user.id)
 
-  const { message, stackContext } = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body) {
+    return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
+  }
+  const validation = stackChatSchema.safeParse(body)
+
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: 'Payload invalide', details: validation.error.flatten().fieldErrors },
+      { status: 400 }
+    )
+  }
+
+  const { message, stackContext } = validation.data
 
   const prompt = `
 <role>
@@ -21,7 +48,7 @@ Parle toujours en français.
 
 <stack_context>
 Stack: ${stackContext.stack_name}
-Agents: ${(stackContext.agents as Array<{ name: string; role: string }>).map((a) => `${a.name} (${a.role})`).join(', ')}
+Agents: ${stackContext.agents.map((a) => `${a.name} (${a.role})`).join(', ')}
 Objectif: ${stackContext.objective}
 Coût: ${stackContext.total_cost}€/mois
 </stack_context>
