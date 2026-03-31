@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getUserByClerkId, getUserStacks } from '@/lib/supabase/queries'
 import { RATE_LIMIT_CONFIGS } from '@/lib/rate-limit/config'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default async function SettingsPage() {
   const { getToken } = await auth()
@@ -49,8 +50,8 @@ export default async function SettingsPage() {
           <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-5">Mon profil</p>
           <div className="flex items-center gap-4 mb-5">
             {user.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.imageUrl} alt="Avatar" className="w-14 h-14 rounded-xl object-cover" />
+              <Image src={user.imageUrl} alt="Avatar" width={56} height={56}
+                className="w-14 h-14 rounded-xl object-cover" />
             ) : (
               <div className="w-14 h-14 rounded-xl bg-zinc-800 flex items-center justify-center font-syne font-black text-xl text-white">
                 {(user.firstName?.[0] ?? email[0] ?? '?').toUpperCase()}

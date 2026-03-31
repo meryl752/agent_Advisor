@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import dynamic from 'next/dynamic'
 import type { FinalStack } from '@/lib/agents/types'
 import AgentCard from '@/app/components/ui/AgentCard'
-import StackFlow from '@/app/components/ui/StackFlow'
-import StackSummary from '@/app/components/ui/StackSummary'
-import ROIChart from '@/app/components/ui/ROIChart'
+
+// Lazy load heavy components — only loaded when results are shown
+const StackFlow = dynamic(() => import('@/app/components/ui/StackFlow'), { ssr: false })
+const StackSummary = dynamic(() => import('@/app/components/ui/StackSummary'), { ssr: false })
+const ROIChart = dynamic(() => import('@/app/components/ui/ROIChart'), { ssr: false })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -447,7 +450,8 @@ export default function RecommendPage() {
               exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3 }}
               className="flex-shrink-0 border-t border-zinc-800/50 px-4 py-3">
               <div className="max-w-lg mx-auto flex gap-2 items-end">
-                <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+                <textarea ref={inputRef} value={input}
+                  onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                   placeholder="Envoyer un message..."
                   rows={1}

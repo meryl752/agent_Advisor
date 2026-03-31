@@ -1,5 +1,6 @@
 import { supabaseServer, createSupabaseClient, supabaseService } from './server'
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 import type { Agent, Stack } from './types'
 import { anonymizeEmail, anonymizeId } from '@/lib/utils/logger'
 
@@ -73,29 +74,35 @@ async function ensureUserExists(clerkId: string, email?: string): Promise<string
 }
 
 // ─── Agents ──────────────────────────────────────────────────────────────────
+// Cached for 5 minutes — agents data rarely changes
 
-export async function getAllAgents(): Promise<Agent[]> {
-  const { data, error } = await supabaseServer
-    .from('agents')
-    .select('*')
-    .order('score', { ascending: false })
+export const getAllAgents = unstable_cache(
+  async (): Promise<Agent[]> => {
+    const { data, error } = await supabaseServer
+      .from('agents')
+      .select('*')
+      .order('score', { ascending: false })
+    if (error) { console.error('getAllAgents error:', error.message); return [] }
+    return data ?? []
+  },
+  ['all-agents'],
+  { revalidate: 300 } // 5 minutes
+)
 
-  if (error) { console.error('getAllAgents error:', JSON.stringify(error, null, 2)); return [] }
-  return data ?? []
-}
-
-export async function getAgentsByCategories(categories: string[]): Promise<Agent[]> {
-  if (categories.length === 0) return getAllAgents()
-
-  const { data, error } = await supabaseServer
-    .from('agents')
-    .select('*')
-    .in('category', categories)
-    .order('score', { ascending: false })
-
-  if (error) { console.error('getAgentsByCategories error:', JSON.stringify(error, null, 2)); return [] }
-  return data ?? []
-}
+export const getAgentsByCategories = unstable_cache(
+  async (categories: string[]): Promise<Agent[]> => {
+    if (categories.length === 0) return getAllAgents()
+    const { data, error } = await supabaseServer
+      .from('agents')
+      .select('*')
+      .in('category', categories)
+      .order('score', { ascending: false })
+    if (error) { console.error('getAgentsByCategories error:', error.message); return [] }
+    return data ?? []
+  },
+  ['agents-by-categories'],
+  { revalidate: 300 }
+)
 
 export async function searchAgents(query: string): Promise<Agent[]> {
   const { data, error } = await supabaseServer
@@ -109,16 +116,19 @@ export async function searchAgents(query: string): Promise<Agent[]> {
   return data ?? []
 }
 
-export async function getTopAgents(limit = 10): Promise<Agent[]> {
-  const { data, error } = await supabaseServer
-    .from('agents')
-    .select('*')
-    .order('roi_score', { ascending: false })
-    .limit(limit)
-
-  if (error) { console.error('getTopAgents error:', JSON.stringify(error, null, 2)); return [] }
-  return data ?? []
-}
+export const getTopAgents = unstable_cache(
+  async (limit = 10): Promise<Agent[]> => {
+    const { data, error } = await supabaseServer
+      .from('agents')
+      .select('*')
+      .order('roi_score', { ascending: false })
+      .limit(limit)
+    if (error) { console.error('getTopAgents error:', error.message); return [] }
+    return data ?? []
+  },
+  ['top-agents'],
+  { revalidate: 300 }
+)
 
 // ─── Stacks ──────────────────────────────────────────────────────────────────
 
