@@ -53,6 +53,7 @@ export default function BlueprintPage() {
   useEffect(() => {
     const stored = localStorage.getItem('blueprint_last_sector')
     if (stored) setLastViewed(stored)
+    document.title = 'AI Playbook | Raspquery'
   }, [])
 
   return (

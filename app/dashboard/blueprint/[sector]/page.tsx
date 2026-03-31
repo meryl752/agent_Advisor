@@ -70,6 +70,8 @@ export default function BlueprintSectorPage({ params }: { params: Promise<{ sect
           setData(json)
           // Remember last viewed sector
           localStorage.setItem('blueprint_last_sector', sectorSlug)
+          // Update page title
+          document.title = `AI Playbook — ${json.sector.label} | Raspquery`
         }
       })
       .catch(err => setError(err.message))

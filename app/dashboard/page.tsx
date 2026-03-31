@@ -2,10 +2,15 @@ import { auth, currentUser } from '@clerk/nextjs/server'
 import { getUserStacks, getTopAgents } from '@/lib/supabase/queries'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import DashboardMetrics from '@/app/components/dashboard/DashboardMetrics'
 import EconomyChart from '@/app/components/dashboard/EconomyChart'
 import StackList from '@/app/components/dashboard/StackList'
 import StackHealthRing from '@/app/components/dashboard/StackHealthRing'
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+}
 
 export default async function DashboardPage() {
   const { getToken } = await auth()
