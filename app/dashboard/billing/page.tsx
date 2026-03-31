@@ -4,9 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 const PLANS = {
-  free:   { label: 'Free',   color: 'text-zinc-400',  bg: 'bg-zinc-800',       requests: '1 / 30 jours',  price: '0€' },
-  pro:    { label: 'Pro',    color: 'text-[#CAFF32]', bg: 'bg-[#CAFF32]/10',   requests: '10 / heure',    price: '19€/mois' },
-  agency: { label: 'Agency', color: 'text-[#38bdf8]', bg: 'bg-[#38bdf8]/10',   requests: '50 / heure',    price: '79€/mois' },
+  free:   { label: 'Free',   color: 'text-zinc-400',  bg: 'bg-zinc-800',       requests: '1 recommandation par mois',    price: '0€' },
+  pro:    { label: 'Pro',    color: 'text-[#CAFF32]', bg: 'bg-[#CAFF32]/10',   requests: '10 recommandations par heure', price: '19€/mois' },
+  agency: { label: 'Agency', color: 'text-[#38bdf8]', bg: 'bg-[#38bdf8]/10',   requests: '50 recommandations par heure', price: '79€/mois' },
 }
 
 function ManageButton({ hasPaid }: { hasPaid: boolean }) {
@@ -135,7 +135,7 @@ export default function BillingPage() {
                   {key === 'free' ? '1' : key === 'pro' ? '10' : '50'}
                 </p>
                 <p className={`text-sm ${key === plan ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  {key === 'free' ? '30 jours' : '1 heure'}
+                  {key === 'free' ? 'par mois' : 'par heure'}
                 </p>
               </div>
             ))}
