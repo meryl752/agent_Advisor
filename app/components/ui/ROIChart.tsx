@@ -3,13 +3,21 @@
 import { motion } from 'framer-motion'
 
 interface ROIChartProps {
-  roiEstimate: number  // percentage, e.g. 340
-  totalCost: number    // monthly cost in euros
+  roiEstimate: number   // percentage, e.g. 340
+  totalCost: number     // monthly cost in euros
+  timeSavedPerWeek?: number // hours saved per week
 }
 
-export default function ROIChart({ roiEstimate, totalCost }: ROIChartProps) {
+export default function ROIChart({ roiEstimate, totalCost, timeSavedPerWeek = 0 }: ROIChartProps) {
   const months = [1, 2, 3, 4, 5, 6]
-  const savings = months.map(m => Math.round(m * totalCost * (roiEstimate / 100)))
+
+  // If tools are free, calculate savings based on time saved (valued at 25€/hour)
+  const hourlyRate = 25
+  const monthlySavingsBase = totalCost > 0
+    ? totalCost * (roiEstimate / 100)
+    : timeSavedPerWeek * hourlyRate * 4 // 4 weeks per month
+
+  const savings = months.map(m => Math.round(m * monthlySavingsBase))
 
   const maxSaving = savings[savings.length - 1] || 1
   const chartWidth = 320

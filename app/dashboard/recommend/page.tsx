@@ -193,7 +193,7 @@ function RightPanel({ answers, result, isResults, onComplete, onError }: {
                 ))}
               </div>
             </div>,
-            <ROIChart key="r" roiEstimate={result.roi_estimate} totalCost={result.total_cost} />,
+            <ROIChart key="r" roiEstimate={result.roi_estimate} totalCost={result.total_cost} timeSavedPerWeek={result.time_saved_per_week} />,
             <StackFlow key="f" agents={result.agents} stackName={result.stack_name} />,
             <div key="w" className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {result.quick_wins?.length > 0 && (
