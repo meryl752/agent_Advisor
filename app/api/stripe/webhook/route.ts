@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (event.type) {
+
+      // ── Nouveau paiement / upgrade ────────────────────────────────────────
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const clerkUserId = session.metadata?.userId
@@ -33,12 +35,10 @@ export async function POST(req: NextRequest) {
           break
         }
 
-        // Determine plan from price ID
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
         const priceId = lineItems.data[0]?.price?.id
         const plan = getPlanFromPriceId(priceId)
 
-        // Update user plan in Supabase
         const { error } = await (supabaseService as any)
           .from('users')
           .update({ plan, stripe_customer_id: session.customer })
@@ -52,11 +52,51 @@ export async function POST(req: NextRequest) {
         break
       }
 
+      // ── Renouvellement mensuel réussi → maintenir le plan ─────────────────
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice
+        const customerId = invoice.customer as string
+        const priceId = (invoice as any).lines?.data?.[0]?.price?.id
+        const plan = getPlanFromPriceId(priceId)
+
+        if (plan !== 'free') {
+          const { error } = await (supabaseService as any)
+            .from('users')
+            .update({ plan })
+            .eq('stripe_customer_id', customerId)
+
+          if (error) {
+            console.error('Failed to renew user plan:', error.message)
+          } else {
+            console.log(`✅ Plan ${plan} renewed for customer ${customerId.substring(0, 8)}***`)
+          }
+        }
+        break
+      }
+
+      // ── Paiement échoué → downgrade vers free ─────────────────────────────
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice
+        const customerId = invoice.customer as string
+
+        const { error } = await (supabaseService as any)
+          .from('users')
+          .update({ plan: 'free' })
+          .eq('stripe_customer_id', customerId)
+
+        if (error) {
+          console.error('Failed to downgrade after payment failure:', error.message)
+        } else {
+          console.log(`⚠️ Payment failed — customer ${customerId.substring(0, 8)}*** downgraded to free`)
+        }
+        break
+      }
+
+      // ── Abonnement annulé → downgrade vers free ───────────────────────────
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
-        // Downgrade to free when subscription cancelled
         const { error } = await (supabaseService as any)
           .from('users')
           .update({ plan: 'free' })
@@ -71,7 +111,6 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        // Ignore other events
         break
     }
   } catch (err) {
