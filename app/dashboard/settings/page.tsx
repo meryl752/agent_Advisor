@@ -4,6 +4,7 @@ import { getUserByClerkId, getUserStacks } from '@/lib/supabase/queries'
 import { RATE_LIMIT_CONFIGS } from '@/lib/rate-limit/config'
 import Link from 'next/link'
 import Image from 'next/image'
+import RedoOnboardingButton from '@/app/components/dashboard/RedoOnboardingButton'
 
 export default async function SettingsPage() {
   const { getToken } = await auth()
@@ -139,6 +140,7 @@ export default async function SettingsPage() {
                 className="border border-zinc-700 text-zinc-300 text-xs font-bold px-4 py-2 hover:border-zinc-500 transition-colors">
                 Gérer mon compte →
               </Link>
+              <RedoOnboardingButton />
             </div>
           </div>
         </section>

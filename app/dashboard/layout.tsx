@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { UserButton, useUser } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/app/components/ThemeToggle'
+import WelcomeToast from '@/app/components/ui/WelcomeToast'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: '◈' },
   { href: '/dashboard/recommend', label: 'Construis ton stack', icon: '✦', accent: true },
-  { href: '/dashboard/blueprint', label: 'AI Playbook', icon: '◉', badge: 'New' },
+  { href: '/dashboard/blueprint', label: 'StackMap', icon: '◉', badge: 'New' },
   { href: '/dashboard/stack', label: 'Mes stacks', icon: '⬡' },
   { href: '/dashboard/roi', label: 'ROI Tracker', icon: '↑' },
   { href: '/dashboard/alerts', label: 'Stack Alerts', icon: '◎' },
@@ -113,6 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex-1 overflow-y-auto relative z-10 scrollbar-hide px-8 py-8">
           {children}
         </div>
+        <WelcomeToast />
       </main>
     </div>
   )

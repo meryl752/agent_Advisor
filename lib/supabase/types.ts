@@ -58,6 +58,14 @@ export interface Database {
           plan: 'free' | 'pro' | 'agency'
           stacks_count: number
           created_at: string
+          role: string | null
+          sector: string | null
+          team_size: string | null
+          budget: string | null
+          main_goal: string | null
+          referral_source: string | null
+          onboarding_completed: boolean
+          onboarding_step: number | null
         }
         Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at' | 'stacks_count'>
         Update: Partial<Database['public']['Tables']['users']['Insert']>

@@ -7,6 +7,8 @@ import DashboardMetrics from '@/app/components/dashboard/DashboardMetrics'
 import EconomyChart from '@/app/components/dashboard/EconomyChart'
 import StackList from '@/app/components/dashboard/StackList'
 import StackHealthRing from '@/app/components/dashboard/StackHealthRing'
+import OnboardingBanner from '@/app/components/dashboard/OnboardingBanner'
+import { supabaseService } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -33,11 +35,26 @@ export default async function DashboardPage() {
     getTopAgents(3),
   ])
 
+  // Fetch onboarding status for banner
+  let onboardingCompleted = true
+  try {
+    const { data } = await (supabaseService as any)
+      .from('users')
+      .select('onboarding_completed')
+      .eq('clerk_id', user.id)
+      .single()
+    onboardingCompleted = data?.onboarding_completed ?? true
+  } catch {
+    // fail open
+  }
+
   const stackCount = stacks.length
   const stackItems = topAgents.map(a => ({ name: a.name, score: a.score }))
 
   return (
     <div className="p-8 w-full max-w-7xl mx-auto">
+
+      <OnboardingBanner show={!onboardingCompleted} />
 
       {/* Header */}
       <div className="mb-10 flex items-end justify-between">
