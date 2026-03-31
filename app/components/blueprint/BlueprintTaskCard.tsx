@@ -164,8 +164,7 @@ export default function BlueprintTaskCard({
   }
 
   return (
-    <motion.div
-      layout
+    <div
       className={cn(
         'border rounded-xl overflow-hidden transition-all duration-200 cursor-pointer',
         selected
@@ -259,6 +258,6 @@ export default function BlueprintTaskCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }
