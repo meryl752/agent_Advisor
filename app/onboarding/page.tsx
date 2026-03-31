@@ -247,8 +247,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-[#FAFAF7] flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-8 py-5 border-b border-zinc-200">
-        {/* Logo */}
+      <div className="flex items-center px-8 py-5 border-b border-zinc-200">
         <span className="font-syne font-extrabold text-lg tracking-[-0.02em] text-zinc-900 flex items-center">
           Ras
           <span className="relative flex items-center mx-[1px]">
@@ -256,11 +255,6 @@ export default function OnboardingPage() {
             <span className="text-zinc-900 bg-[#CAFF32] px-[3px] py-[1px] rounded-r-md leading-none -ml-[1px] text-[0.95em]">q</span>
           </span>
           uery
-        </span>
-
-        {/* Step counter */}
-        <span className="font-dm-mono text-[11px] text-zinc-400 uppercase tracking-widest">
-          {currentStep + 1} / {STEPS.length}
         </span>
       </div>
 
@@ -301,12 +295,11 @@ export default function OnboardingPage() {
                   const selected = currentValue === opt.label
                   return (
                     <button key={opt.label} onClick={() => handleSelect(opt.label)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
                         selected
                           ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm'
                           : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50'
                       }`}>
-                      {opt.icon && <span className="text-base leading-none">{opt.icon}</span>}
                       <span className="font-dm-sans">{opt.label}</span>
                     </button>
                   )
