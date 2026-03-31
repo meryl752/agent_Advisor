@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/app/components/ThemeToggle'
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: '◈' },
   { href: '/dashboard/recommend', label: 'Construis ton stack', icon: '✦', accent: true },
+  { href: '/dashboard/blueprint', label: 'Business Blueprint', icon: '◉', badge: 'New' },
   { href: '/dashboard/stack', label: 'Mes stacks', icon: '⬡' },
   { href: '/dashboard/roi', label: 'ROI Tracker', icon: '↑' },
   { href: '/dashboard/alerts', label: 'Stack Alerts', icon: '◎' },
@@ -47,7 +48,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
           {NAV.map((item) => {
-            const active = pathname === item.href
+            const active = item.href === '/dashboard'
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(item.href + '/')
             return (
               <Link key={item.href} href={item.href}
                 className={cn(
@@ -67,6 +70,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="text-xs font-semibold tracking-wide">{item.label}</span>
                 {item.accent && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#CAFF32] animate-pulse" />
+                )}
+                {(item as { badge?: string }).badge && (
+                  <span className="ml-auto font-dm-mono text-[8px] bg-[#CAFF32]/10 text-[#CAFF32] border border-[#CAFF32]/20 px-1.5 py-[1px] rounded-full">
+                    {(item as { badge?: string }).badge}
+                  </span>
                 )}
                 </Link>
             )
