@@ -242,7 +242,39 @@ function RightPanel({ answers, result, isResults, onComplete, onError }: {
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Context extraction from any message ─────────────────────────────────────
+
+function extractContext(text: string): {
+  sector: string | null
+  budget: string | null
+  tech: string | null
+} {
+  const lower = text.toLowerCase()
+
+  const sector =
+    lower.includes('ecommerce') || lower.includes('shopify') || lower.includes('boutique') || lower.includes('dropshipping') ? 'e-commerce'
+    : lower.includes('saas') || lower.includes('logiciel') || lower.includes('software') ? 'saas'
+    : lower.includes('agence') ? 'agence'
+    : lower.includes('consultant') || lower.includes('freelance') ? 'consultant'
+    : lower.includes('créateur') || lower.includes('youtube') || lower.includes('instagram') || lower.includes('tiktok') ? 'createur'
+    : lower.includes('b2b') || lower.includes('entreprise') || lower.includes('prospection') ? 'b2b'
+    : null
+
+  const budget =
+    lower.includes('gratuit') || lower.includes('0€') || lower.includes('sans budget') ? 'zero'
+    : lower.includes('200') ? 'medium'
+    : lower.includes('50') ? 'low'
+    : lower.includes('500') || lower.includes('1000') || lower.includes('illimité') ? 'high'
+    : null
+
+  const tech =
+    lower.includes('débutant') || lower.includes('novice') || lower.includes('pas technique') || lower.includes('non technique') ? 'beginner'
+    : lower.includes('avancé') || lower.includes('développeur') || lower.includes('dev ') || lower.includes('expert') ? 'advanced'
+    : lower.includes('intermédiaire') || lower.includes('no-code') ? 'intermediate'
+    : null
+
+  return { sector, budget, tech }
+}
 
 export default function RecommendPage() {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -275,39 +307,52 @@ export default function RecommendPage() {
     if (!text.trim()) return
     setPhase('chat')
     setMessages([{ role: 'user', text }])
-    setAnswers({ objective: text })
     setInput('')
-    addAIMessage("Parfait ! Pour affiner mes recommandations, dis-moi : dans quel secteur travailles-tu, quel est ton budget mensuel pour les outils IA, et quel est ton niveau technique ? (Tu peux tout mettre dans un seul message)", 800)
+
+    // Try to extract context from the first message itself
+    const ctx = extractContext(text)
+    const newAnswers: Record<string, string> = {
+      objective: text,
+      sector: ctx.sector ?? 'général',
+      budget: ctx.budget ?? 'medium',
+      tech_level: ctx.tech ?? 'intermediate',
+    }
+    setAnswers(newAnswers)
+
+    // If we got enough context, go straight to reasoning
+    if (ctx.sector && ctx.budget) {
+      setIsTyping(true)
+      setTimeout(() => {
+        setIsTyping(false)
+        setMessages(prev => [...prev, { role: 'ai', text: "Parfait, j'ai tout ce qu'il me faut. Je construis ton stack..." }])
+        setTimeout(() => setPhase('reasoning'), 400)
+      }, 600)
+    } else {
+      // Ask only for what's missing
+      const missing = []
+      if (!ctx.sector) missing.push('ton secteur d\'activité')
+      if (!ctx.budget) missing.push('ton budget mensuel pour les outils IA')
+      addAIMessage(`Pour affiner les recommandations, dis-moi ${missing.join(' et ')}.`, 800)
+    }
   }, [addAIMessage])
 
-  // Second message: extract context and launch
+  // Second message: extract remaining context and launch
   const handleContextMessage = useCallback((text: string) => {
     setMessages(prev => [...prev, { role: 'user', text }])
     setInput('')
     setIsTyping(true)
     setTimeout(() => {
       setIsTyping(false)
-      setMessages(prev => [...prev, { role: 'ai', text: "Super, j'ai tout ce qu'il me faut. Je construis ton stack maintenant..." }])
-      // Extract context from free text via simple heuristics
-      const lower = text.toLowerCase()
-      const sector = lower.includes('ecommerce') || lower.includes('shopify') || lower.includes('boutique') ? 'e-commerce'
-        : lower.includes('saas') || lower.includes('logiciel') ? 'saas'
-        : lower.includes('agence') ? 'agence'
-        : lower.includes('consultant') ? 'consultant'
-        : lower.includes('créateur') || lower.includes('youtube') || lower.includes('instagram') ? 'createur'
-        : lower.includes('b2b') || lower.includes('entreprise') ? 'b2b'
-        : 'général'
-      const budget = lower.includes('gratuit') || lower.includes('0€') || lower.includes('rien') ? 'zero'
-        : lower.includes('200') || lower.includes('200€') ? 'medium'
-        : lower.includes('50') || lower.includes('50€') ? 'low'
-        : lower.includes('500') || lower.includes('1000') ? 'high'
-        : 'medium'
-      const tech = lower.includes('débutant') || lower.includes('novice') || lower.includes('pas technique') ? 'beginner'
-        : lower.includes('avancé') || lower.includes('développeur') || lower.includes('expert') ? 'advanced'
-        : 'intermediate'
-      setAnswers(prev => ({ ...prev, sector, budget, tech_level: tech }))
+      const ctx = extractContext(text)
+      setAnswers(prev => ({
+        ...prev,
+        sector: ctx.sector ?? prev.sector ?? 'général',
+        budget: ctx.budget ?? prev.budget ?? 'medium',
+        tech_level: ctx.tech ?? prev.tech_level ?? 'intermediate',
+      }))
+      setMessages(prev => [...prev, { role: 'ai', text: "Super, je construis ton stack maintenant..." }])
       setTimeout(() => setPhase('reasoning'), 400)
-    }, 1000)
+    }, 700)
   }, [])
 
   const handleSend = useCallback(() => {
@@ -337,10 +382,10 @@ export default function RecommendPage() {
           className="relative z-10 w-full max-w-2xl">
           <div className="text-center mb-10">
             <h1 className="font-syne font-black text-4xl md:text-5xl text-white tracking-tight mb-4 leading-tight">
-              Construis ton stack de<br /><span className="text-[#CAFF32]">super-pouvoirs</span> IA
+              Quel est ton objectif ?
             </h1>
             <p className="text-zinc-500 text-base font-dm-sans max-w-md mx-auto">
-              Décris ton objectif — notre IA assemble le combo optimal en 30 secondes.
+              Décris ce que tu veux accomplir — on s'occupe du reste.
             </p>
           </div>
           <div className="relative bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden
