@@ -19,5 +19,4 @@ module.exports = withSentryConfig(nextConfig, {
   silent: !process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: true,
   hideSourceMaps: true,
-  automaticVercelMonitors: false,
 })
