@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
+import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 
 const TIERS = [
@@ -12,7 +13,7 @@ const TIERS = [
         desc: 'Pour découvrir Raspquery.',
         features: ['1 stack/mois', '50 agents indexés', 'Stack Score basique', 'Dashboard lecture'],
         cta: 'Commencer gratuitement',
-        href: '/sign-up',
+        priceId: null,
         featured: false,
     },
     {
@@ -21,7 +22,7 @@ const TIERS = [
         desc: 'Pour les entrepreneurs sérieux.',
         features: ['Stacks illimités', '200+ agents indexés', 'ROI Tracker temps réel', 'Stack Alerts', 'Workflow Visualizer', 'Stack Score complet'],
         cta: 'Essai 14 jours gratuit',
-        href: '/sign-up',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
         featured: true,
     },
     {
@@ -30,10 +31,66 @@ const TIERS = [
         desc: 'Pour les agences et équipes.',
         features: ['Tout le plan Pro', 'Multi-clients', 'Exports PDF blanc', 'Stack vs Stack illimité', 'API access', 'Support prioritaire'],
         cta: 'Contacter l\'équipe',
-        href: '/sign-up',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_AGENCY_PRICE_ID,
         featured: false,
     },
 ]
+
+function CheckoutButton({ priceId, cta, featured }: { priceId: string | null | undefined; cta: string; featured: boolean }) {
+    const { isSignedIn } = useAuth()
+    const [loading, setLoading] = useState(false)
+
+    const handleClick = async () => {
+        if (!priceId) return // Free plan — just redirect to sign-up
+
+        if (!isSignedIn) {
+            window.location.href = '/sign-up'
+            return
+        }
+
+        setLoading(true)
+        try {
+            const res = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ priceId }),
+            })
+            const data = await res.json()
+            if (data.url) window.location.href = data.url
+        } catch (err) {
+            console.error('Checkout error:', err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (!priceId) {
+        return (
+            <a href="/sign-up"
+                className={cn(
+                    'block w-full text-center font-bold py-3 rounded-xl transition-all duration-200 text-sm',
+                    featured
+                        ? 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] hover:shadow-lg hover:scale-105'
+                        : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 border border-zinc-200'
+                )}>
+                {cta}
+            </a>
+        )
+    }
+
+    return (
+        <button onClick={handleClick} disabled={loading}
+            className={cn(
+                'block w-full text-center font-bold py-3 rounded-xl transition-all duration-200 text-sm',
+                featured
+                    ? 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] hover:shadow-lg hover:scale-105'
+                    : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 border border-zinc-200',
+                loading && 'opacity-60 cursor-not-allowed'
+            )}>
+            {loading ? 'Redirection...' : cta}
+        </button>
+    )
+}
 
 export default function Pricing() {
     const ref = useRef(null)
@@ -131,15 +188,7 @@ export default function Pricing() {
                                 ))}
                             </div>
 
-                            <Link href={tier.href}
-                                className={cn(
-                                    'block w-full text-center font-bold py-3 rounded-xl transition-all duration-200 text-sm',
-                                    tier.featured
-                                        ? 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] hover:shadow-lg hover:scale-105'
-                                        : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 border border-zinc-200'
-                                )}>
-                                {tier.cta}
-                            </Link>
+                            <CheckoutButton priceId={tier.priceId} cta={tier.cta} featured={tier.featured} />
                         </motion.div>
                     ))}
                 </div>
