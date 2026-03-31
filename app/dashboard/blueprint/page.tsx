@@ -61,17 +61,17 @@ export default function BlueprintPage() {
       <div className="mb-10">
         <div className="flex items-center gap-2 mb-3">
           <span className="font-dm-mono text-[10px] text-[#CAFF32] uppercase tracking-[0.2em]">
-            ◉ Business Blueprint
+            ◉ AI Playbook
           </span>
           <span className="font-dm-mono text-[9px] bg-[#CAFF32]/10 text-[#CAFF32] border border-[#CAFF32]/20 px-2 py-[2px] rounded-full">
             Nouveau
           </span>
         </div>
         <h1 className="font-syne font-black text-4xl text-white tracking-tighter mb-3">
-          Quel est ton secteur ?
+          Your AI Playbook
         </h1>
         <p className="font-dm-sans text-sm text-zinc-500 max-w-xl leading-relaxed">
-          Sélectionne ton type de business pour découvrir la carte complète des tâches automatisables avec l'IA — et les meilleurs outils pour chacune.
+          Pick your business type and get the complete map of daily tasks you can automate with AI — with the best tool for each one.
         </p>
       </div>
 

@@ -9,7 +9,7 @@ import { ThemeToggle } from '@/app/components/ThemeToggle'
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: '◈' },
   { href: '/dashboard/recommend', label: 'Construis ton stack', icon: '✦', accent: true },
-  { href: '/dashboard/blueprint', label: 'Business Blueprint', icon: '◉', badge: 'New' },
+  { href: '/dashboard/blueprint', label: 'AI Playbook', icon: '◉', badge: 'New' },
   { href: '/dashboard/stack', label: 'Mes stacks', icon: '⬡' },
   { href: '/dashboard/roi', label: 'ROI Tracker', icon: '↑' },
   { href: '/dashboard/alerts', label: 'Stack Alerts', icon: '◎' },

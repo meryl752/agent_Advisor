@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { getLogoUrl } from '@/lib/utils/logo'
 import type { Agent } from '@/lib/supabase/types'
 import type { BlueprintTask } from '@/lib/blueprint/sectors'
 
@@ -19,6 +21,36 @@ const CATEGORY_COLORS: Record<string, string> = {
   social: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',
 }
 
+// ─── Agent Logo ───────────────────────────────────────────────────────────────
+
+function AgentLogo({ domain, name }: { domain?: string; name: string }) {
+  const [error, setError] = useState(false)
+
+  if (!domain || error) {
+    return (
+      <div className="w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
+        <span className="text-zinc-400 text-[10px] font-black">{name[0]}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <Image
+        src={getLogoUrl(domain)}
+        alt={name}
+        width={20}
+        height={20}
+        className="object-contain"
+        onError={() => setError(true)}
+        unoptimized
+      />
+    </div>
+  )
+}
+
+// ─── Agent Chip ───────────────────────────────────────────────────────────────
+
 interface AgentChipProps {
   agent: Agent
   inStack: boolean
@@ -30,6 +62,7 @@ interface AgentChipProps {
 function AgentChip({ agent, inStack, onAdd, stackFull, plan }: AgentChipProps) {
   const [added, setAdded] = useState(inStack)
   const [showUpgrade, setShowUpgrade] = useState(false)
+  const domain = (agent as Agent & { website_domain?: string }).website_domain
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -44,65 +77,57 @@ function AgentChip({ agent, inStack, onAdd, stackFull, plan }: AgentChipProps) {
   }
 
   return (
-    <div className="relative flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 group/chip hover:border-zinc-700 transition-all">
+    <div className="relative flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 hover:border-zinc-700 transition-all group/chip">
+      {/* Logo */}
+      <AgentLogo domain={domain} name={agent.name} />
+
+      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-syne font-bold text-xs text-white truncate">{agent.name}</span>
           <span className={cn(
-            'font-dm-mono text-[9px] px-1.5 py-[1px] rounded-full border',
+            'font-dm-mono text-[8px] px-1.5 py-[1px] rounded-full border',
             CATEGORY_COLORS[agent.category] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'
           )}>
             {agent.category}
           </span>
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="font-dm-mono text-[10px] text-[#CAFF32]">
+          <span className={`font-dm-mono text-[10px] font-bold ${agent.price_from === 0 ? 'text-[#CAFF32]' : 'text-zinc-400'}`}>
             {agent.price_from === 0 ? 'Gratuit' : `${agent.price_from}€/m`}
           </span>
-          <span className="font-dm-mono text-[10px] text-zinc-600">
-            {agent.score}/100
+          <span className="font-dm-mono text-[9px] text-zinc-600">
+            ★ {agent.score}/100
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      {/* Actions */}
+      <div className="flex items-center gap-2 flex-shrink-0">
         {agent.url && (
-          <a
-            href={agent.url}
-            target="_blank"
-            rel="noopener noreferrer"
+          <a href={agent.url} target="_blank" rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="text-zinc-600 hover:text-zinc-300 transition-colors text-xs"
-            title={`Visiter ${agent.name}`}
-          >
+            className="text-zinc-600 hover:text-zinc-300 transition-colors text-xs" title={`Visiter ${agent.name}`}>
             ↗
           </a>
         )}
-        <button
-          onClick={handleAdd}
+        <button onClick={handleAdd}
           className={cn(
-            'font-dm-mono text-[9px] px-2 py-1 rounded-md transition-all',
+            'font-dm-mono text-[9px] px-2.5 py-1 rounded-lg transition-all',
             (added || inStack)
               ? 'bg-[#CAFF32]/10 text-[#CAFF32] border border-[#CAFF32]/20 cursor-default'
               : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 hover:text-white'
-          )}
-        >
-          {(added || inStack) ? '✓ Dans le stack' : '+ Ajouter'}
+          )}>
+          {(added || inStack) ? '✓ Added' : '+ Add'}
         </button>
       </div>
 
       <AnimatePresence>
         {showUpgrade && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            className="absolute bottom-full left-0 mb-2 z-20 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap"
-          >
-            <p className="font-dm-mono text-[10px] text-zinc-300 mb-1">Stack limité à 3 agents (plan gratuit)</p>
-            <a href="/dashboard/billing" className="font-dm-mono text-[10px] text-[#CAFF32] hover:underline">
-              Passer en Pro →
-            </a>
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+            className="absolute bottom-full left-0 mb-2 z-20 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
+            <p className="font-dm-mono text-[10px] text-zinc-300 mb-1">Free plan limited to 3 agents</p>
+            <a href="/dashboard/billing" className="font-dm-mono text-[10px] text-[#CAFF32] hover:underline">Upgrade to Pro →</a>
           </motion.div>
         )}
       </AnimatePresence>
