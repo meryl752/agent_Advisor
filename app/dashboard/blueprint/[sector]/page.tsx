@@ -41,8 +41,16 @@ export default function BlueprintSectorPage({ params }: { params: Promise<{ sect
   const [error, setError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [stackAgentIds, setStackAgentIds] = useState<string[]>([])
-  const [userPlan] = useState<'free' | 'pro' | 'agency'>('free')
+  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'agency'>('free')
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+
+  // Fetch real user plan
+  useEffect(() => {
+    fetch('/api/user/plan')
+      .then(r => r.json())
+      .then(d => { if (d.plan) setUserPlan(d.plan) })
+      .catch(() => {}) // keep 'free' as safe default
+  }, [])
 
   // Fetch blueprint data
   useEffect(() => {
