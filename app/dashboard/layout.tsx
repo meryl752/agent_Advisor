@@ -14,6 +14,7 @@ const NAV = [
   { href: '/dashboard/alerts', label: 'Stack Alerts', icon: '◎' },
   { href: '/dashboard/score', label: 'Stack Score', icon: '◐' },
   { href: '/dashboard/settings', label: 'Paramètres', icon: '⚙' },
+  { href: '/dashboard/billing', label: 'Facturation', icon: '◈' },
   { href: '/dashboard/account', label: 'Mon compte', icon: '○' },
 ]
 
