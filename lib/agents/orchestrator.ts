@@ -20,12 +20,12 @@ export async function runOrchestrator(
 ): Promise<OrchestratorResult | null> {
   const startTime = Date.now()
   
-  // Global timeout for entire orchestration (2 minutes max)
+  // Global timeout — 60s max (2 LLM calls × 25s + DB overhead)
   const timeoutPromise = new Promise<null>((resolve) => {
     setTimeout(() => {
-      console.error('❌ [Orchestrator] Global timeout after 120s')
+      console.error('❌ [Orchestrator] Timeout after 60s')
       resolve(null)
-    }, 120000)
+    }, 60000)
   })
 
   const orchestrationPromise = (async () => {
@@ -33,14 +33,14 @@ export async function runOrchestrator(
       // ── Agent 1 : Query Analyzer ──────────────────────────────────────────────
       const analyzedQuery = await analyzeQuery(ctx)
 
-      // ── Fetch Reference Stacks — ancrage "vérité terrain" ─────────────────────
-      const referenceStacks = await getReferenceStack(
-        analyzedQuery.required_categories[0] ?? '',
-        analyzedQuery.sector_context ?? ''
-      )
-
-      // ── Agent 2 : Matcher (synchrone — fetch agents) ──────────────────────────
-      const relevantAgents = await getAgentsByCategories(analyzedQuery.required_categories)
+      // ── Fetch DB data in parallel ─────────────────────────────────────────────
+      const [referenceStacks, relevantAgents] = await Promise.all([
+        getReferenceStack(
+          analyzedQuery.required_categories[0] ?? '',
+          analyzedQuery.sector_context ?? ''
+        ),
+        getAgentsByCategories(analyzedQuery.required_categories),
+      ])
       const candidates = matchAgents(relevantAgents, analyzedQuery, ctx)
 
       if (candidates.length === 0) {

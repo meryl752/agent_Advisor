@@ -146,17 +146,70 @@ JSON strict uniquement. Zéro markdown. Zéro backtick. Zéro texte avant ou apr
 </output_format>`
 
   try {
-    const text = await callLLM(prompt, 1500)
-    
-    // Extraction robuste du JSON au cas où le LLM ajoute du texte ou des mardown backticks
+    const text = await callLLM(prompt, 3000)
+
+    // Extract JSON — strip any markdown fences
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("Aucun objet JSON trouvé dans la réponse du LLM")
+    if (!jsonMatch) throw new Error('No JSON found in LLM response')
+
+    let raw = jsonMatch[0]
+
+    // Attempt 1: direct parse
+    try {
+      return JSON.parse(raw) as FinalStack
+    } catch {
+      // Attempt 2: truncated JSON repair
+      // Find the last complete agent object by locating the last valid closing brace
+      // before the agents array closes
+      raw = repairTruncatedJSON(raw)
+      return JSON.parse(raw) as FinalStack
     }
-    
-    return JSON.parse(jsonMatch[0]) as FinalStack
   } catch (err) {
     console.error('StackBuilder error:', err)
     return null
   }
+}
+
+/**
+ * Attempts to repair a JSON string that was truncated mid-way.
+ * Closes any open arrays/objects so JSON.parse can succeed.
+ */
+function repairTruncatedJSON(raw: string): string {
+  // Remove trailing incomplete string/value after last complete comma-separated item
+  // Strategy: track open brackets and close them
+  const stack: string[] = []
+  let inString = false
+  let escape = false
+  let lastSafePos = 0
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+
+    if (ch === '{' || ch === '[') {
+      stack.push(ch)
+    } else if (ch === '}' || ch === ']') {
+      stack.pop()
+      if (stack.length === 0) lastSafePos = i + 1
+    } else if ((ch === ',' || ch === ':') && stack.length <= 2) {
+      lastSafePos = i
+    }
+  }
+
+  if (stack.length === 0) return raw // already valid
+
+  // Truncate to last safe position and close all open brackets
+  let repaired = raw.slice(0, lastSafePos).trimEnd()
+  // Remove trailing comma if any
+  if (repaired.endsWith(',')) repaired = repaired.slice(0, -1)
+
+  // Close in reverse order
+  for (let i = stack.length - 1; i >= 0; i--) {
+    repaired += stack[i] === '{' ? '}' : ']'
+  }
+
+  return repaired
 }

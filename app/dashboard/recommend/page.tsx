@@ -125,10 +125,10 @@ function ResultsPanel({ result, objective, streamedCount }: { result: FinalStack
           />
         </motion.div>
 
-        {/* Financial summary */}
+        {/* Financial summary — below the roadmap with breathing room */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
-          className="rounded-xl border border-zinc-800 p-5">
+          transition={{ duration: 0.45, delay: 0.35, ease: [0.4, 0, 0.2, 1] }}
+          className="rounded-xl border border-zinc-800 p-5 mt-4">
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4">Résumé financier</p>
           {[
             { label: 'Coût mensuel', value: `${result.total_cost}€`, color: 'text-white' },
