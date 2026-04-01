@@ -62,8 +62,20 @@ export default clerkMiddleware(async (auth, req) => {
           )
 
           if (res.ok) {
-            const rows = await res.json() as Array<{ onboarding_completed: boolean }>
-            const completed = rows[0]?.onboarding_completed ?? true // fail open
+            const rows = await res.json() as Array<{ onboarding_completed: boolean | null }>
+            const row = rows[0]
+
+            // If column doesn't exist or user not found → fail open (allow dashboard)
+            if (!row) {
+              // User not in DB yet, let them through
+              if (isOnboardingRoute(req)) {
+                return NextResponse.redirect(new URL('/dashboard', req.url))
+              }
+              return NextResponse.next()
+            }
+
+            // If column is null (not yet migrated) → treat as completed, fail open
+            const completed = row.onboarding_completed ?? true
 
             if (!completed && !isOnboardingRoute(req)) {
               return NextResponse.redirect(new URL('/onboarding', req.url))
