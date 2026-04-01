@@ -138,7 +138,8 @@ JSON strict uniquement. Zéro markdown. Zéro backtick. Zéro texte avant ou apr
       "time_to_value": "<délai pour voir les premiers résultats>",
       "role": "Son rôle SPÉCIFIQUE dans CE projet — pas en général",
       "reason": "Pourquoi CET outil plutôt qu'un autre pour CE profil précis (niveau technique + budget + secteur + urgence)",
-      "concrete_result": "Exemple chiffré et précis: 'Tes [élément du projet] passent de X à Y, tu récupères Z heures/semaine'"
+      "concrete_result": "Exemple chiffré et précis: 'Tes [élément du projet] passent de X à Y, tu récupères Z heures/semaine'",
+      "prompt_to_use": "Le prompt exact à copier-coller dans cet outil pour accomplir sa mission dans CE projet. Commence directement par l'instruction, en français, adapté au contexte précis de l'utilisateur. 3-6 phrases max."
     }
   ]
 }

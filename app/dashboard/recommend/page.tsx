@@ -4,10 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import type { FinalStack } from '@/lib/agents/types'
-import AgentCard from '@/app/components/ui/AgentCard'
 
-const StackFlow = dynamic(() => import('@/app/components/ui/StackFlow'), { ssr: false })
-const StackSummary = dynamic(() => import('@/app/components/ui/StackSummary'), { ssr: false })
+const StackRoadmap = dynamic(() => import('@/app/components/ui/StackRoadmap'), { ssr: false })
 const ROIChart = dynamic(() => import('@/app/components/ui/ROIChart'), { ssr: false })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -110,62 +108,59 @@ function ReasoningMessage({ visibleStep }: { visibleStep: number }) {
 
 // ─── Results Panel ────────────────────────────────────────────────────────────
 
-function ResultsPanel({ result }: { result: FinalStack }) {
-  const sections = [
-    <StackSummary key="s" stackName={result.stack_name} justification={result.justification}
-      total_cost={result.total_cost} roi_estimate={result.roi_estimate}
-      time_saved_per_week={result.time_saved_per_week} agentCount={result.agents.length} />,
-    <div key="a">
-      <p className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.15em] mb-3">Agents recommandés</p>
-      <div className="flex flex-col gap-1">
-        {result.agents.map((a, i) => (
-          <AgentCard key={i} rank={a.rank} name={a.name} category={a.category}
-            price_from={a.price_from} role={a.role} reason={a.reason}
-            concrete_result={(a as any).concrete_result} website_domain={a.website_domain}
-            setup_difficulty={a.setup_difficulty} time_to_value={a.time_to_value} score={a.score} />
-        ))}
-      </div>
-    </div>,
-    <ROIChart key="r" roiEstimate={result.roi_estimate} totalCost={result.total_cost} timeSavedPerWeek={result.time_saved_per_week} />,
-    <StackFlow key="f" agents={result.agents} stackName={result.stack_name} />,
-    <div key="w" className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {result.quick_wins?.length > 0 && (
-        <div className="bg-[#CAFF32]/5 border border-[#CAFF32]/15 rounded-xl p-5">
-          <p className="font-dm-mono text-[9px] text-[#CAFF32] uppercase tracking-[0.15em] mb-3">✦ Quick wins</p>
-          {result.quick_wins.map((w, i) => (
-            <div key={i} className="flex gap-2 mb-2">
-              <span className="text-[#CAFF32] text-xs font-dm-mono flex-shrink-0">{i+1}.</span>
-              <p className="text-xs text-zinc-300 leading-relaxed">{w}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
-        <p className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.15em] mb-4">Résumé financier</p>
-        {[
-          { label: 'Coût mensuel', value: `${result.total_cost}€`, color: 'text-white' },
-          { label: 'ROI estimé', value: `+${result.roi_estimate}%`, color: 'text-[#CAFF32]' },
-          { label: 'Temps économisé', value: `${result.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
-        ].map((m, i) => (
-          <div key={i} className="flex justify-between py-2 border-b border-zinc-800 last:border-0">
-            <span className="text-xs text-zinc-500 font-dm-mono">{m.label}</span>
-            <span className={`font-syne font-black text-sm ${m.color}`}>{m.value}</span>
-          </div>
-        ))}
-      </div>
-    </div>,
-  ]
-
+function ResultsPanel({ result, objective }: { result: FinalStack; objective: string }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
       className="h-full overflow-y-auto px-6 py-6 scrollbar-hide">
-      <div className="flex flex-col gap-6">
-        {sections.map((s, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: i * 0.12, ease: [0.4, 0, 0.2, 1] }}>
-            {s}
+      <div className="flex flex-col gap-8">
+
+        {/* Roadmap — main feature */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}>
+          <StackRoadmap agents={result.agents} stackName={result.stack_name} objective={objective} />
+        </motion.div>
+
+        {/* ROI Chart */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.15, ease: [0.4, 0, 0.2, 1] }}>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Projection ROI</p>
+          <div className="h-32">
+            <ROIChart roiEstimate={result.roi_estimate} totalCost={result.total_cost} timeSavedPerWeek={result.time_saved_per_week} />
+          </div>
+        </motion.div>
+
+        {/* Quick wins */}
+        {result.quick_wins?.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="rounded-xl border border-zinc-800 p-5">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Quick wins</p>
+            {result.quick_wins.map((w, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <span className="text-[#CAFF32] text-xs flex-shrink-0">{i + 1}.</span>
+                <p className="text-sm text-zinc-300 leading-relaxed">{w}</p>
+              </div>
+            ))}
           </motion.div>
-        ))}
+        )}
+
+        {/* Financial summary */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="rounded-xl border border-zinc-800 p-5">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4">Résumé financier</p>
+          {[
+            { label: 'Coût mensuel', value: `${result.total_cost}€`, color: 'text-white' },
+            { label: 'ROI estimé', value: `+${result.roi_estimate}%`, color: 'text-[#CAFF32]' },
+            { label: 'Temps économisé', value: `${result.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
+          ].map((m, i) => (
+            <div key={i} className="flex justify-between py-2 border-b border-zinc-800 last:border-0">
+              <span className="text-xs text-zinc-500">{m.label}</span>
+              <span className={`font-semibold text-sm ${m.color}`}>{m.value}</span>
+            </div>
+          ))}
+        </motion.div>
+
       </div>
     </motion.div>
   )
@@ -620,7 +615,7 @@ export default function RecommendPage() {
             exit={{ opacity: 0, x: 80 }}
             transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1], delay: 0.1 }}
             className="flex-1 h-full overflow-hidden bg-zinc-950/80 border-l border-zinc-800/30">
-            <ResultsPanel result={result} />
+            <ResultsPanel result={result} objective={answers.objective ?? ''} />
           </motion.div>
         )}
       </AnimatePresence>

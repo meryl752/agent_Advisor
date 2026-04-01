@@ -54,6 +54,7 @@ export interface StackAgent {
     role: string
     reason: string
     concrete_result: string
+    prompt_to_use: string
     website_domain?: string
     setup_difficulty?: string
     time_to_value?: string
