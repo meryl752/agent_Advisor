@@ -48,8 +48,7 @@ export async function runOrchestrator(
         return null
       }
 
-      // ── Agent 3 : Stack Builder ───────────────────────────────────────────────
-      const stack = await buildStack(ctx, analyzedQuery, candidates, referenceStacks)
+    const stack = await buildStack(ctx, analyzedQuery, candidates, referenceStacks)
 
       if (!stack) {
         console.error('❌ [Agent 3] Stack build failed')

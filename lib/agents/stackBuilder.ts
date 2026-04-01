@@ -146,7 +146,7 @@ JSON strict uniquement. Zéro markdown. Zéro backtick. Zéro texte avant ou apr
 </output_format>`
 
   try {
-    const text = await callLLM(prompt, 2048)
+    const text = await callLLM(prompt, 1500)
     
     // Extraction robuste du JSON au cas où le LLM ajoute du texte ou des mardown backticks
     const jsonMatch = text.match(/\{[\s\S]*\}/)

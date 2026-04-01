@@ -108,45 +108,26 @@ function ReasoningMessage({ visibleStep }: { visibleStep: number }) {
 
 // ─── Results Panel ────────────────────────────────────────────────────────────
 
-function ResultsPanel({ result, objective }: { result: FinalStack; objective: string }) {
+function ResultsPanel({ result, objective, streamedCount }: { result: FinalStack; objective: string; streamedCount?: number }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
       className="h-full overflow-y-auto px-6 py-6 scrollbar-hide">
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
 
-        {/* Roadmap — main feature */}
+        {/* Roadmap — full focus */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}>
-          <StackRoadmap agents={result.agents} stackName={result.stack_name} objective={objective} />
+          <StackRoadmap
+            agents={result.agents}
+            stackName={result.stack_name}
+            objective={objective}
+            streamedCount={streamedCount}
+          />
         </motion.div>
-
-        {/* ROI Chart */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.15, ease: [0.4, 0, 0.2, 1] }}>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Projection ROI</p>
-          <div className="h-32">
-            <ROIChart roiEstimate={result.roi_estimate} totalCost={result.total_cost} timeSavedPerWeek={result.time_saved_per_week} />
-          </div>
-        </motion.div>
-
-        {/* Quick wins */}
-        {result.quick_wins?.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            className="rounded-xl border border-zinc-800 p-5">
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Quick wins</p>
-            {result.quick_wins.map((w, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <span className="text-[#CAFF32] text-xs flex-shrink-0">{i + 1}.</span>
-                <p className="text-sm text-zinc-300 leading-relaxed">{w}</p>
-              </div>
-            ))}
-          </motion.div>
-        )}
 
         {/* Financial summary */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          transition={{ duration: 0.45, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
           className="rounded-xl border border-zinc-800 p-5">
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4">Résumé financier</p>
           {[
@@ -218,6 +199,7 @@ export default function RecommendPage() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [reasoningStep, setReasoningStep] = useState(0)
+  const [streamedCount, setStreamedCount] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const resultRef = useRef<FinalStack | null>(null)
@@ -275,9 +257,14 @@ export default function RecommendPage() {
       apiDone.current = true
       if (allShown.current) {
         setTimeout(() => {
-          setResult(resultRef.current)
-          setMessages(prev => [...prev, { role: 'ai', text: `Voilà ton stack **${data.result.stack_name}** — ${data.result.agents.length} outils sélectionnés pour toi.` }])
-          setTimeout(() => setPhase('results'), 800)
+          const stack = data.result
+          setResult(stack)
+          setPhase('results')
+          setStreamedCount(0)
+          stack.agents.forEach((_: any, idx: number) => {
+            setTimeout(() => setStreamedCount(idx + 1), idx * 220)
+          })
+          setMessages(prev => [...prev, { role: 'ai', text: `Voilà ton stack **${stack.stack_name}** — ${stack.agents.length} outils sélectionnés pour toi.` }])
         }, 500)
       }
     }).catch(() => {
@@ -293,9 +280,14 @@ export default function RecommendPage() {
           allShown.current = true
           if (apiDone.current && resultRef.current) {
             setTimeout(() => {
-              setResult(resultRef.current)
-              setMessages(prev => [...prev, { role: 'ai', text: `Voilà ton stack — ${resultRef.current!.agents.length} outils sélectionnés pour toi.` }])
-              setTimeout(() => setPhase('results'), 800)
+              const stack = resultRef.current!
+              setResult(stack)
+              setPhase('results')
+              setStreamedCount(0)
+              stack.agents.forEach((_, idx) => {
+                setTimeout(() => setStreamedCount(idx + 1), idx * 220)
+              })
+              setMessages(prev => [...prev, { role: 'ai', text: `Voilà ton stack — ${stack.agents.length} outils sélectionnés pour toi.` }])
             }, 500)
           }
         }
@@ -401,6 +393,7 @@ export default function RecommendPage() {
     setPhase('idle'); setMessages([]); setAnswers({})
     setResult(null); setError(null); setInput(''); setIsTyping(false)
     setReasoningStep(0); apiDone.current = false; allShown.current = false
+    setStreamedCount(0)
   }
 
   // ── IDLE ──────────────────────────────────────────────────────────────────
@@ -615,7 +608,7 @@ export default function RecommendPage() {
             exit={{ opacity: 0, x: 80 }}
             transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1], delay: 0.1 }}
             className="flex-1 h-full overflow-hidden bg-zinc-950/80 border-l border-zinc-800/30">
-            <ResultsPanel result={result} objective={answers.objective ?? ''} />
+            <ResultsPanel result={result} objective={answers.objective ?? ''} streamedCount={streamedCount} />
           </motion.div>
         )}
       </AnimatePresence>

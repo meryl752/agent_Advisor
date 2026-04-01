@@ -1,8 +1,8 @@
 import { getGroqClient, GROQ_MODEL } from '@/lib/groq/client'
 import { getGeminiClient } from '@/lib/gemini/client'
 
-const LLM_TIMEOUT_MS = 30000 // 30 seconds max
-const MAX_RETRIES = 2
+const LLM_TIMEOUT_MS = 25000 // 25s per attempt
+const MAX_RETRIES = 1 // no retry — fail fast, let orchestrator handle it
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([
