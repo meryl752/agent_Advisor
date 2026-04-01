@@ -304,12 +304,43 @@ export default function RecommendPage() {
     }, 700)
   }, [answers, launchReasoning])
 
-  // After results: allow follow-up questions
+  // After results: continue chatting with AI about the stack
   const handleFollowUp = useCallback((text: string) => {
     setMessages(prev => [...prev, { role: 'user', text }])
     setInput('')
-    addAIMessage("Pour générer un nouveau stack avec ces paramètres, clique sur ↺ Nouveau. Je ne peux pas modifier un stack déjà généré.", 800)
-  }, [addAIMessage])
+    setIsTyping(true)
+
+    // Use stack-chat API if we have a result, otherwise answer generically
+    if (result) {
+      fetch('/api/stack-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          stackContext: {
+            stack_name: result.stack_name,
+            objective: answers.objective ?? '',
+            total_cost: result.total_cost,
+            agents: result.agents.map(a => ({ name: a.name, role: a.role })),
+          },
+        }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          setIsTyping(false)
+          setMessages(prev => [...prev, { role: 'ai', text: data.response ?? "Je ne peux pas répondre à ça pour l'instant." }])
+        })
+        .catch(() => {
+          setIsTyping(false)
+          setMessages(prev => [...prev, { role: 'ai', text: "Une erreur est survenue. Réessaie." }])
+        })
+    } else {
+      setTimeout(() => {
+        setIsTyping(false)
+        setMessages(prev => [...prev, { role: 'ai', text: "Génère d'abord un stack pour que je puisse répondre à tes questions." }])
+      }, 600)
+    }
+  }, [result, answers])
 
   const handleSend = useCallback(() => {
     const text = input.trim()
@@ -346,14 +377,22 @@ export default function RecommendPage() {
               Décris ce que tu veux accomplir — on s'occupe du reste.
             </p>
           </div>
-          <div className="relative bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden
-                          focus-within:border-[#CAFF32]/50 transition-all duration-300 shadow-2xl">
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+            }}>
+            {/* Inner glass highlight */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             <textarea value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
               placeholder="Ex: Je veux automatiser mon service client Shopify, budget 50€, débutant..."
               rows={3}
-              className="w-full bg-transparent text-zinc-100 font-medium text-base px-6 pt-5 pb-2
-                         outline-none resize-none placeholder:text-zinc-600 leading-relaxed" />
+              className="w-full bg-transparent text-white font-medium text-base px-6 pt-5 pb-2
+                         outline-none resize-none placeholder:text-zinc-500 leading-relaxed" />
             <div className="flex justify-end px-5 pb-4">
               <button onClick={handleSend} disabled={input.trim().length < 5}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-syne font-bold text-sm
@@ -456,20 +495,30 @@ export default function RecommendPage() {
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.35 }}
               className="flex-shrink-0 border-t border-zinc-800/50 px-4 py-3">
-              <div className="max-w-lg mx-auto flex gap-2 items-end">
-                <textarea ref={inputRef} value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                  placeholder={phase === 'results' ? "Poser une question sur ce stack..." : "Envoyer un message..."}
-                  rows={1}
-                  className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm
-                             text-zinc-200 outline-none focus:border-zinc-600 placeholder:text-zinc-600
-                             transition-colors resize-none leading-relaxed" />
-                <button onClick={handleSend} disabled={!input.trim()}
-                  className="bg-white text-zinc-900 font-bold px-4 py-3 rounded-xl text-sm
-                             hover:bg-zinc-100 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0">
-                  →
-                </button>
+              <div className="max-w-lg mx-auto">
+                <div className="relative rounded-2xl overflow-hidden"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}>
+                  <textarea ref={inputRef} value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                    placeholder={phase === 'results' ? "Pose une question sur ce stack..." : "Envoyer un message..."}
+                    rows={2}
+                    className="w-full bg-transparent text-zinc-200 text-sm px-4 pt-3 pb-10
+                               outline-none resize-none placeholder:text-zinc-600 leading-relaxed" />
+                  <div className="absolute bottom-2.5 right-2.5">
+                    <button onClick={handleSend} disabled={!input.trim()}
+                      className="w-8 h-8 rounded-lg bg-[#CAFF32] text-zinc-900 font-bold text-sm
+                                 hover:bg-[#d4ff50] transition-all disabled:opacity-30 disabled:cursor-not-allowed
+                                 flex items-center justify-center">
+                      ↑
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
