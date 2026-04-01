@@ -139,7 +139,7 @@ JSON strict uniquement. Zéro markdown. Zéro backtick. Zéro texte avant ou apr
       "role": "Son rôle SPÉCIFIQUE dans CE projet — pas en général",
       "reason": "Pourquoi CET outil plutôt qu'un autre pour CE profil précis (niveau technique + budget + secteur + urgence)",
       "concrete_result": "Exemple chiffré et précis: 'Tes [élément du projet] passent de X à Y, tu récupères Z heures/semaine'",
-      "prompt_to_use": "Le prompt exact à copier-coller dans cet outil pour accomplir sa mission dans CE projet. Commence directement par l'instruction, en français, adapté au contexte précis de l'utilisateur. 3-6 phrases max."
+      "prompt_to_use": "Si l'outil est un LLM (ex: Claude, GPT, Gemini): le prompt exact à copier-coller pour accomplir sa mission dans CE projet, en français, adapté au contexte précis. Si l'outil n'est pas un LLM (ex: Make.com, Shopify, Zapier, Notion...): les 3-4 étapes concrètes pour le configurer et l'utiliser afin d'accomplir sa tâche dans ce projet précis. Commence directement par l'action, sans introduction."
     }
   ]
 }
