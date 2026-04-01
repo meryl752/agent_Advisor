@@ -22,16 +22,16 @@
 }
 
 .dark {
-  --bg: #080808;
-  --bg2: #0d0d0d;
-  --bg3: #111111;
+  --bg: #2A2A2D;
+  --bg2: #2F2F32;
+  --bg3: #343437;
   --accent: #C8F135;
   --accent2: #ff6b2b;
   --accent3: #38bdf8;
   --text: #f0ede6;
   --text-muted: #71717a;
-  --border: #1a1a1a;
-  --border2: #222222;
+  --border: #3a3a3d;
+  --border2: #404043;
 }
 
 * {

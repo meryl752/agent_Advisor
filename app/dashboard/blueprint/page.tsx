@@ -13,14 +13,11 @@ function SectorCard({ sector, isLast }: { sector: SectorConfig; isLast?: boolean
     <Link
       href={`/dashboard/blueprint/${sector.slug}`}
       className={cn(
-        'group relative flex flex-col gap-4 p-6 rounded-2xl border transition-all duration-200',
+        'group relative flex flex-col gap-3 p-6 rounded-2xl border transition-all duration-200',
         'bg-zinc-900/50 border-zinc-800',
         'hover:border-[#CAFF32]/40 hover:bg-zinc-900 hover:shadow-[0_0_24px_rgba(202,255,50,0.06)]'
       )}
     >
-      {/* Icon */}
-      <div className="text-3xl">{sector.icon}</div>
-
       {/* Label + description */}
       <div className="flex-1">
         <h3 className="font-syne font-black text-white text-lg mb-1 group-hover:text-[#CAFF32] transition-colors">
@@ -34,14 +31,13 @@ function SectorCard({ sector, isLast }: { sector: SectorConfig; isLast?: boolean
       {/* Footer */}
       <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
         <span className="font-dm-mono text-[10px] text-zinc-600 uppercase tracking-widest">
-          {sector.tasks.length} tâches
+          {sector.tasks.length} tasks
         </span>
         <span className="font-dm-mono text-[10px] text-zinc-700 group-hover:text-[#CAFF32] transition-colors">
-          Explorer →
+          Explore →
         </span>
       </div>
 
-      {/* Hover accent line */}
       <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#CAFF32]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-t-2xl" />
     </Link>
   )
@@ -60,19 +56,11 @@ export default function BlueprintPage() {
     <div className="w-full max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-10">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="font-dm-mono text-[10px] text-[#CAFF32] uppercase tracking-[0.2em]">
-            ◉ StackMap
-          </span>
-          <span className="font-dm-mono text-[9px] bg-[#CAFF32]/10 text-[#CAFF32] border border-[#CAFF32]/20 px-2 py-[2px] rounded-full">
-            Nouveau
-          </span>
-        </div>
         <h1 className="font-syne font-black text-4xl text-white tracking-tighter mb-3">
-          Your StackMap
+          StackMap
         </h1>
-        <p className="font-dm-sans text-sm text-zinc-500 max-w-xl leading-relaxed">
-          Pick your business type and get the complete map of daily tasks you can automate with AI — with the best tool for each one.
+        <p className="font-dm-sans text-sm text-zinc-400 max-w-xl leading-relaxed">
+          Pick your business type and get the complete map of AI tools for every daily task.
         </p>
       </div>
 
