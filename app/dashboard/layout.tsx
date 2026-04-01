@@ -1,6 +1,7 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { UserButton, useUser } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
@@ -22,7 +23,22 @@ const NAV = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user } = useUser()
+
+  // Check onboarding status once on mount
+  useEffect(() => {
+    fetch('/api/onboarding/state')
+      .then(r => r.json())
+      .then(data => {
+        // Only redirect if explicitly false
+        if (data?.onboarding_completed === false) {
+          router.push('/onboarding')
+        }
+      })
+      .catch(() => {}) // fail open
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex transition-all duration-500 ease-in-out">
