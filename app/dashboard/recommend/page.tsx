@@ -36,6 +36,17 @@ const REASONING_STEPS = [
   'Assemblage du stack final...',
 ]
 
+// ─── Suggestion chips ─────────────────────────────────────────────────────────
+
+const SUGGESTIONS = [
+  { label: 'Automatiser mon service client Shopify', prompt: "J'aimerais automatiser le service client au niveau de ma plateforme Shopify" },
+  { label: 'Augmenter ma prospection B2B', prompt: "J'aimerais augmenter la rapidité à laquelle j'atteins mes clients dans mon business B2B" },
+  { label: 'Créer du contenu Instagram en masse', prompt: "Je veux créer du contenu Instagram de qualité en grande quantité avec l'IA" },
+  { label: 'Automatiser ma gestion d\'inventaire', prompt: "Mettre en place un système intelligent pour automatiser ma gestion d'inventaire" },
+  { label: 'Analyser mes données clients', prompt: "J'aimerais analyser mes données clients pour prédire les futures tendances" },
+  { label: 'Optimiser mes processus de vente', prompt: "Je souhaite optimiser mes processus de vente avec l'IA pour gagner du temps" },
+]
+
 // ─── Context extraction ───────────────────────────────────────────────────────
 
 function extractContext(text: string) {
@@ -161,6 +172,47 @@ function ResultsPanel({ result }: { result: FinalStack }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+
+const MODELS = ['Gemini 2.0', 'Llama 3.3', 'GPT-4o']
+
+function ModelSelector() {
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState(MODELS[0])
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 bg-zinc-800/60 border border-zinc-700/50 rounded-xl px-3 py-1.5 text-zinc-300 hover:text-white transition-colors"
+      >
+        <span className="font-dm-mono text-[10px] tracking-wider">{selected}</span>
+        <span className="text-zinc-500 text-[10px]">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="absolute top-full mt-1 left-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden z-50 min-w-[120px]">
+          {MODELS.map(m => (
+            <button
+              key={m}
+              onClick={() => { setSelected(m); setOpen(false) }}
+              className={`w-full text-left px-4 py-2 text-xs font-dm-mono transition-colors hover:bg-zinc-800 ${m === selected ? 'text-white' : 'text-zinc-400'}`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function RecommendPage() {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -359,50 +411,84 @@ export default function RecommendPage() {
   // ── IDLE ──────────────────────────────────────────────────────────────────
   if (phase === 'idle') {
     return (
-      <div className="h-full flex flex-col items-center justify-center px-4 relative overflow-hidden">
-        <div className="fixed inset-0 pointer-events-none">
-          <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.03, 0.06, 0.03] }}
-            transition={{ duration: 10, repeat: Infinity }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] blur-3xl rounded-full"
-            style={{ background: 'radial-gradient(ellipse, #CAFF32, transparent 70%)' }} />
+      <div className="h-full flex flex-col relative overflow-hidden">
+        {/* Top bar with model selector + usage */}
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-zinc-800/40">
+          <ModelSelector />
+          <div className="flex items-center gap-2 bg-zinc-800/40 border border-zinc-700/30 rounded-xl px-3 py-1.5">
+            <span className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-wider">Crédits</span>
+            <span className="font-dm-mono text-[10px] text-[#CAFF32] font-bold">Plan actif</span>
+          </div>
         </div>
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-          className="relative z-10 w-full max-w-2xl">
-          <div className="text-center mb-10">
-            <h1 className="font-syne font-black text-4xl md:text-5xl text-white tracking-tight mb-4 leading-tight">
-              Quel est ton objectif ?
-            </h1>
-            <p className="text-zinc-500 text-base font-dm-sans max-w-md mx-auto">
-              Décris ce que tu veux accomplir — on s'occupe du reste.
-            </p>
+
+        {/* Main centered content */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
+          <div className="fixed inset-0 pointer-events-none">
+            <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.03, 0.06, 0.03] }}
+              transition={{ duration: 10, repeat: Infinity }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] blur-3xl rounded-full"
+              style={{ background: 'radial-gradient(ellipse, #CAFF32, transparent 70%)' }} />
           </div>
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl"
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
-            }}>
-            {/* Inner glass highlight */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            <textarea value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-              placeholder="Ex: Je veux automatiser mon service client Shopify, budget 50€, débutant..."
-              rows={3}
-              className="w-full bg-transparent text-white font-medium text-base px-6 pt-5 pb-2
-                         outline-none resize-none placeholder:text-zinc-500 leading-relaxed" />
-            <div className="flex justify-end px-5 pb-4">
-              <button onClick={handleSend} disabled={input.trim().length < 5}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-syne font-bold text-sm
-                           bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] transition-all
-                           disabled:opacity-30 disabled:cursor-not-allowed">
-                Générer →
-              </button>
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            className="relative z-10 w-full max-w-2xl">
+            <div className="text-center mb-8">
+              <h1 className="font-syne font-black text-4xl md:text-5xl text-white tracking-tight mb-4 leading-tight">
+                Quel est ton objectif ?
+              </h1>
+              <p className="text-zinc-500 text-base font-dm-sans max-w-md mx-auto">
+                Décris ce que tu veux accomplir — on s'occupe du reste.
+              </p>
             </div>
-          </div>
-        </motion.div>
+
+            {/* Suggestion carousel */}
+            <div className="w-full overflow-hidden mb-5"
+              style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}>
+              {[0, 1].map(row => (
+                <div key={row} className="flex overflow-hidden mb-2">
+                  <motion.div
+                    animate={{ x: row === 0 ? [0, -900] : [-900, 0] }}
+                    transition={{ duration: row === 0 ? 40 : 50, repeat: Infinity, ease: 'linear' }}
+                    className="flex gap-2 whitespace-nowrap">
+                    {[...SUGGESTIONS, ...SUGGESTIONS, ...SUGGESTIONS].map((s, i) => (
+                      <button key={i} onClick={() => setInput(s.prompt)}
+                        className="flex-shrink-0 px-4 py-2 rounded-xl border border-zinc-700/50 bg-zinc-800/30
+                                   text-zinc-400 hover:text-zinc-200 hover:border-[#CAFF32]/30 hover:bg-zinc-800/60
+                                   text-xs font-dm-sans transition-all">
+                        {s.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+              }}>
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <textarea value={input} onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                placeholder="Ex: Je veux automatiser mon service client Shopify, budget 50€, débutant..."
+                rows={3}
+                className="w-full bg-transparent text-white font-medium text-base px-6 pt-5 pb-2
+                           outline-none resize-none placeholder:text-zinc-500 leading-relaxed" />
+              <div className="flex justify-end px-5 pb-4">
+                <button onClick={handleSend} disabled={input.trim().length < 5}
+                  className="flex items-center justify-center w-9 h-9 rounded-xl font-syne font-bold text-base
+                             bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] transition-all
+                             disabled:opacity-30 disabled:cursor-not-allowed">
+                  ↑
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     )
   }
