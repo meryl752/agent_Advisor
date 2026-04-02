@@ -247,6 +247,87 @@ function BottomInput({ value, onChange, onSend, phase, disabled }: {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+// ─── Agent tasks log — below chat ────────────────────────────────────────────
+
+function AgentTasksLog({ phase, result }: { phase: Phase; result: FinalStack | null }) {
+  const [open, setOpen] = useState(false)
+
+  const tasks = [
+    {
+      id: 'analyze',
+      label: 'Analyse de la requête',
+      done: phase !== 'idle' && phase !== 'chat',
+    },
+    {
+      id: 'match',
+      label: 'Sélection des agents',
+      done: phase === 'reasoning' || phase === 'results' || phase === 'error',
+    },
+    {
+      id: 'build',
+      label: 'Construction du stack',
+      done: phase === 'results',
+    },
+    {
+      id: 'roadmap',
+      label: `Roadmap générée${result ? ` — ${result.agents.length} outils` : ''}`,
+      done: phase === 'results' && !!result,
+    },
+    {
+      id: 'guides',
+      label: 'Guides d\'implémentation',
+      done: phase === 'results' && !!result?.agents.some(a => a.implementation_steps?.length),
+    },
+  ].filter(t => t.done || phase === 'reasoning')
+
+  if (tasks.length === 0) return null
+
+  return (
+    <div className="mt-2 mx-0">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors hover:bg-white/5"
+        style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(30,30,35,0.8)' }}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Tâches de l'agent</span>
+          <span className="text-[10px] text-zinc-600">({tasks.filter(t => t.done).length}/{tasks.length})</span>
+        </div>
+        <span className="text-zinc-600 text-[10px]">{open ? '▲' : '▼'}</span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-1 flex flex-col gap-1">
+              {tasks.map((task, i) => (
+                <motion.div key={task.id}
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg"
+                  style={{ background: 'rgba(30,30,35,0.6)' }}
+                >
+                  <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${task.done ? 'bg-[#CAFF32]' : 'border border-zinc-600'}`}>
+                    {task.done && <span className="text-zinc-900 text-[7px] font-black">✓</span>}
+                  </div>
+                  <span className={`text-xs ${task.done ? 'text-zinc-300' : 'text-zinc-600'}`}>{task.label}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 // ─── Nav menu (sidebar links in session mode) ─────────────────────────────────
 
 const NAV_LINKS = [
@@ -507,9 +588,10 @@ export default function RecommendPage() {
 
   // ── SESSION — full screen layout ──────────────────────────────────────────
   return (
-    <div className="fixed inset-0 flex flex-col bg-zinc-950 z-10"
+    <div className="fixed inset-0 flex flex-col z-10"
       style={{
-        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
+        background: '#2A2A2D',
+        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px)',
         backgroundSize: '28px 28px',
       }}>
 
@@ -545,16 +627,26 @@ export default function RecommendPage() {
           className="flex-shrink-0 flex flex-col overflow-hidden pt-2 pb-4 pl-6 pr-3"
           style={{ minWidth: 0 }}
         >
-          <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-zinc-700/50"
-            style={{ background: 'rgba(18,18,20,0.92)', backdropFilter: 'blur(16px)' }}>
-            <AgentLog
-              messages={messages}
-              reasoningStep={reasoningStep}
-              isTyping={isTyping}
-              phase={phase}
-              error={error}
-              onRetry={() => { setError(null); if (Object.keys(answers).length > 0) launchReasoning(answers) }}
-            />
+          <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-zinc-600/40"
+            style={{ background: '#2F2F32', backdropFilter: 'blur(16px)' }}>
+            {/* Fade mask top/bottom — pointer-events-none so scroll still works */}
+            <div className="relative flex-1 min-h-0 flex flex-col">
+              <div className="absolute inset-x-0 top-0 h-8 z-10 pointer-events-none rounded-t-xl"
+                style={{ background: 'linear-gradient(to bottom, #2F2F32, transparent)' }} />
+              <div className="absolute inset-x-0 bottom-0 h-8 z-10 pointer-events-none rounded-b-xl"
+                style={{ background: 'linear-gradient(to top, #2F2F32, transparent)' }} />
+              <AgentLog
+                messages={messages}
+                reasoningStep={reasoningStep}
+                isTyping={isTyping}
+                phase={phase}
+                error={error}
+                onRetry={() => { setError(null); if (Object.keys(answers).length > 0) launchReasoning(answers) }}
+              />
+            </div>
+          </div>
+          <div className="mt-3 pb-1">
+            <AgentTasksLog phase={phase} result={result} />
           </div>
         </motion.div>
 
