@@ -3,6 +3,7 @@ import type { UserContext, FinalStack } from './types'
 import { analyzeQuery } from './queryAnalyzer'
 import { matchAgents } from './matcher'
 import { buildStack } from './stackBuilder'
+import { buildGuides } from './guideBuilder'
 import { getReferenceStack, getAgentsByCategories } from '@/lib/supabase/queries'
 
 export interface OrchestratorResult {
@@ -69,6 +70,11 @@ export async function runOrchestrator(
         }
         return agent
       })
+
+      // ── Agent 4 : Guide Builder (Tavily + LLM) — runs after stack is built ──
+      // Enriches each agent with step-by-step implementation guide
+      // Uses cache to avoid burning Tavily credits on repeated queries
+      stack.agents = await buildGuides(stack.agents, ctx)
 
       const processingTime = Date.now() - startTime
 

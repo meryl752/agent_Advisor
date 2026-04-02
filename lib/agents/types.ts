@@ -44,6 +44,15 @@ export interface SubTask {
     tool_name: string
 }
 
+export interface ImplementationStep {
+    step: number
+    title: string
+    action: string        // short imperative — "Créer un compte Make"
+    details: string       // full explanation with context
+    tip?: string          // optional pro tip or warning
+    source_url?: string   // link to official doc found by Tavily
+}
+
 export interface StackAgent {
     id: string
     name: string
@@ -58,6 +67,7 @@ export interface StackAgent {
     website_domain?: string
     setup_difficulty?: string
     time_to_value?: string
+    implementation_steps?: ImplementationStep[]  // populated by guideBuilder after stack is built
 }
 
 export interface FinalStack {
