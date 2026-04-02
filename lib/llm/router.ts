@@ -1,7 +1,7 @@
 import { getGroqClient, GROQ_MODEL, GROQ_MODEL_FAST } from '@/lib/groq/client'
 import { getGeminiClient } from '@/lib/gemini/client'
 
-const CALL_TIMEOUT_MS = 22000 // 22s hard limit per individual call
+const CALL_TIMEOUT_MS = 28000 // 28s — Gemini can be slow on long prompts
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -46,25 +46,27 @@ async function callGemini(prompt: string): Promise<string> {
 
 /**
  * Race Groq (fast 8b) vs Gemini in parallel — first to respond wins.
+ * For large outputs (>1500 tokens), use 70b directly — 8b can't handle it.
  * Falls back to Groq 70b if both fast options fail.
  */
 export async function callLLM(prompt: string, maxTokens = 1024): Promise<string> {
-  const attempts: Promise<string>[] = []
-
   const groqClient = getGroqClient()
   const geminiClient = getGeminiClient()
 
-  if (groqClient) attempts.push(callGroq(prompt, maxTokens, true))  // fast 8b
+  if (!groqClient && !geminiClient) throw new Error('No LLM configured')
+
+  // For large outputs, skip 8b — it truncates and produces invalid JSON
+  const useFast = maxTokens <= 1200
+
+  const attempts: Promise<string>[] = []
+  if (groqClient) attempts.push(callGroq(prompt, maxTokens, useFast))
   if (geminiClient) attempts.push(callGemini(prompt))
 
-  if (attempts.length === 0) throw new Error('No LLM configured')
-
   try {
-    // Race: first successful response wins
     return await Promise.any(attempts)
   } catch {
-    // All fast attempts failed — try Groq 70b as last resort
-    if (groqClient) {
+    // If we used fast and it failed, retry with 70b
+    if (useFast && groqClient) {
       console.warn('[LLM] Fast models failed, trying Groq 70b...')
       return callGroq(prompt, maxTokens, false)
     }

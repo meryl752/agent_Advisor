@@ -3,7 +3,6 @@ import type { UserContext, FinalStack } from './types'
 import { analyzeQuery } from './queryAnalyzer'
 import { matchAgents } from './matcher'
 import { buildStack } from './stackBuilder'
-import { buildGuides } from './guideBuilder'
 import { getReferenceStack, getAgentsByCategories } from '@/lib/supabase/queries'
 
 export interface OrchestratorResult {
@@ -21,12 +20,12 @@ export async function runOrchestrator(
 ): Promise<OrchestratorResult | null> {
   const startTime = Date.now()
   
-  // Global timeout — 60s max (2 LLM calls × 25s + DB overhead)
+  // Global timeout — 45s max (2 LLM calls + DB)
   const timeoutPromise = new Promise<null>((resolve) => {
     setTimeout(() => {
-      console.error('❌ [Orchestrator] Timeout after 60s')
+      console.error('❌ [Orchestrator] Timeout after 45s')
       resolve(null)
-    }, 60000)
+    }, 45000)
   })
 
   const orchestrationPromise = (async () => {
@@ -71,10 +70,8 @@ export async function runOrchestrator(
         return agent
       })
 
-      // ── Agent 4 : Guide Builder (Tavily + LLM) — runs after stack is built ──
-      // Enriches each agent with step-by-step implementation guide
-      // Uses cache to avoid burning Tavily credits on repeated queries
-      stack.agents = await buildGuides(stack.agents, ctx)
+      // ── Agent 4 : Guide Builder runs async via /api/guides — not blocking ──
+      // Guides are fetched separately after the stack is displayed to the user
 
       const processingTime = Date.now() - startTime
 
