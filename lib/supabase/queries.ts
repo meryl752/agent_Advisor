@@ -256,3 +256,20 @@ export async function incrementReferenceUsage(id: string) {
     .update({ usage_count: (supabaseServer as any).rpc('increment', { x: 1 }) })
     .eq('id', id)
 }
+
+// ─── Vector Search ────────────────────────────────────────────────────────────
+
+export async function getVectorMatchedAgents(embedding: number[], budget: number, category?: string) {
+  // On utilise supabaseService car on a besoin de droits pour appeler le RPC
+  const { data, error } = await (supabaseService as any).rpc('smart_search_agents', {
+    query_embedding: embedding,
+    user_budget_max: budget || 0,
+    user_category: category || null,
+  })
+
+  if (error) {
+    console.error('Erreur recherche vectorielle:', error)
+    throw error
+  }
+  return data
+}

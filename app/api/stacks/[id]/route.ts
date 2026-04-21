@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseService } from '@/lib/supabase/server'
+import { uuidSchema, stackPatchSchema } from '@/lib/validators/api'
 
 // ─── Helper: verify stack belongs to user ────────────────────────────────────
 
@@ -24,6 +25,13 @@ export async function DELETE(
     if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { id } = await params
+
+    // Validate UUID format
+    const idValidation = uuidSchema.safeParse(id)
+    if (!idValidation.success) {
+      return NextResponse.json({ error: 'ID invalide' }, { status: 400 })
+    }
+
     const internalId = await getInternalUserId(userId)
     if (!internalId) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
 
@@ -56,12 +64,20 @@ export async function PATCH(
     if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { id } = await params
+
+    // Validate UUID format
+    const idValidation = uuidSchema.safeParse(id)
+    if (!idValidation.success) {
+      return NextResponse.json({ error: 'ID invalide' }, { status: 400 })
+    }
+
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
 
-    const { name } = body
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json({ error: 'Nom invalide' }, { status: 400 })
+    // Validate body with Zod
+    const validation = stackPatchSchema.safeParse(body)
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Données invalides', details: validation.error.errors }, { status: 400 })
     }
 
     const internalId = await getInternalUserId(userId)
@@ -69,7 +85,7 @@ export async function PATCH(
 
     const { data, error } = await (supabaseService as any)
       .from('stacks')
-      .update({ name: name.trim() })
+      .update({ name: validation.data.name })
       .eq('id', id)
       .eq('user_id', internalId) // security: only update own stacks
       .select()

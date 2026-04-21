@@ -1,14 +1,14 @@
 import type { Metadata } from 'next'
-import { Syne, DM_Mono, DM_Sans } from 'next/font/google'
+import { Plus_Jakarta_Sans, DM_Mono, DM_Sans } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import './globals.css'
 import { ThemeProvider } from '@/app/components/ThemeProvider'
 
-const syne = Syne({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['400', '700', '800'],
-  variable: '--font-syne',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-syne', // keep same CSS var so all existing font-syne classes work
   display: 'swap',
 })
 
@@ -81,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         },
       }}
     >
-      <html lang="fr" className={`${syne.variable} ${dmMono.variable} ${dmSans.variable}`} suppressHydrationWarning>
+      <html lang="fr" className={`${plusJakarta.variable} ${dmMono.variable} ${dmSans.variable}`} suppressHydrationWarning>
         <body className="antialiased">
           <ThemeProvider
             attribute="class"

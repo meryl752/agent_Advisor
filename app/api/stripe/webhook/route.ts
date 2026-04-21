@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/client'
 import { supabaseService } from '@/lib/supabase/server'
+import { invalidatePlanCache } from '@/lib/rate-limit/user-plan'
 import Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
           console.error('Failed to update user plan:', error.message)
         } else {
           console.log(`✅ User ${clerkUserId.substring(0, 8)}*** upgraded to ${plan}`)
+          invalidatePlanCache(clerkUserId) // clear cached plan so next request fetches fresh
         }
         break
       }

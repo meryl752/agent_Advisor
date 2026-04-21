@@ -72,9 +72,20 @@ async function recommendHandler(req: NextRequest) {
   }
 }
 
-// Apply rate limiting middleware
+// Rate limiting:
+// - Production (NODE_ENV=production): MANDATORY — returns 503 if Redis not configured
+// - Development: bypassed to allow local testing without Redis
 const rateLimiter = getRateLimiter()
+const isDev = process.env.NODE_ENV !== 'production'
+
+if (!rateLimiter && !isDev) {
+  console.error('❌ [/api/recommend] Rate limiter not configured in production — requests will be blocked')
+}
 
 export const POST = rateLimiter
   ? withRateLimit(recommendHandler, { limiter: rateLimiter, endpoint: 'recommend' })
-  : recommendHandler
+  : isDev
+    ? recommendHandler // dev: allow without rate limiting
+    : async () => NextResponse.json({
+        error: 'Service temporairement indisponible',
+      }, { status: 503 })

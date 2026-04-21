@@ -39,30 +39,43 @@ const MODELS = ['Gemini 2.0', 'Llama 3.3', 'GPT-4o']
 function extractContext(text: string) {
   const lower = text.toLowerCase()
   const sector =
-    lower.includes('ecommerce') || lower.includes('shopify') || lower.includes('boutique') ? 'e-commerce'
-    : lower.includes('saas') || lower.includes('logiciel') ? 'saas'
+    lower.includes('ecommerce') || lower.includes('shopify') || lower.includes('boutique') || lower.includes('vente en ligne') ? 'e-commerce'
+    : lower.includes('saas') || lower.includes('logiciel') || lower.includes('application') ? 'saas'
     : lower.includes('agence') ? 'agence'
-    : lower.includes('consultant') || lower.includes('freelance') ? 'consultant'
-    : lower.includes('créateur') || lower.includes('youtube') || lower.includes('instagram') ? 'createur'
-    : lower.includes('b2b') || lower.includes('entreprise') || lower.includes('prospection') ? 'b2b'
+    : lower.includes('consultant') || lower.includes('freelance') || lower.includes('indépendant') ? 'consultant'
+    : lower.includes('créateur') || lower.includes('youtube') || lower.includes('instagram') || lower.includes('contenu') || lower.includes('réseaux') ? 'createur'
+    : lower.includes('b2b') || lower.includes('entreprise') || lower.includes('prospection') || lower.includes('client') ? 'b2b'
+    : lower.includes('restaurant') || lower.includes('commerce') || lower.includes('magasin') ? 'commerce'
     : null
+
   const budget =
-    lower.includes('gratuit') || lower.includes('0€') ? 'zero'
-    : lower.includes('200') ? 'medium'
-    : lower.includes('50') ? 'low'
-    : lower.includes('500') || lower.includes('1000') ? 'high'
+    lower.includes('gratuit') || lower.includes('0€') || lower.includes('sans budget') ? 'zero'
+    : lower.includes('50') || lower.includes('petit budget') || lower.includes('peu') ? 'low'
+    : lower.includes('200') || lower.includes('moyen') ? 'medium'
+    : lower.includes('500') || lower.includes('1000') || lower.includes('grand budget') || lower.includes('illimité') ? 'high'
     : null
+
   const tech =
-    lower.includes('débutant') || lower.includes('novice') ? 'beginner'
-    : lower.includes('avancé') || lower.includes('développeur') ? 'advanced'
-    : lower.includes('intermédiaire') || lower.includes('no-code') ? 'intermediate'
+    lower.includes('débutant') || lower.includes('novice') || lower.includes('pas technique') || lower.includes('non technique') ? 'beginner'
+    : lower.includes('avancé') || lower.includes('développeur') || lower.includes('dev ') || lower.includes('code') ? 'advanced'
+    : lower.includes('intermédiaire') || lower.includes('no-code') || lower.includes('nocode') ? 'intermediate'
     : null
-  return { sector, budget, tech }
+
+  // If the message is long enough (>60 chars), assume the user gave enough context
+  // and use sensible defaults rather than asking for clarification
+  const isDetailed = text.trim().length > 60
+
+  return {
+    sector: sector ?? (isDetailed ? 'général' : null),
+    budget: budget ?? (isDetailed ? 'medium' : null),
+    tech,
+    isDetailed,
+  }
 }
 
 function ModelSelector() {
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState(MODELS[0])
+  const [selected, setSelected] = useState<string>(MODELS[0])
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
@@ -74,10 +87,10 @@ function ModelSelector() {
       <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 bg-zinc-800/60 border border-zinc-700/50 rounded-lg px-3 py-1.5 text-zinc-300 hover:text-white transition-colors">
         <span className="text-[10px] tracking-wider">{selected}</span>
-        <span className="text-zinc-500 text-[10px]">{open ? '▲' : '▼'}</span>
+        <span className="text-zinc-500 text-[10px]">{open ? '▼' : '▲'}</span>
       </button>
       {open && (
-        <div className="absolute top-full mt-1 left-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden z-50 min-w-[120px]">
+        <div className="absolute bottom-full mb-1 left-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden z-50 min-w-[120px] shadow-2xl">
           {MODELS.map(m => (
             <button key={m} onClick={() => { setSelected(m); setOpen(false) }}
               className={`w-full text-left px-4 py-2 text-xs transition-colors hover:bg-zinc-800 ${m === selected ? 'text-white' : 'text-zinc-400'}`}>
@@ -111,7 +124,7 @@ function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRetry }: 
         <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           {msg.role === 'user' ? (
             /* User bubble — white with dark text like the screenshot */
-            <div className="bg-white text-zinc-900 rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed font-medium shadow-sm self-end max-w-[90%] ml-auto">
+            <div className="bg-white text-zinc-900 rounded-2xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed font-medium shadow-sm self-end max-w-[90%] ml-auto">
               {msg.text}
             </div>
           ) : msg.role === 'reasoning' ? (
@@ -143,7 +156,7 @@ function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRetry }: 
                       initial={{ opacity: 0, x: -4 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.25 }}
-                      className={`text-xs pb-3 leading-relaxed ${done ? 'text-zinc-600' : active ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                      className={`text-sm pb-3 leading-relaxed ${done ? 'text-zinc-600' : active ? 'text-zinc-300' : 'text-zinc-700'}`}>
                       {step}
                     </motion.p>
                   </div>
@@ -152,7 +165,7 @@ function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRetry }: 
             </div>
           ) : (
             /* AI message */
-            <p className="text-xs text-zinc-400 leading-relaxed">{msg.text}</p>
+            <p className="text-[13px] text-zinc-300 leading-relaxed">{msg.text}</p>
           )}
         </motion.div>
       ))}
@@ -403,11 +416,6 @@ export default function RecommendPage() {
   // Collapse sidebar when session starts, restore on reset
   useEffect(() => { setCollapsed(inSession) }, [inSession, setCollapsed])
 
-  const addAIMessage = useCallback((text: string, delay = 700) => {
-    setIsTyping(true)
-    setTimeout(() => { setIsTyping(false); setMessages(prev => [...prev, { role: 'ai', text }]) }, delay)
-  }, [])
-
   const revealStack = useCallback((stack: FinalStack, stackId?: string) => {
     setResult(stack); setSavedStackId(stackId); setPhase('results'); setStreamedCount(0)
     stack.agents.forEach((_, idx) => { setTimeout(() => setStreamedCount(idx + 1), idx * 220) })
@@ -492,16 +500,22 @@ export default function RecommendPage() {
     const ctx = extractContext(text)
     const ans: Record<string, string> = { objective: text, sector: ctx.sector ?? 'général', budget: ctx.budget ?? 'medium', tech_level: ctx.tech ?? 'intermediate' }
     setAnswers(ans)
+    // Proceed directly if we detected context OR the message is detailed enough
     if (ctx.sector && ctx.budget) {
       setIsTyping(true)
       setTimeout(() => { setIsTyping(false); setMessages(prev => [...prev, { role: 'ai', text: "Parfait, j'analyse ça maintenant." }]); setTimeout(() => launchReasoning(ans), 500) }, 600)
     } else {
+      // Only ask for clarification if the message is very short/vague
       const missing: string[] = []
-      if (!ctx.sector) missing.push('ton secteur')
-      if (!ctx.budget) missing.push('ton budget mensuel')
-      addAIMessage(`Pour affiner, dis-moi ${missing.join(' et ')}.`, 700)
+      if (!ctx.sector) missing.push('ton secteur d\'activité')
+      if (!ctx.budget) missing.push('ton budget mensuel approximatif')
+      setIsTyping(true)
+      setTimeout(() => {
+        setIsTyping(false)
+        setMessages(prev => [...prev, { role: 'ai', text: `Pour personnaliser ton stack, dis-moi ${missing.join(' et ')}.` }])
+      }, 900)
     }
-  }, [addAIMessage, launchReasoning])
+  }, [launchReasoning])
 
   const handleContextMessage = useCallback((text: string) => {
     setMessages(prev => [...prev, { role: 'user', text }]); setInput(''); setIsTyping(true)
@@ -586,81 +600,120 @@ export default function RecommendPage() {
     )
   }
 
-  // ── SESSION — full screen layout ──────────────────────────────────────────
+  // ── SESSION — classic split layout ───────────────────────────────────────
   return (
-    <div className="fixed inset-0 flex flex-col z-10"
+    <div className="fixed inset-0 flex z-10"
       style={{
         background: '#2A2A2D',
         backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px)',
         backgroundSize: '28px 28px',
       }}>
 
-      {/* Top bar — just quick actions, no title */}
-      <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 relative z-20">
-        {/* Left — nav menu button */}
-        <NavMenu onReset={reset} />
+      {/* LEFT — Chat panel with integrated input */}
+      <motion.div
+        initial={{ width: 0, opacity: 0 }}
+        animate={{ width: 440, opacity: 1 }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        className="flex-shrink-0 flex flex-col h-full"
+        style={{ minWidth: 0 }}
+      >
+        <div className="flex-1 flex flex-col overflow-hidden border-r border-zinc-700/40"
+          style={{ background: '#252528' }}>
 
-        {/* Right — profile + theme + reset */}
-        <div className="flex items-center gap-3">
-          <button onClick={reset}
-            className="text-[10px] text-zinc-500 hover:text-zinc-200 transition-colors border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg">
-            ↺ Nouveau
-          </button>
-          <ThemeToggle />
-          <UserButton appearance={{
-            elements: {
-              avatarBox: 'w-7 h-7 rounded-lg',
-              userButtonPopoverCard: 'bg-zinc-900 border border-zinc-800 shadow-2xl',
-            }
-          }} />
-        </div>
-      </div>
+          {/* Chat header — just reset button */}
+          <div className="flex-shrink-0 flex items-center justify-end px-4 py-3 border-b border-zinc-700/40">
+            <button onClick={reset} className="text-[10px] text-zinc-600 hover:text-zinc-300 transition-colors">↺ Nouveau</button>
+          </div>
 
-      {/* Body — chat left + canvas right, both on dot background */}
-      <div className="flex-1 flex overflow-hidden min-h-0 relative">
+          {/* Messages with fade top/bottom */}
+          <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-6 z-10 pointer-events-none"
+              style={{ background: 'linear-gradient(to bottom, #252528, transparent)' }} />
+            <div className="absolute inset-x-0 bottom-0 h-6 z-10 pointer-events-none"
+              style={{ background: 'linear-gradient(to top, #252528, transparent)' }} />
+            <AgentLog
+              messages={messages}
+              reasoningStep={reasoningStep}
+              isTyping={isTyping}
+              phase={phase}
+              error={error}
+              onRetry={() => { setError(null); if (Object.keys(answers).length > 0) launchReasoning(answers) }}
+            />
+          </div>
 
-        {/* Agent log — wider, offset from left, reduced radius */}
-        <motion.div
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 340, opacity: 1 }}
-          transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-          className="flex-shrink-0 flex flex-col overflow-hidden pt-2 pb-4 pl-6 pr-3"
-          style={{ minWidth: 0 }}
-        >
-          <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-zinc-600/40"
-            style={{ background: '#2F2F32', backdropFilter: 'blur(16px)' }}>
-            {/* Fade mask top/bottom — pointer-events-none so scroll still works */}
-            <div className="relative flex-1 min-h-0 flex flex-col">
-              <div className="absolute inset-x-0 top-0 h-8 z-10 pointer-events-none rounded-t-xl"
-                style={{ background: 'linear-gradient(to bottom, #2F2F32, transparent)' }} />
-              <div className="absolute inset-x-0 bottom-0 h-8 z-10 pointer-events-none rounded-b-xl"
-                style={{ background: 'linear-gradient(to top, #2F2F32, transparent)' }} />
-              <AgentLog
-                messages={messages}
-                reasoningStep={reasoningStep}
-                isTyping={isTyping}
-                phase={phase}
-                error={error}
-                onRetry={() => { setError(null); if (Object.keys(answers).length > 0) launchReasoning(answers) }}
-              />
+          {/* Input integrated in chat */}
+          <div className="flex-shrink-0 px-3 pb-3 pt-2">
+            <div className="relative rounded-xl overflow-visible"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <textarea value={input} onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                placeholder={phase === 'results' ? "Pose une question..." : "Envoyer un message..."}
+                rows={2} disabled={phase === 'reasoning'}
+                className="w-full bg-transparent text-zinc-200 text-sm px-4 pt-3 pb-10 outline-none resize-none placeholder:text-zinc-600 leading-relaxed disabled:opacity-40" />
+              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between">
+                <ModelSelector />
+                <button onClick={handleSend} disabled={!input.trim() || phase === 'reasoning'}
+                  className="w-8 h-8 rounded-lg bg-[#CAFF32] text-zinc-900 font-bold text-sm hover:bg-[#d4ff50] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center">↑</button>
+              </div>
             </div>
           </div>
-          <div className="mt-3 pb-1">
-            <AgentTasksLog phase={phase} result={result} />
+        </div>
+
+        {/* Tasks log below chat */}
+        <div className="px-3 py-2 border-t border-zinc-700/40" style={{ background: '#252528' }}>
+          <AgentTasksLog phase={phase} result={result} />
+        </div>
+      </motion.div>
+
+      {/* RIGHT — Top bar + Canvas */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+
+        {/* Top bar */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 relative z-20">
+          <NavMenu onReset={reset} />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <UserButton appearance={{
+              elements: {
+                avatarBox: 'w-7 h-7 rounded-lg',
+                userButtonPopoverCard: 'bg-zinc-900 border border-zinc-800 shadow-2xl',
+              }
+            }} />
           </div>
-        </motion.div>
+        </div>
 
         {/* Canvas */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
+        <div className="flex-1 overflow-hidden">
           <AnimatePresence mode="wait">
             {phase === 'results' && result ? (
               <motion.div key="canvas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
-                className="flex-1 overflow-hidden flex flex-col">
-                <CanvasArea result={result} objective={answers.objective ?? ''} streamedCount={streamedCount} stackId={savedStackId} />
+                className="h-full overflow-y-auto px-6 py-4 scrollbar-hide">
+                <div className="max-w-4xl mx-auto flex flex-col gap-8">
+                  <StackRoadmap agents={result.agents} stackName={result.stack_name} objective={answers.objective ?? ''} streamedCount={streamedCount} />
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+                    className="rounded-xl border border-zinc-700/50 p-5" style={{ background: '#2F2F32' }}>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4">Résumé financier</p>
+                    {[
+                      { label: 'Coût mensuel', value: `${result.total_cost}€`, color: 'text-white' },
+                      { label: 'ROI estimé', value: `+${result.roi_estimate}%`, color: 'text-[#CAFF32]' },
+                      { label: 'Temps économisé', value: `${result.time_saved_per_week}h/sem`, color: 'text-[#38bdf8]' },
+                    ].map((m, i) => (
+                      <div key={i} className="flex justify-between py-2 border-b border-zinc-700/40 last:border-0">
+                        <span className="text-xs text-zinc-500">{m.label}</span>
+                        <span className={`font-semibold text-sm ${m.color}`}>{m.value}</span>
+                      </div>
+                    ))}
+                  </motion.div>
+                  {savedStackId && (
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+                      <StackFeedback stackId={savedStackId} agents={result.agents} />
+                    </motion.div>
+                  )}
+                </div>
               </motion.div>
             ) : (
               <motion.div key="waiting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex-1 flex items-center justify-center">
+                className="h-full flex items-center justify-center">
                 {phase === 'reasoning' ? (
                   <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}>
                     <p className="text-zinc-500 text-sm">Génération de ta roadmap...</p>
@@ -673,15 +726,6 @@ export default function RecommendPage() {
           </AnimatePresence>
         </div>
       </div>
-
-      {/* Bottom input — no border-top */}
-      <BottomInput
-        value={input}
-        onChange={setInput}
-        onSend={handleSend}
-        phase={phase}
-        disabled={phase === 'reasoning'}
-      />
     </div>
   )
 }

@@ -19,7 +19,7 @@ export function useSidebar() { return useContext(SidebarContext) }
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: '◈' },
   { href: '/dashboard/recommend', label: 'Construis ton stack', icon: '✦', accent: true },
-  { href: '/dashboard/blueprint', label: 'StackMap', icon: '◉', badge: 'New' },
+  { href: '/dashboard/blueprint', label: 'StackMap', icon: '◉' },
   { href: '/dashboard/stack', label: 'Mes stacks', icon: '⬡' },
   { href: '/dashboard/roi', label: 'ROI Tracker', icon: '↑' },
   { href: '/dashboard/alerts', label: 'Stack Alerts', icon: '◎' },
@@ -55,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         collapsed ? 'w-0 border-r-0' : 'w-[220px]'
       )}>
         <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, rgba(202,255,50,0.03), transparent)' }} />
+          style={{ background: 'linear-gradient(to bottom, rgba(202,255,50,0.04), transparent)' }} />
 
         {/* Logo */}
         <div className="px-5 py-5 border-b border-zinc-200 dark:border-zinc-800/60 whitespace-nowrap">
@@ -69,8 +69,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-1 whitespace-nowrap">
+        {/* Nav — grouped */}
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-1 whitespace-nowrap overflow-y-auto scrollbar-hide">
           {NAV.map((item) => {
             const active = item.href === '/dashboard'
               ? pathname === item.href
@@ -89,18 +89,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {item.icon}
                 </span>
                 <span className="text-xs font-semibold tracking-wide">{item.label}</span>
-                {item.accent && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#CAFF32] animate-pulse" />}
-                {(item as { badge?: string }).badge && (
-                  <span className="ml-auto font-dm-mono text-[8px] bg-[#CAFF32]/10 text-[#CAFF32] border border-[#CAFF32]/20 px-1.5 py-[1px] rounded-full">
-                    {(item as { badge?: string }).badge}
-                  </span>
-                )}
               </Link>
             )
           })}
         </nav>
 
-        {/* User + ThemeToggle */}
+        {/* User info */}
         <div className="border-t border-zinc-200 dark:border-zinc-800/60 px-4 py-4 flex items-center gap-3 whitespace-nowrap">
           <UserButton appearance={{
             elements: {
@@ -113,7 +107,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="text-xs font-bold text-zinc-800 dark:text-zinc-300 truncate">{user?.firstName ?? 'Utilisateur'}</p>
             <p className="text-[10px] text-zinc-500 dark:text-zinc-600 truncate">{user?.emailAddresses[0]?.emailAddress ?? ''}</p>
           </div>
-          <ThemeToggle />
         </div>
       </aside>
 
@@ -121,7 +114,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 h-screen flex flex-col overflow-hidden relative">
         <div className="fixed inset-0 pointer-events-none opacity-[0.015] dark:opacity-[0.015]"
           style={{ backgroundImage: 'radial-gradient(circle, #CAFF32 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-        <div className={cn('flex-1 overflow-y-auto relative z-10 scrollbar-hide', collapsed ? 'p-0 overflow-hidden' : 'px-8 py-8')}>
+        
+        {/* Top bar with theme toggle */}
+        {!collapsed && (
+          <div className="flex-shrink-0 flex items-center justify-end px-8 py-4 relative z-10 border-b border-zinc-200/50 dark:border-zinc-800/30">
+            <ThemeToggle />
+          </div>
+        )}
+        
+        <div className={cn('flex-1 overflow-y-auto relative z-10 scrollbar-hide', collapsed ? 'p-0 overflow-hidden' : 'px-8 py-6')}>
           {children}
         </div>
         <WelcomeToast />

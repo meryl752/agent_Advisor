@@ -34,6 +34,7 @@ const config: Config = {
         syne: ['var(--font-syne)', 'sans-serif'],
         mono: ['var(--font-dm-mono)', 'monospace'],
         sans: ['var(--font-dm-sans)', 'sans-serif'],
+        jakarta: ['var(--font-syne)', 'sans-serif'], // alias for clarity
       },
       fontSize: {
         'label': ['0.72rem', { letterSpacing: '0.16em' }],

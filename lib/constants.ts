@@ -1,4 +1,28 @@
-// ─── Design Tokens ────────────────────────────────────────────────────────────
+// ─── Budget & Context Maps ────────────────────────────────────────────────────
+// Single source of truth — used by queryAnalyzer, matcher, orchestrator, stackBuilder
+
+export const BUDGET_MAP: Record<string, number> = {
+  zero: 0,
+  low: 50,
+  medium: 200,
+  high: 1000,
+}
+
+export const DIFFICULTY_ALLOWED: Record<string, string[]> = {
+  beginner:     ['easy'],
+  intermediate: ['easy', 'medium'],
+  advanced:     ['easy', 'medium', 'hard'],
+}
+
+export const VALID_CATEGORIES = [
+  'copywriting', 'image', 'automation', 'analytics',
+  'customer_service', 'seo', 'prospecting', 'coding',
+  'research', 'video', 'website',
+] as const
+
+export type AgentCategory = typeof VALID_CATEGORIES[number]
+
+
 
 export const COLORS = {
   bg: '#080808',

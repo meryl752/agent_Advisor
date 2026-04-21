@@ -1,9 +1,6 @@
 import { callLLM } from '@/lib/llm/router'
+import { BUDGET_MAP } from '@/lib/constants'
 import type { AnalyzedQuery, ScoredAgent, UserContext, FinalStack } from './types'
-
-const BUDGET_MAP = {
-  zero: 0, low: 50, medium: 200, high: 1000,
-}
 
 const TECH_LEVEL_DESCRIPTION = {
   beginner: 'débutant complet — aucun code, interfaces visuelles uniquement, setup en quelques clics',

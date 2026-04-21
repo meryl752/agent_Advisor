@@ -135,25 +135,34 @@ JSON strict uniquement. Zéro markdown. Zéro texte avant ou après.
 }
 
 /**
- * Build guides for all agents in parallel.
+ * Build guides for all agents with controlled concurrency (max 2 parallel).
  * Returns the stack agents enriched with implementation_steps.
  */
 export async function buildGuides(
   agents: StackAgent[],
   ctx: UserContext
 ): Promise<StackAgent[]> {
-  console.log(`[GuideBuilder] Building guides for ${agents.length} agents in parallel...`)
+  console.log(`[GuideBuilder] Building guides for ${agents.length} agents (max 2 parallel)...`)
 
-  const results = await Promise.allSettled(
-    agents.map(agent => buildAgentGuide(agent, ctx.objective, ctx.tech_level))
-  )
+  const enrichedAgents: StackAgent[] = []
+  const BATCH_SIZE = 2
 
-  return agents.map((agent, i) => {
-    const result = results[i]
-    const steps = result.status === 'fulfilled' ? result.value : []
-    if (result.status === 'rejected') {
-      console.error(`[GuideBuilder] Agent ${agent.name} failed:`, result.reason)
-    }
-    return { ...agent, implementation_steps: steps }
-  })
+  // Process in batches of 2
+  for (let i = 0; i < agents.length; i += BATCH_SIZE) {
+    const batch = agents.slice(i, i + BATCH_SIZE)
+    const results = await Promise.allSettled(
+      batch.map(agent => buildAgentGuide(agent, ctx.objective, ctx.tech_level))
+    )
+
+    batch.forEach((agent, idx) => {
+      const result = results[idx]
+      const steps = result.status === 'fulfilled' ? result.value : []
+      if (result.status === 'rejected') {
+        console.error(`[GuideBuilder] Agent ${agent.name} failed:`, result.reason)
+      }
+      enrichedAgents.push({ ...agent, implementation_steps: steps })
+    })
+  }
+
+  return enrichedAgents
 }
