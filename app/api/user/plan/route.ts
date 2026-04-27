@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const { userId } = await auth()
     if (!userId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
     }
 
     const user = await getUserByClerkId(userId)

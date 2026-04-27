@@ -6,6 +6,7 @@ import { buildStack } from './stackBuilder'
 import { getReferenceStack, getVectorMatchedAgents, getAgentsByCategories } from '@/lib/supabase/queries'
 import { BUDGET_MAP } from '@/lib/constants'
 import type { FinalStack } from './types'
+import { embeddingService } from '@/lib/embeddings/service'
 
 export interface OrchestratorResult {
   stack: FinalStack
@@ -15,57 +16,16 @@ export interface OrchestratorResult {
     subtasks_detected: number
     processing_time_ms: number
     retrieval_mode: 'vector' | 'fallback'
+    embedding_provider: 'jina'
+    embedding_latency_ms: number
   }
 }
 
-// ─── Embedding via Hugging Face Inference API ─────────────────────────────────
+// ─── Embedding via Jina AI v4 ────────────────────────────────────────────────
 
 async function generateEmbedding(text: string): Promise<number[]> {
-  const apiKey = process.env.HUGGINGFACE_API_KEY
-  if (!apiKey) throw new Error('[Embedding] HUGGINGFACE_API_KEY manquant')
-
-  const res = await fetch(
-    'https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2',
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: text,
-        options: { wait_for_model: true },
-      }),
-    }
-  )
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`[Embedding] HuggingFace error ${res.status}: ${err}`)
-  }
-
-  const data = await res.json()
-
-  if (!Array.isArray(data)) throw new Error('[Embedding] Format inattendu')
-
-  let vector: number[]
-  if (typeof data[0] === 'number') {
-    vector = data as number[]
-  } else if (Array.isArray(data[0]) && typeof data[0][0] === 'number') {
-    vector = data[0] as number[]
-  } else if (Array.isArray(data[0]) && Array.isArray(data[0][0])) {
-    // Token embeddings — mean pool
-    const tokens = data[0] as number[][]
-    const dim = tokens[0].length
-    vector = new Array(dim).fill(0)
-    for (const t of tokens) for (let i = 0; i < dim; i++) vector[i] += t[i]
-    vector = vector.map(v => v / tokens.length)
-  } else {
-    throw new Error('[Embedding] Format de réponse non reconnu')
-  }
-
-  console.log(`[Embedding] ✅ ${vector.length} dimensions`)
-  return vector
+  const result = await embeddingService.generate(text)
+  return result.vector
 }
 
 // ─── Fallback matcher — adapts DB agents to VectorAgent with similarity=1 ────
@@ -88,11 +48,14 @@ export async function runOrchestrator(
 ): Promise<OrchestratorResult | null> {
   const startTime = Date.now()
 
+  // Timeout réduit à 15s pour une meilleure UX web
+  // Breakdown typique : Analyse LLM (2-3s) + Embedding (1s) + Vector search (0.2s) + Scoring (0.1s) + Build LLM (3-4s) = ~7-9s
+  // Marge de 6s pour les variations réseau et retry
   const timeoutPromise = new Promise<null>(resolve =>
     setTimeout(() => {
-      console.error('❌ [Orchestrator] Timeout après 50s')
+      console.error('❌ [Orchestrator] Timeout après 30s')
       resolve(null)
-    }, 50_000)
+    }, 30_000)
   )
 
   const orchestrationPromise = (async (): Promise<OrchestratorResult | null> => {
@@ -108,6 +71,7 @@ export async function runOrchestrator(
       // ── Étape 2 : Récupération des agents (vectorielle ou fallback) ─────────
       let vectorAgents: VectorAgent[] = []
       let retrievalMode: 'vector' | 'fallback' = 'fallback'
+      let embeddingLatency = 0
 
       // Fetch reference stacks in parallel regardless of retrieval mode
       const referenceStacksPromise = getReferenceStack(
@@ -117,19 +81,25 @@ export async function runOrchestrator(
 
       try {
         console.log('[Orchestrator] Étape 2 — Génération de l\'embedding...')
+        // Texte enrichi : objectif + secteur + TOUTES les catégories + sous-tâches
+        // Plus de diversité sémantique = meilleur recall vectoriel
         const embeddingText = [
           ctx.objective,
+          `Secteur: ${ctx.sector}`,
           analyzedQuery.sector_context ?? '',
-          analyzedQuery.subtasks.slice(0, 3).join('. '),
-        ].join('. ')
+          `Catégories: ${analyzedQuery.required_categories.join(', ')}`,
+          ...analyzedQuery.subtasks.slice(0, 5),
+        ].filter(Boolean).join('. ')
 
-        const embedding = await generateEmbedding(embeddingText)
+        const embeddingResult = await embeddingService.generate(embeddingText)
+        embeddingLatency = embeddingResult.latency_ms
 
         console.log('[Orchestrator] Étape 3 — Recherche vectorielle Supabase...')
         const rawVectorAgents = await getVectorMatchedAgents(
-          embedding,
+          embeddingResult.vector,
           budgetMax,
-          primaryCategory ?? undefined
+          // Pas de filtre catégorie — on veut 40 agents diversifiés
+          // Le Matcher RRF s'occupe du scoring par catégorie ensuite
         )
 
         if (rawVectorAgents && rawVectorAgents.length > 0) {
@@ -167,8 +137,8 @@ export async function runOrchestrator(
       // ── Étape 5 : Construction du stack ────────────────────────────────────
       console.log('[Orchestrator] Étape 5 — Construction du stack...')
       const referenceStacks = await referenceStacksPromise
-      const top5 = candidates.slice(0, 5)
-      const stack = await buildStack(ctx, analyzedQuery, top5, referenceStacks)
+      const top15 = candidates.slice(0, 15)
+      const stack = await buildStack(ctx, analyzedQuery, top15, referenceStacks)
 
       if (!stack) {
         console.error('❌ [Orchestrator] Échec construction stack')
@@ -195,6 +165,8 @@ export async function runOrchestrator(
           subtasks_detected:  analyzedQuery.subtasks.length,
           processing_time_ms: processingTime,
           retrieval_mode:     retrievalMode,
+          embedding_provider: 'jina',
+          embedding_latency_ms: embeddingLatency,
         },
       }
     } catch (err) {

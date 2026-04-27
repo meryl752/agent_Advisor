@@ -42,7 +42,7 @@ function StepCard({ step, index, color }: { step: ImplementationStep; index: num
       {/* Vertical connector line between steps */}
       {index > 0 && (
         <div className="absolute left-[11px] -top-3 w-px h-3"
-          style={{ background: 'repeating-linear-gradient(to bottom, #3f3f46 0px, #3f3f46 3px, transparent 3px, transparent 6px)' }} />
+          style={{ background: 'repeating-linear-gradient(to bottom, #d4d4d8 0px, #d4d4d8 3px, transparent 3px, transparent 6px)' }} />
       )}
 
       <button
@@ -56,7 +56,7 @@ function StepCard({ step, index, color }: { step: ImplementationStep; index: num
         </div>
 
         <div className="flex-1 min-w-0 pb-2">
-          <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors leading-snug">{step.title}</p>
+          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors leading-snug">{step.title}</p>
           <p className="text-xs text-zinc-500 mt-0.5">{step.action}</p>
         </div>
 
@@ -73,7 +73,7 @@ function StepCard({ step, index, color }: { step: ImplementationStep; index: num
             className="overflow-hidden ml-[34px]"
           >
             <div className="pb-3">
-              <p className="text-xs text-zinc-400 leading-relaxed mb-2">{step.details}</p>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-2">{step.details}</p>
               {step.tip && (
                 <div className="flex gap-2 p-2.5 rounded-lg mt-2"
                   style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
@@ -140,7 +140,7 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-base text-white">{agent.name}</span>
+              <span className="font-semibold text-base text-zinc-900 dark:text-white">{agent.name}</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full"
                 style={{ color, background: `${color}15` }}>
                 {agent.category}
@@ -151,7 +151,7 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
         </div>
 
         {/* Role */}
-        <p className="text-sm text-zinc-400 leading-relaxed mb-4">{agent.role}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">{agent.role}</p>
 
         {/* Concrete result */}
         <div className="rounded-xl p-3 mb-4"
@@ -162,18 +162,18 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
 
         {/* Prompt / guide */}
         {agent.prompt_to_use && (
-          <div className="rounded-xl bg-zinc-900/60 border border-zinc-800/80 p-3 mb-4">
+          <div className="rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 p-3 mb-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
                 {isLLM ? 'Prompt' : 'Prise en main'}
               </p>
               <button
                 onClick={() => { navigator.clipboard.writeText(agent.prompt_to_use); setCopied(true); setTimeout(() => setCopied(false), 1800) }}
-                className="text-[10px] px-2.5 py-1 rounded border border-zinc-700 text-zinc-400 hover:text-white transition-all">
+                className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all">
                 {copied ? '✓' : '⎘ Copier'}
               </button>
             </div>
-            <p className="text-xs text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">{agent.prompt_to_use}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">{agent.prompt_to_use}</p>
           </div>
         )}
 
@@ -214,7 +214,7 @@ export default function StackRoadmap({ agents, stackName, objective, streamedCou
       <div className="flex items-start justify-between mb-8">
         <div>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Roadmap d'implémentation</p>
-          <h2 className="text-lg font-semibold text-white">{stackName}</h2>
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">{stackName}</h2>
           <p className="text-sm text-zinc-500 mt-0.5 max-w-xl">{objective}</p>
         </div>
         <button
@@ -232,8 +232,8 @@ export default function StackRoadmap({ agents, stackName, objective, streamedCou
       </div>
 
       {/* Footer */}
-      <div className="flex items-center gap-5 pt-4 border-t border-zinc-800/60 text-xs text-zinc-500 mt-2">
-        <span>Total <span className="text-white font-medium">{agents.reduce((s, a) => s + a.price_from, 0)}€/mois</span></span>
+      <div className="flex items-center gap-5 pt-4 border-t border-zinc-200 dark:border-zinc-800/60 text-xs text-zinc-500 mt-2">
+        <span>Total <span className="text-zinc-900 dark:text-white font-medium">{agents.reduce((s, a) => s + a.price_from, 0)}€/mois</span></span>
         <span>{agents.length} agents</span>
         {streamedCount !== undefined && streamedCount < agents.length && (
           <span className="text-[#CAFF32] animate-pulse">Chargement...</span>
@@ -246,7 +246,7 @@ export default function StackRoadmap({ agents, stackName, objective, streamedCou
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-50 bg-zinc-950 overflow-auto p-10">
+        className="fixed inset-0 z-50 bg-white dark:bg-zinc-950 overflow-auto p-10">
         {inner}
       </motion.div>
     )

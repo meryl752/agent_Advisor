@@ -1,0 +1,577 @@
+{
+  "timestamp": "2026-04-22T12:16:09.722Z",
+  "total_agents": 205,
+  "data_quality": {
+    "missing_best_for": 0,
+    "missing_not_for": 99,
+    "missing_use_cases": 0,
+    "missing_difficulty": 0
+  },
+  "miscategorized": [
+    {
+      "id": "3b91a723-04ea-46e8-b8d8-9ac7742a7221",
+      "name": "Pipedrive AI",
+      "current_category": "prospecting",
+      "suggested_category": "crm",
+      "reason": "3 keywords match \"crm\" vs 0 for \"prospecting\""
+    },
+    {
+      "id": "35dab221-35af-4959-9c2c-e142a3bbc20b",
+      "name": "Pencil",
+      "current_category": "image",
+      "suggested_category": "social",
+      "reason": "3 keywords match \"social\" vs 0 for \"image\""
+    },
+    {
+      "id": "1237881f-3788-4bd2-b980-49dbea676f5f",
+      "name": "Pencil",
+      "current_category": "image",
+      "suggested_category": "social",
+      "reason": "3 keywords match \"social\" vs 0 for \"image\""
+    }
+  ],
+  "landing_page_tools_miscategorized": [
+    {
+      "id": "2cd1d9bb-b3e9-4403-adc2-a78b1587777c",
+      "name": "PageFly",
+      "current_category": "automation",
+      "description": "Page builder Shopify drag-and-drop avec templates haute conversion optimisés IA."
+    },
+    {
+      "id": "887b7044-e213-4711-822a-c33af7eb94e6",
+      "name": "Shogun",
+      "current_category": "automation",
+      "description": "Page builder e-com haute conversion avec IA — landing pages, fiches produits, A/B testing intégré."
+    },
+    {
+      "id": "4238cf69-7f8e-49a5-87b9-7498f0f567fe",
+      "name": "Shogun",
+      "current_category": "automation",
+      "description": "Page builder e-com haute conversion avec IA — landing pages, fiches produits, A/B testing intégré."
+    },
+    {
+      "id": "5ec9660a-e068-4296-a5b3-34072c39c812",
+      "name": "GemPages",
+      "current_category": "automation",
+      "description": "Landing page builder Shopify optimisé IA — templates dropshipping haute conversion, mobile-first."
+    },
+    {
+      "id": "e659c5b2-c080-498d-b596-f91ea83b297d",
+      "name": "GemPages",
+      "current_category": "automation",
+      "description": "Landing page builder Shopify optimisé IA — templates dropshipping haute conversion, mobile-first."
+    }
+  ],
+  "category_distribution": {
+    "research": 31,
+    "automation": 48,
+    "prospecting": 18,
+    "copywriting": 15,
+    "image": 17,
+    "customer_service": 16,
+    "coding": 17,
+    "video": 14,
+    "seo": 11,
+    "analytics": 18
+  },
+  "critical_issues": {
+    "agents_without_best_for": [],
+    "agents_without_not_for": [
+      {
+        "id": "e9c950af-8d44-41ea-bed1-e593f9a3fcd8",
+        "name": "Stable Diffusion",
+        "category": "image"
+      },
+      {
+        "id": "c9979dcd-1d22-439a-9f1d-6d6504d7241f",
+        "name": "n8n",
+        "category": "automation"
+      },
+      {
+        "id": "b71e74cc-fa89-4891-9985-e8007204dd35",
+        "name": "Intercom",
+        "category": "customer_service"
+      },
+      {
+        "id": "072decd1-b8c7-4bb0-bbc3-85422c6f36e1",
+        "name": "GitHub Copilot",
+        "category": "coding"
+      },
+      {
+        "id": "ab6151e6-3a0c-465c-b725-342bfeb8b5da",
+        "name": "Exa AI",
+        "category": "research"
+      },
+      {
+        "id": "17bbe108-eb57-44d8-8e9a-538104f081f6",
+        "name": "Synthesia",
+        "category": "video"
+      },
+      {
+        "id": "e5894ac3-e58d-4d55-85a3-9b2328f1572d",
+        "name": "Minea",
+        "category": "research"
+      },
+      {
+        "id": "9d5ea4e1-dc37-43ca-a6cc-d440002f3772",
+        "name": "Drop Magic",
+        "category": "automation"
+      },
+      {
+        "id": "dff480b4-efbf-48bc-bcec-190d485fc905",
+        "name": "CJ Dropshipping",
+        "category": "automation"
+      },
+      {
+        "id": "9750a4fe-0821-4ed9-b308-a94ecd5b7b03",
+        "name": "AdCreative.ai",
+        "category": "image"
+      },
+      {
+        "id": "641f72b7-1045-4b35-8127-1b41ffcc805c",
+        "name": "Shopify Sidekick",
+        "category": "automation"
+      },
+      {
+        "id": "e49e0bff-adee-46ca-b820-4394005f6d29",
+        "name": "Klaviyo",
+        "category": "automation"
+      },
+      {
+        "id": "10744f7e-fbd4-49d5-8f16-d91d7cf8edef",
+        "name": "Triple Whale",
+        "category": "analytics"
+      },
+      {
+        "id": "2cd1d9bb-b3e9-4403-adc2-a78b1587777c",
+        "name": "PageFly",
+        "category": "automation"
+      },
+      {
+        "id": "a55b278b-14cc-4eeb-ac27-33dc7b45940e",
+        "name": "Sell The Trend",
+        "category": "research"
+      },
+      {
+        "id": "bc532324-2e11-4a85-95c2-a30678379676",
+        "name": "Ecomhunt",
+        "category": "research"
+      },
+      {
+        "id": "59361d15-ea13-4da9-891c-57ab8e641e1f",
+        "name": "AutoDS",
+        "category": "automation"
+      },
+      {
+        "id": "887b7044-e213-4711-822a-c33af7eb94e6",
+        "name": "Shogun",
+        "category": "automation"
+      },
+      {
+        "id": "8c2a6c04-693b-4ddd-a11a-361254336b97",
+        "name": "Foreplay",
+        "category": "research"
+      },
+      {
+        "id": "ff4fe58a-262b-4b8a-be51-ea8abd1a3028",
+        "name": "Motion App",
+        "category": "analytics"
+      },
+      {
+        "id": "35dab221-35af-4959-9c2c-e142a3bbc20b",
+        "name": "Pencil",
+        "category": "image"
+      },
+      {
+        "id": "02331937-2d36-4d18-b5d3-ce2ae35a0f29",
+        "name": "Richpanel",
+        "category": "customer_service"
+      },
+      {
+        "id": "f97cd0c0-6e37-441e-9cf7-ca4289424734",
+        "name": "AfterShip",
+        "category": "customer_service"
+      },
+      {
+        "id": "a4fc2ef8-9591-4976-8ad7-e86290696e0f",
+        "name": "Judge.me",
+        "category": "customer_service"
+      },
+      {
+        "id": "d55a55cd-c3d9-4e77-b6e3-f460dbc6d188",
+        "name": "Printful",
+        "category": "automation"
+      },
+      {
+        "id": "740df13a-d0a7-4d9c-90d8-16f5a173171a",
+        "name": "Stan Store",
+        "category": "automation"
+      },
+      {
+        "id": "63edc027-56e1-469a-814f-7fcdf6f0dd6b",
+        "name": "Jungle Scout",
+        "category": "research"
+      },
+      {
+        "id": "eacd15c9-5ac4-4f8b-a502-1967e1d2cf3f",
+        "name": "Helium 10",
+        "category": "research"
+      },
+      {
+        "id": "ff939e2d-0f91-48d2-87f9-004f2fdbca7c",
+        "name": "Alli AI",
+        "category": "seo"
+      },
+      {
+        "id": "36f8765b-3090-4cd9-a924-627e37b971f2",
+        "name": "Northbeam",
+        "category": "analytics"
+      },
+      {
+        "id": "50a2f923-2af5-4acf-9744-065b897f60fd",
+        "name": "Glew.io",
+        "category": "analytics"
+      },
+      {
+        "id": "ab187a94-22b9-4ed9-b5a0-f3958e5a13f3",
+        "name": "Sell The Trend",
+        "category": "research"
+      },
+      {
+        "id": "cee4dc5c-a212-41ed-87a7-af2a528a04ca",
+        "name": "Ecomhunt",
+        "category": "research"
+      },
+      {
+        "id": "64312ab0-23be-49ff-9f8d-a6400e107c71",
+        "name": "AutoDS",
+        "category": "automation"
+      },
+      {
+        "id": "4238cf69-7f8e-49a5-87b9-7498f0f567fe",
+        "name": "Shogun",
+        "category": "automation"
+      },
+      {
+        "id": "5ec9660a-e068-4296-a5b3-34072c39c812",
+        "name": "GemPages",
+        "category": "automation"
+      },
+      {
+        "id": "67e0b752-5f67-4652-84f9-83cef480742b",
+        "name": "Foreplay",
+        "category": "research"
+      },
+      {
+        "id": "f991ec76-a084-4b42-b627-ba42ec8448e5",
+        "name": "Motion App",
+        "category": "analytics"
+      },
+      {
+        "id": "1237881f-3788-4bd2-b980-49dbea676f5f",
+        "name": "Pencil",
+        "category": "image"
+      },
+      {
+        "id": "95aec0bc-ee43-4b42-8ce4-549098fe3789",
+        "name": "Richpanel",
+        "category": "customer_service"
+      },
+      {
+        "id": "f17759b0-1445-4f84-864a-26bbb9ca4d39",
+        "name": "AfterShip",
+        "category": "customer_service"
+      },
+      {
+        "id": "bad8ab04-1ef6-4166-b326-abcb77d7f4f9",
+        "name": "Judge.me",
+        "category": "customer_service"
+      },
+      {
+        "id": "e659c5b2-c080-498d-b596-f91ea83b297d",
+        "name": "GemPages",
+        "category": "automation"
+      },
+      {
+        "id": "739912b8-8bd8-49dc-99bf-76e19afd7706",
+        "name": "Stan Store",
+        "category": "automation"
+      },
+      {
+        "id": "d7103f2d-ecd8-49b3-aa46-342a71544567",
+        "name": "Jungle Scout",
+        "category": "research"
+      },
+      {
+        "id": "ca33b782-bed8-4cab-821b-72d8b172516e",
+        "name": "Helium 10",
+        "category": "research"
+      },
+      {
+        "id": "305e8d4b-6580-43db-b7b4-647133b98dd1",
+        "name": "Alli AI",
+        "category": "seo"
+      },
+      {
+        "id": "3b8612f4-1a14-4fbf-9ce8-42b2b14ef2e7",
+        "name": "Describely",
+        "category": "copywriting"
+      },
+      {
+        "id": "abff1d78-27f4-483c-ad5d-5e055cff78a7",
+        "name": "Northbeam",
+        "category": "analytics"
+      },
+      {
+        "id": "c862bc23-a9de-46bf-9b4a-da3ac4593f95",
+        "name": "Glew.io",
+        "category": "analytics"
+      },
+      {
+        "id": "152085b4-169d-4db8-ba19-aca6310b78c4",
+        "name": "ChatGPT Plus",
+        "category": "copywriting"
+      },
+      {
+        "id": "31ca04d2-337a-483d-91ed-6396ffbc3315",
+        "name": "Jasper AI",
+        "category": "copywriting"
+      },
+      {
+        "id": "2f32fcb7-24d7-4710-8809-576713c8bf5b",
+        "name": "Copy.ai",
+        "category": "copywriting"
+      },
+      {
+        "id": "db68de80-27b5-4c69-a8e2-eaf0fcc9b206",
+        "name": "Writesonic",
+        "category": "copywriting"
+      },
+      {
+        "id": "adc8cd71-2d0a-468c-8f69-b24713c33afd",
+        "name": "DALL-E 3",
+        "category": "image"
+      },
+      {
+        "id": "1d18a4c8-a3b3-4547-aa8f-4a4b1799d457",
+        "name": "Adobe Firefly",
+        "category": "image"
+      },
+      {
+        "id": "831bb207-21f5-434b-b265-716acbe59ba1",
+        "name": "Figma AI",
+        "category": "image"
+      },
+      {
+        "id": "3f18c8cf-1372-4457-9f9d-63be4926c828",
+        "name": "Zapier",
+        "category": "automation"
+      },
+      {
+        "id": "7d7959c7-8efe-421f-ac05-b6c284332e9d",
+        "name": "Activepieces",
+        "category": "automation"
+      },
+      {
+        "id": "26d59947-0e94-4271-8bb6-931fb4b9b9c8",
+        "name": "Google Analytics 4",
+        "category": "analytics"
+      },
+      {
+        "id": "1ac4763f-9d39-446c-b33b-950a3149b903",
+        "name": "Mixpanel",
+        "category": "analytics"
+      },
+      {
+        "id": "c52668fc-e18c-4e3c-bd05-f48c2d63d617",
+        "name": "Hotjar",
+        "category": "analytics"
+      },
+      {
+        "id": "4aaceac1-5c36-4df9-999e-1df93b7b897a",
+        "name": "Crisp",
+        "category": "customer_service"
+      },
+      {
+        "id": "9b423a7b-6992-4924-8e93-cb35d650e1fb",
+        "name": "Zendesk AI",
+        "category": "customer_service"
+      },
+      {
+        "id": "8e328dff-4162-466a-96cf-5542d0b5ec64",
+        "name": "Ahrefs",
+        "category": "seo"
+      },
+      {
+        "id": "c2a8c3c6-bf77-4c76-9466-fd4d3fc4b96e",
+        "name": "Semrush",
+        "category": "seo"
+      },
+      {
+        "id": "fe74a90e-b0f1-44b3-84f7-502d02e9e8d6",
+        "name": "Frase.io",
+        "category": "seo"
+      },
+      {
+        "id": "c451f40f-2451-405d-a600-fad3afd4b463",
+        "name": "HubSpot",
+        "category": "prospecting"
+      },
+      {
+        "id": "b5c37429-0ab7-4cd6-8feb-79181d03821d",
+        "name": "Lemlist",
+        "category": "prospecting"
+      },
+      {
+        "id": "91c31d01-044e-460f-9d64-1f1a15353363",
+        "name": "LinkedIn Sales Navigator",
+        "category": "prospecting"
+      },
+      {
+        "id": "082779df-d243-40a3-9182-69f862fa68bb",
+        "name": "Lavender",
+        "category": "prospecting"
+      },
+      {
+        "id": "849b26a6-f095-4844-b8cb-e75e7f86fbdd",
+        "name": "Cursor",
+        "category": "coding"
+      },
+      {
+        "id": "3266d7dd-b02e-4ac2-86e7-1af4c53a695a",
+        "name": "Replit AI",
+        "category": "coding"
+      },
+      {
+        "id": "cd718c18-981f-4eae-8398-27d464fad9af",
+        "name": "v0.dev",
+        "category": "coding"
+      },
+      {
+        "id": "af5d7d61-0ff1-4239-9f03-78c932301a38",
+        "name": "Consensus",
+        "category": "research"
+      },
+      {
+        "id": "05c29e7a-b560-4c44-b2af-4f4ac057f307",
+        "name": "Elicit",
+        "category": "research"
+      },
+      {
+        "id": "a2dc87b2-4524-473b-a1b9-82f6e31d2c1e",
+        "name": "Descript",
+        "category": "video"
+      },
+      {
+        "id": "51aafbd2-59d6-4419-9d0b-ee3ac629e904",
+        "name": "HeyGen",
+        "category": "video"
+      },
+      {
+        "id": "d1391f0a-fe3c-4107-a7bc-2d6e3d1caba6",
+        "name": "Opus Clip",
+        "category": "video"
+      },
+      {
+        "id": "1e2bf61d-45be-4f69-8ea5-f68970cf0c9d",
+        "name": "Hootsuite",
+        "category": "automation"
+      },
+      {
+        "id": "07c78eea-4ff0-4a41-a547-3632de9aa36e",
+        "name": "Taplio",
+        "category": "automation"
+      },
+      {
+        "id": "5d0a7f3b-6e2d-4c02-a40d-c4d919457d68",
+        "name": "Tweet Hunter",
+        "category": "automation"
+      },
+      {
+        "id": "87d622a5-0017-42a4-83af-df6420179db5",
+        "name": "Notion AI",
+        "category": "copywriting"
+      },
+      {
+        "id": "ef612857-f540-40c2-a250-6af6e0c6fec0",
+        "name": "Otter.ai",
+        "category": "research"
+      },
+      {
+        "id": "6650a759-dd40-42fd-9431-a6b5fe78b046",
+        "name": "Gamma",
+        "category": "copywriting"
+      },
+      {
+        "id": "d516abc0-267f-43f7-b75c-02ef2b870cfd",
+        "name": "DSers",
+        "category": "automation"
+      },
+      {
+        "id": "3fe10a32-78f8-4f82-b628-2e060893e265",
+        "name": "Zendrop",
+        "category": "automation"
+      },
+      {
+        "id": "7d90c2cd-0b1e-49f6-a697-2329a44e6883",
+        "name": "Loox",
+        "category": "customer_service"
+      },
+      {
+        "id": "53bce7c5-8f54-4ce5-b8b6-3d691bd15b79",
+        "name": "Postscript",
+        "category": "automation"
+      },
+      {
+        "id": "10c58288-92b8-4897-aedc-6a7de21b658a",
+        "name": "Niche Scraper",
+        "category": "research"
+      },
+      {
+        "id": "a2811a77-2d83-4c52-84c4-880798325377",
+        "name": "Printify",
+        "category": "automation"
+      },
+      {
+        "id": "5d91f3d2-c5f0-41e5-ae7c-e63e338645a5",
+        "name": "Gumroad",
+        "category": "automation"
+      },
+      {
+        "id": "f364b81d-2793-4029-9c9c-25a66555c1ce",
+        "name": "Whop",
+        "category": "automation"
+      },
+      {
+        "id": "6c9bc3aa-51c9-4c4f-8970-98654164de56",
+        "name": "Describely",
+        "category": "copywriting"
+      },
+      {
+        "id": "f4fcd926-61f4-4ee2-a404-97b28b2761fa",
+        "name": "Niche Scraper",
+        "category": "research"
+      },
+      {
+        "id": "ca5966cb-0c1a-4bcb-8353-a0d1ff065fe5",
+        "name": "Printful",
+        "category": "automation"
+      },
+      {
+        "id": "9d9e4ec6-6ef4-4529-a74f-57a9696ad724",
+        "name": "Printify",
+        "category": "automation"
+      },
+      {
+        "id": "ad614ea9-6985-4990-acc1-cc49e96d3bd2",
+        "name": "Gumroad",
+        "category": "automation"
+      },
+      {
+        "id": "e6469820-234b-42f5-9757-8ef213000e7b",
+        "name": "Whop",
+        "category": "automation"
+      }
+    ]
+  }
+}

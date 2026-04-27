@@ -7,14 +7,8 @@ export default function WelcomeToast() {
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    const stored = localStorage.getItem('stackai_welcome_message')
-    if (stored) {
-      setMessage(stored)
-      localStorage.removeItem('stackai_welcome_message')
-
-      const timer = setTimeout(() => setMessage(null), 8000)
-      return () => clearTimeout(timer)
-    }
+    // Clear any stored welcome message — we no longer show it
+    localStorage.removeItem('stackai_welcome_message')
   }, [])
 
   return (

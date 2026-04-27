@@ -1,0 +1,465 @@
+{
+  "common": {
+    "continue": "Continuar",
+    "skip": "Omitir",
+    "back": "Volver",
+    "loading": "Cargando...",
+    "error": "Ha ocurrido un error",
+    "signOut": "Cerrar sesión",
+    "themeLight": "Modo claro",
+    "themeDark": "Modo oscuro",
+    "getStarted": "Empezar",
+    "newStack": "Nuevo stack",
+    "seeMore": "Ver más",
+    "manage": "Gestionar",
+    "view": "Ver",
+    "retry": "Reintentar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No",
+    "or": "o"
+  },
+  "landing": {
+    "nav": {
+      "features": "Funcionalidades",
+      "pricing": "Precios",
+      "signIn": "Iniciar sesión",
+      "signUp": "Registrarse",
+      "logo": "Raspquery"
+    },
+    "hero": {
+      "title": "Tu stack de IA personalizado en 60 segundos",
+      "subtitle": "Describe tu negocio, analizamos más de 200 agentes de IA y te entregamos un stack personalizado con ROI estimado, costes y guías de implementación.",
+      "cta": "Generar mi stack gratis",
+      "ctaSecondary": "Ver una demo",
+      "badge": "Nuevo — Análisis de más de 200 agentes de IA"
+    },
+    "features": {
+      "title": "Todo lo que necesitas para automatizar",
+      "subtitle": "Herramientas potentes para construir, analizar y optimizar tu stack de IA.",
+      "items": [
+        {
+          "title": "AI Stack Builder",
+          "description": "Describe tu negocio en una frase y recibe un stack de IA completo con ROI estimado y guías de implementación."
+        },
+        {
+          "title": "Calculadora ROI",
+          "description": "Estima el retorno de inversión de cada herramienta de IA antes de comprometerte financieramente."
+        },
+        {
+          "title": "Guías de implementación",
+          "description": "Guías paso a paso para integrar cada herramienta en tu flujo de trabajo existente, incluso sin conocimientos técnicos."
+        },
+        {
+          "title": "Stack Monitoring",
+          "description": "Monitoriza el rendimiento de tu stack, recibe alertas y optimiza continuamente."
+        }
+      ]
+    },
+    "howItWorks": {
+      "title": "Cómo funciona",
+      "subtitle": "Tres pasos sencillos para obtener tu stack de IA personalizado.",
+      "steps": [
+        {
+          "step": "Describe tu negocio",
+          "description": "Explica tu sector, objetivos y presupuesto en una frase. Nuestra IA entiende el contexto."
+        },
+        {
+          "step": "Analizamos por ti",
+          "description": "Nuestro motor escanea más de 200 agentes de IA y selecciona las mejores herramientas adaptadas a tu perfil."
+        },
+        {
+          "step": "Recibe tu stack",
+          "description": "Obtén un stack completo con ROI estimado, costes mensuales y guías de implementación detalladas."
+        }
+      ]
+    },
+    "pricing": {
+      "title": "Precios simples y transparentes",
+      "subtitle": "Empieza gratis, escala según tus necesidades.",
+      "plans": [
+        {
+          "name": "Gratis",
+          "price": "0€",
+          "description": "Para descubrir Raspquery",
+          "features": [
+            "1 recomendación al mes",
+            "Acceso al StackMap",
+            "Calculadora ROI básica",
+            "Soporte comunitario"
+          ],
+          "cta": "Empezar gratis"
+        },
+        {
+          "name": "Pro",
+          "price": "29€",
+          "description": "Para emprendedores serios",
+          "features": [
+            "10 recomendaciones al mes",
+            "Guías de implementación completas",
+            "Stack Monitoring",
+            "Alertas personalizadas",
+            "Soporte prioritario"
+          ],
+          "cta": "Pasarse a Pro"
+        },
+        {
+          "name": "Agency",
+          "price": "99€",
+          "description": "Para agencias y equipos",
+          "features": [
+            "50 recomendaciones por hora",
+            "Acceso a la API",
+            "Informes para clientes",
+            "Multi-cuenta",
+            "Soporte dedicado"
+          ],
+          "cta": "Pasarse a Agency"
+        }
+      ]
+    },
+    "socialProof": {
+      "title": "Confían en Raspquery",
+      "subtitle": "Emprendedores y agencias que han transformado su negocio con la IA."
+    },
+    "cta": {
+      "title": "¿Listo para automatizar tu negocio?",
+      "subtitle": "Únete a cientos de emprendedores que ya usan Raspquery para optimizar su stack de IA.",
+      "button": "Generar mi stack gratis"
+    },
+    "footer": {
+      "copyright": "© {year} Raspquery. Todos los derechos reservados.",
+      "links": {
+        "privacy": "Privacidad",
+        "terms": "Términos de uso",
+        "contact": "Contacto"
+      }
+    }
+  },
+  "onboarding": {
+    "stepOf": "Paso {current} de {total}",
+    "steps": {
+      "role": {
+        "question": "¿Cuál es tu rol?",
+        "subtitle": "Esto nos ayuda a personalizar tus recomendaciones."
+      },
+      "sector": {
+        "question": "¿En qué sector trabajas?",
+        "subtitle": "Adaptamos las herramientas de IA a tu campo de actividad."
+      },
+      "team_size": {
+        "question": "¿Cuál es el tamaño de tu equipo?",
+        "subtitle": "Para recomendar herramientas adaptadas a tu organización."
+      },
+      "budget": {
+        "question": "¿Cuál es tu presupuesto mensual para herramientas de IA?",
+        "subtitle": "Optimizamos las recomendaciones según tus restricciones financieras."
+      },
+      "main_goal": {
+        "question": "¿Cuál es tu objetivo principal?",
+        "subtitle": "Para identificar las herramientas que tendrán mayor impacto."
+      },
+      "referral_source": {
+        "question": "¿Cómo descubriste Raspquery?",
+        "subtitle": "Ayúdanos a entender cómo nos encontraste."
+      }
+    },
+    "options": {
+      "role": {
+        "founder": "Fundador / CEO",
+        "marketing": "Marketing",
+        "ecommerce": "E-commerce",
+        "freelancer": "Freelance",
+        "developer": "Desarrollador",
+        "contentCreator": "Creador de contenido",
+        "sales": "Ventas",
+        "other": "Otro"
+      },
+      "sector": {
+        "ecommerce": "E-commerce",
+        "saas": "SaaS",
+        "agence": "Agencia",
+        "consultant": "Consultor",
+        "createur": "Creador de contenido",
+        "b2b": "B2B / Ventas",
+        "other": "Otro"
+      },
+      "team_size": {
+        "solo": "Solo",
+        "small": "2–5 personas",
+        "medium": "6–20 personas",
+        "large": "20+ personas"
+      },
+      "budget": {
+        "zero": "0€ — Solo gratis",
+        "low": "Menos de 50€/mes",
+        "medium": "50–200€/mes",
+        "high": "200€+/mes"
+      },
+      "main_goal": {
+        "automate": "Automatizar tareas repetitivas",
+        "grow": "Hacer crecer mi negocio",
+        "save_time": "Ahorrar tiempo",
+        "reduce_costs": "Reducir costes",
+        "improve_quality": "Mejorar la calidad",
+        "other": "Otro"
+      },
+      "referral_source": {
+        "google": "Google / Búsqueda",
+        "social": "Redes sociales",
+        "friend": "Recomendación de un amigo",
+        "newsletter": "Newsletter",
+        "other": "Otro"
+      }
+    },
+    "otherPlaceholder": "Especifica tu respuesta...",
+    "getStarted": "Empezar",
+    "error": "Ha ocurrido un error. Inténtalo de nuevo.",
+    "completing": "Completando tu perfil...",
+    "welcome": "¡Bienvenido a Raspquery!"
+  },
+  "dashboard": {
+    "greeting": "Hola, {name}",
+    "nav": {
+      "dashboard": "Dashboard",
+      "recommend": "Construye tu stack",
+      "blueprint": "StackMap",
+      "stacks": "Mis stacks",
+      "roi": "ROI Tracker",
+      "alerts": "Stack Alerts",
+      "score": "Stack Score",
+      "settings": "Ajustes",
+      "billing": "Facturación",
+      "account": "Mi cuenta"
+    },
+    "sidebar": {
+      "collapse": "Contraer barra lateral",
+      "expand": "Expandir barra lateral",
+      "newStack": "Construye tu stack"
+    },
+    "metrics": {
+      "activeStacks": "{count, plural, one {# stack activo} other {# stacks activos}}",
+      "monthlyCost": "Coste mensual",
+      "avgRoi": "ROI promedio",
+      "avgScore": "Puntuación media",
+      "roiTooltip": "El ROI estima la ganancia financiera en relación al coste mensual de tus stacks.",
+      "scoreTooltip": "Evalúa la calidad global de tus stacks: fiabilidad, popularidad y adecuación a tus necesidades."
+    },
+    "emptyState": {
+      "title": "Tu primer stack te espera",
+      "description": "Describe tu negocio en una frase — analizamos más de 200 agentes de IA y te entregamos un stack personalizado con ROI estimado, costes y guías de implementación.",
+      "cta": "Generar mi stack →"
+    },
+    "latestStack": {
+      "label": "Último stack",
+      "viewLink": "Ver →",
+      "cost": "Coste",
+      "roi": "ROI",
+      "score": "Puntuación",
+      "empty": "Ningún stack todavía.",
+      "perMonth": "/mes"
+    },
+    "allStacks": {
+      "label": "Todos tus stacks",
+      "manageLink": "Gestionar →"
+    },
+    "recommend": {
+      "idle": {
+        "title": "Tu stack de IA, a medida",
+        "subtitle": "Describe tu negocio y recibe un stack personalizado con ROI estimado.",
+        "placeholder": "Ej: Quiero automatizar mi servicio al cliente de Shopify, presupuesto 50€, principiante...",
+        "send": "Enviar"
+      },
+      "session": {
+        "new": "↺ Nuevo",
+        "roadmapPlaceholder": "El roadmap aparecerá aquí",
+        "questionSend": "Haz una pregunta sobre este stack..."
+      },
+      "reasoning": {
+        "steps": [
+          "Analizando tu objetivo...",
+          "Escaneando más de 200 agentes de IA...",
+          "Optimizando el presupuesto...",
+          "Ensamblando el stack final...",
+          "Buscando documentación...",
+          "Generando guías de implementación..."
+        ]
+      },
+      "suggestions": [
+        "Automatizar mi servicio al cliente de Shopify",
+        "Aumentar mi prospección B2B",
+        "Crear contenido de Instagram en masa",
+        "Automatizar mi gestión de inventario",
+        "Analizar mis datos de clientes",
+        "Optimizar mis procesos de ventas"
+      ],
+      "results": {
+        "ready": "Stack listo — {count} herramientas con guías de implementación.",
+        "financialSummary": "Resumen financiero",
+        "monthlyCost": "Coste mensual",
+        "estimatedRoi": "ROI estimado",
+        "timeSaved": "Tiempo ahorrado",
+        "perWeek": "h/sem"
+      },
+      "errors": {
+        "rateLimit": "Límite alcanzado.",
+        "rateLimitUpgrade": "Pasarse a Pro →",
+        "server": "Error del servidor",
+        "network": "Error de red",
+        "retry": "↺ Reintentar"
+      },
+      "tasks": {
+        "title": "Tareas del agente",
+        "analyze": "Análisis de la solicitud",
+        "match": "Selección de agentes",
+        "build": "Construcción del stack",
+        "roadmap": "Roadmap generado",
+        "guides": "Guías de implementación"
+      },
+      "upgradeBanner": {
+        "free": "Plan gratuito — 1 recomendación/mes",
+        "pro": "Plan Pro — pásate a Agency para 50 recomendaciones/hora",
+        "upgradeTo": "Pasarse a {plan} →"
+      },
+      "models": {
+        "title": "Modelo de IA"
+      }
+    },
+    "blueprint": {
+      "title": "StackMap",
+      "subtitle": "Explora el mapa completo de herramientas de IA por sector.",
+      "selectSector": "Selecciona un sector",
+      "tasks": "Tareas",
+      "useCases": "Casos de uso",
+      "sector": "Sector",
+      "dailyTasks": "Tareas diarias",
+      "viewFullGuide": "Ver la guía completa →",
+      "resume": "reciente",
+      "continue": "Continuar",
+      "recentLabel": "reciente",
+      "emptyState": {
+        "title": "Selecciona un sector",
+        "description": "Elige tu sector de la lista para descubrir el mapa completo de herramientas de IA."
+      }
+    },
+    "stack": {
+      "title": "Mis stacks",
+      "empty": "Ningún stack por ahora.",
+      "viewStack": "Ver el stack",
+      "deleteStack": "Eliminar",
+      "confirmDelete": "¿Confirmar la eliminación?",
+      "cost": "Coste",
+      "roi": "ROI",
+      "score": "Puntuación",
+      "objective": "Objetivo",
+      "perMonth": "/mes",
+      "agents": "herramientas",
+      "createdAt": "Creado el"
+    },
+    "alerts": {
+      "title": "Stack Alerts",
+      "subtitle": "Recibe alertas sobre las actualizaciones de tus herramientas de IA.",
+      "empty": "Ninguna alerta por ahora.",
+      "newAlert": "Nueva alerta",
+      "deleteAlert": "Eliminar alerta"
+    },
+    "score": {
+      "title": "Stack Score",
+      "subtitle": "Evalúa la calidad global de tus stacks de IA.",
+      "empty": "Ninguna puntuación disponible."
+    },
+    "billing": {
+      "title": "Facturación",
+      "subtitle": "Gestiona tu suscripción y pagos.",
+      "currentPlan": "Plan actual",
+      "upgrade": "Mejorar plan",
+      "manage": "Gestionar suscripción",
+      "free": "Gratis",
+      "pro": "Pro",
+      "agency": "Agency"
+    },
+    "settings": {
+      "title": "Ajustes",
+      "subtitle": "Personaliza tu experiencia en Raspquery.",
+      "save": "Guardar",
+      "saved": "¡Guardado!",
+      "language": "Idioma",
+      "theme": "Tema",
+      "notifications": "Notificaciones"
+    },
+    "account": {
+      "title": "Mi cuenta",
+      "subtitle": "Gestiona tu información personal.",
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "save": "Guardar",
+      "saved": "¡Guardado!",
+      "deleteAccount": "Eliminar mi cuenta",
+      "confirmDelete": "Esta acción es irreversible. ¿Confirmar?"
+    },
+    "roi": {
+      "title": "ROI Tracker",
+      "subtitle": "Sigue el retorno de inversión de tus stacks de IA.",
+      "empty": "No hay datos de ROI disponibles.",
+      "totalSaved": "Total ahorrado",
+      "perMonth": "por mes",
+      "perYear": "por año"
+    }
+  },
+  "metadata": {
+    "home": {
+      "title": "Raspquery — Tu stack de IA personalizado",
+      "description": "Describe tu negocio y recibe un stack de IA personalizado con ROI estimado, costes y guías de implementación en 60 segundos."
+    },
+    "dashboard": {
+      "title": "Dashboard — Raspquery",
+      "description": "Visión general de tus stacks de IA, métricas y rendimiento."
+    },
+    "recommend": {
+      "title": "Construye tu stack — Raspquery",
+      "description": "Genera un stack de IA personalizado adaptado a tu negocio y presupuesto."
+    },
+    "blueprint": {
+      "title": "StackMap — Raspquery",
+      "description": "Explora el mapa completo de herramientas de IA por sector de actividad."
+    },
+    "stack": {
+      "title": "Mis stacks — Raspquery",
+      "description": "Gestiona y consulta todos tus stacks de IA guardados."
+    },
+    "alerts": {
+      "title": "Stack Alerts — Raspquery",
+      "description": "Recibe alertas sobre actualizaciones y cambios en tus herramientas de IA."
+    },
+    "score": {
+      "title": "Stack Score — Raspquery",
+      "description": "Evalúa la calidad y relevancia de tus stacks de IA."
+    },
+    "billing": {
+      "title": "Facturación — Raspquery",
+      "description": "Gestiona tu suscripción y consulta tus facturas."
+    },
+    "settings": {
+      "title": "Ajustes — Raspquery",
+      "description": "Personaliza tus preferencias y ajustes de cuenta."
+    },
+    "account": {
+      "title": "Mi cuenta — Raspquery",
+      "description": "Gestiona tu información personal y ajustes de seguridad."
+    },
+    "roi": {
+      "title": "ROI Tracker — Raspquery",
+      "description": "Sigue y analiza el retorno de inversión de tus stacks de IA."
+    },
+    "onboarding": {
+      "title": "Bienvenido a Raspquery",
+      "description": "Configura tu perfil para recibir recomendaciones personalizadas."
+    },
+    "notFound": {
+      "title": "Página no encontrada — Raspquery",
+      "description": "La página que buscas no existe o ha sido movida."
+    }
+  }
+}

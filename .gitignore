@@ -4,3 +4,4 @@ node_modules/
 .next/
 dist/
 *.backup.json
+tx.txt

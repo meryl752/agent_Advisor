@@ -193,7 +193,7 @@ export default function Hero() {
                                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
                                 <div className="w-3 h-3 rounded-full bg-green-400" />
                             </div>
-                            <div className="flex-1 bg-white border border-zinc-200 rounded-md py-1 px-3
+                            <div suppressHydrationWarning className="flex-1 bg-white border border-zinc-200 rounded-md py-1 px-3
                               text-xs text-zinc-400 font-mono text-center">
                                 app.stackai.co — Construis ton stack
                             </div>

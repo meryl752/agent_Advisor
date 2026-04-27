@@ -20,6 +20,9 @@ const config: Config = {
           2: '#ff6b2b',
           3: '#38bdf8',
         },
+        // Named alias for the lime green — use text-lime-accent, bg-lime-accent
+        // In light mode use a darker shade for visibility
+        'lime-accent': '#CAFF32',
         cream: '#f0ede6',
         muted: {
           DEFAULT: '#888888',

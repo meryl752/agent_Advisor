@@ -26,7 +26,8 @@ export default function CoverageRing({ covered, total, score }: CoverageRingProp
           <circle
             cx="70" cy="70" r={radius}
             fill="none"
-            stroke="rgba(255,255,255,0.05)"
+            stroke="rgba(0,0,0,0.08)"
+            className="dark:[stroke:rgba(255,255,255,0.05)]"
             strokeWidth="10"
           />
           {/* Progress */}
@@ -50,7 +51,7 @@ export default function CoverageRing({ covered, total, score }: CoverageRingProp
             initial={{ opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.8 }}
-            className="font-syne font-black text-3xl text-white leading-none"
+            className="font-syne font-black text-3xl text-zinc-900 dark:text-white leading-none"
           >
             {score}%
           </motion.span>
@@ -72,8 +73,8 @@ export default function CoverageRing({ covered, total, score }: CoverageRingProp
         transition={{ delay: 1.1 }}
         className="font-dm-mono text-xs text-zinc-400 text-center"
       >
-        <span className="text-white font-bold">{covered}</span>
-        <span className="text-zinc-600">/{total}</span>
+        <span className="text-zinc-900 dark:text-white font-bold">{covered}</span>
+        <span className="text-zinc-400 dark:text-zinc-600">/{total}</span>
         {' '}tâches couvertes
       </motion.p>
     </div>

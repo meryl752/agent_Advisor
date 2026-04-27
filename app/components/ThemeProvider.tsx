@@ -19,7 +19,7 @@ export function ThemeProvider({ children, ...props }: React.ComponentProps<typeo
     <NextThemesProvider
       {...props}
       disableTransitionOnChange
-    >
+    > 
       {children}
     </NextThemesProvider>
   )

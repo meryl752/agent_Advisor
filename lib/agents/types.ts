@@ -10,14 +10,31 @@ export interface UserContext {
   current_tools: string[]
 }
 
+// Nouvelle structure avec domaines et sous-tâches atomiques
+export interface AtomicSubtask {
+  id: string                    // ex: "d1_t1"
+  action: string                // description précise de la sous-tâche atomique
+  required_category: string     // catégorie d'outil requise
+  depends_on: string[]          // IDs des sous-tâches dépendantes
+  can_be_automated: boolean     // si automatisable ou action humaine requise
+}
+
+export interface FunctionalDomain {
+  name: string                  // nom du domaine fonctionnel
+  priority: number              // ordre de priorité
+  subtasks: AtomicSubtask[]     // sous-tâches atomiques du domaine
+}
+
 export interface AnalyzedQuery {
-  original: string
-  subtasks: string[]
-  required_categories: string[]
-  implicit_constraints: string[]
-  sector_context: string
-  success_metrics: string[]
-  budget_max: number
+  original: string              // reformulation claire de l'objectif
+  domains: FunctionalDomain[]   // domaines fonctionnels avec sous-tâches
+  implicit_constraints: string[] // contraintes implicites détectées
+  sector_context: string        // spécificités sectorielles
+  budget_max: number            // budget maximum en euros
+  
+  // Champs dérivés pour compatibilité avec le reste du système
+  subtasks: string[]            // liste plate des actions (généré depuis domains)
+  required_categories: string[] // liste unique des catégories (généré depuis domains)
 }
 
 // Agent enrichi avec le score de similarité vectorielle retourné par Supabase RPC
@@ -32,6 +49,7 @@ export interface VectorAgent {
   use_cases: string[]
   compatible_with: string[]
   best_for?: string[]        // cas d'usage prioritaires (colonne DB)
+  not_for?: string[]         // cas d'usage à éviter (colonne DB)
   integrations?: string[]    // intégrations natives (colonne DB)
   website_domain?: string
   setup_difficulty?: string

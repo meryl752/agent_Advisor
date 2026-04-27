@@ -23,26 +23,22 @@ export default function CTA() {
     }
 
     return (
-        <section className="py-32 bg-zinc-950 relative overflow-hidden" ref={ref}>
+        <section className="py-16 bg-zinc-950 relative overflow-hidden" ref={ref}>
             {/* Background glow */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                        w-[600px] h-[300px] opacity-20 blur-3xl rounded-full"
+                        w-[400px] h-[200px] opacity-15 blur-3xl rounded-full"
                     style={{ background: 'radial-gradient(ellipse, #CAFF32, transparent)' }} />
             </div>
 
-            <div className="relative max-w-3xl mx-auto px-6 text-center">
+            <div className="relative max-w-2xl mx-auto px-6 text-center">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.6 }}
                 >
-                    <span className="inline-block bg-zinc-800 text-zinc-400 text-xs font-bold
-                           uppercase tracking-widest px-4 py-2 rounded-full mb-8">
-                        Early Access
-                    </span>
-                    <h2 className="font-black text-white leading-tight mb-4"
-                        style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
+                    <h2 className="font-black text-white leading-tight mb-3"
+                        style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
                         Ton stack.<br />
                         Ton{' '}
                         <span className="text-transparent bg-clip-text"
@@ -50,46 +46,36 @@ export default function CTA() {
                             avantage.
                         </span>
                     </h2>
-                    <p className="text-zinc-400 text-lg mb-10 font-light">
+                    <p className="text-zinc-400 text-sm mb-8 font-light">
                         Les 50 premiers accèdent gratuitement à la bêta privée.
                     </p>
 
                     {sent ? (
-                        <div className="bg-zinc-900 border border-[#CAFF32]/30 rounded-2xl p-6 flex items-center justify-center gap-3">
-                            <div className="w-8 h-8 bg-[#CAFF32] rounded-full flex items-center justify-center">
-                                <span className="text-zinc-900 font-black text-sm">✓</span>
+                        <div className="bg-zinc-900 border border-[#CAFF32]/30 rounded-2xl p-5 flex items-center justify-center gap-3">
+                            <div className="w-7 h-7 bg-[#CAFF32] rounded-full flex items-center justify-center">
+                                <span className="text-zinc-900 font-black text-xs">✓</span>
                             </div>
-                            <p className="text-white font-semibold">Tu es sur la liste. On te contacte en premier.</p>
+                            <p className="text-white font-semibold text-sm">Tu es sur la liste. On te contacte en premier.</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-6 max-w-md mx-auto mb-10">
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                                    placeholder="ton@email.com"
-                                    className="flex-1 bg-zinc-900 border border-zinc-700 text-white px-5 py-3.5
+                        <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                                placeholder="ton@email.com"
+                                className="flex-1 bg-zinc-900 border border-zinc-700 text-white px-4 py-3
                                rounded-xl outline-none focus:border-[#CAFF32] transition-colors
                                placeholder:text-zinc-500 text-sm"
-                                />
-                                <button
-                                    onClick={handleSubmit}
-                                    className="bg-[#CAFF32] text-zinc-900 font-bold px-6 py-3.5 rounded-xl
-                               hover:bg-[#d4ff50] transition-all hover:scale-105 hover:shadow-xl
-                               whitespace-nowrap text-sm"
-                                >
-                                    Rejoindre →
-                                </button>
-                            </div>
-                            
-                            {/* Social Proof Outline */}
-                            <div className="flex flex-row items-center justify-center">
-                                <p className="text-zinc-400 text-sm font-medium">
-                                    Rejoint par <span className="text-white font-bold">200+</span> entrepreneurs
-                                </p>
-                            </div>
+                            />
+                            <button
+                                onClick={handleSubmit}
+                                className="bg-[#CAFF32] text-zinc-900 font-bold px-5 py-3 rounded-xl
+                               hover:bg-[#d4ff50] transition-all whitespace-nowrap text-sm"
+                            >
+                                Rejoindre →
+                            </button>
                         </div>
                     )}
                 </motion.div>

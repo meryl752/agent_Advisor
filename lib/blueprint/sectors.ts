@@ -25,7 +25,7 @@ export const SECTORS: Record<SectorSlug, SectorConfig> = {
     slug: 'ecommerce',
     label: 'E-commerce',
     description: 'Boutique en ligne, dropshipping, marketplace — automatise tes ventes et ta relation client.',
-    icon: '🛒',
+    icon: '',
     tasks: [
       {
         id: 'ecommerce-service-client',
@@ -115,7 +115,7 @@ export const SECTORS: Record<SectorSlug, SectorConfig> = {
     slug: 'saas',
     label: 'SaaS',
     description: 'Logiciel en ligne, app web — accélère ta croissance et réduis ton churn.',
-    icon: '⚡',
+    icon: '',
     tasks: [
       {
         id: 'saas-copywriting-landing',
@@ -187,7 +187,7 @@ export const SECTORS: Record<SectorSlug, SectorConfig> = {
     slug: 'agence',
     label: 'Agence',
     description: 'Agence marketing, créative ou digitale — livre plus vite et prospecte mieux.',
-    icon: '🏢',
+    icon: '',
     tasks: [
       {
         id: 'agence-prospection-clients',
@@ -250,7 +250,7 @@ export const SECTORS: Record<SectorSlug, SectorConfig> = {
     slug: 'consultant',
     label: 'Consultant',
     description: 'Consultant indépendant ou freelance — gagne du temps sur les tâches répétitives.',
-    icon: '💼',
+    icon: '',
     tasks: [
       {
         id: 'consultant-prospection-linkedin',
@@ -313,7 +313,7 @@ export const SECTORS: Record<SectorSlug, SectorConfig> = {
     slug: 'createur',
     label: 'Créateur',
     description: 'YouTubeur, streamer, créateur de contenu — produis plus et engage ta communauté.',
-    icon: '🎬',
+    icon: '',
     tasks: [
       {
         id: 'createur-script-video',
@@ -385,7 +385,7 @@ export const SECTORS: Record<SectorSlug, SectorConfig> = {
     slug: 'b2b',
     label: 'B2B',
     description: 'Vente B2B, SaaS enterprise, services aux entreprises — scale ta prospection.',
-    icon: '🤝',
+    icon: '',
     tasks: [
       {
         id: 'b2b-enrichissement-leads',

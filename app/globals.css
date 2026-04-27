@@ -8,23 +8,37 @@
   }
 }
 
+/* ─── Light mode green override ──────────────────────────────────────────────
+   #CAFF32 is nearly invisible on white backgrounds.
+   In light mode, we override it to a darker, more visible green.
+   This targets Tailwind arbitrary color classes and inline styles.
+*/
+:root:not(.dark) .text-\[\#CAFF32\] { color: #5a8a00 !important; }
+:root:not(.dark) .border-\[\#CAFF32\] { border-color: #5a8a00 !important; }
+:root:not(.dark) .bg-\[\#CAFF32\] { background-color: #CAFF32 !important; }
+:root:not(.dark) .hover\:bg-\[\#CAFF32\]:hover { background-color: #CAFF32 !important; }
+:root:not(.dark) .hover\:text-\[\#CAFF32\]:hover { color: #5a8a00 !important; }
+:root:not(.dark) .group-hover\:text-\[\#CAFF32\] { color: #5a8a00 !important; }
+:root:not(.dark) .focus\:border-\[\#CAFF32\]:focus { border-color: #5a8a00 !important; }
+
 :root {
-  --bg: #FBFCF5; /* Ultra-light lime tint */
-  --bg2: #F7F9E8; /* Subtle dirty white with lime undertones */
-  --bg3: #F2F5DB; /* Slightly more saturated tint for depth */
-  --accent: #8fb824; /* Adjusted accent for better legibility on tinted bg */
+  --bg: #F8F9F4; /* Très légère teinte vert-gris naturelle */
+  --bg2: #F2F4EC; /* Légèrement plus saturé */
+  --bg3: #ECF0E2; /* Profondeur douce */
+  --accent: #7aaa00; /* Vert plus lisible sur fond clair */
   --accent2: #ff6b2b;
   --accent3: #0ea5e9;
   --text: #09090b;
   --text-muted: #71717a;
-  --border: #e4e4e7;
-  --border2: #f4f4f5;
+  --border: #e2e5d8;
+  --border2: #eceee6;
+  --grid-line: rgba(0,0,0,0.06);
 }
 
 .dark {
-  --bg: #2A2A2D;
-  --bg2: #2F2F32;
-  --bg3: #343437;
+  --bg: #18181b;
+  --bg2: #1e1e21;
+  --bg3: #232326;
   --accent: #C8F135;
   --accent2: #ff6b2b;
   --accent3: #38bdf8;
@@ -32,6 +46,7 @@
   --text-muted: #71717a;
   --border: #3a3a3d;
   --border2: #404043;
+  --grid-line: rgba(255,255,255,0.04);
 }
 
 * {
@@ -90,6 +105,22 @@ body::before {
 
   .font-dm-sans {
     font-family: var(--font-dm-sans), sans-serif;
+  }
+
+  .accent-green {
+    color: #7aaa00;
+  }
+
+  .dark .accent-green {
+    color: #CAFF32;
+  }
+
+  .bg-accent-green {
+    background-color: #7aaa00;
+  }
+
+  .dark .bg-accent-green {
+    background-color: #CAFF32;
   }
 
   .section-label {

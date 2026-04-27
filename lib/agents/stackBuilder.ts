@@ -79,22 +79,48 @@ ${query.subtasks.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 ${query.implicit_constraints.map(c => `• ${c}`).join('\n') || '• Aucune contrainte spécifique détectée'}
 </implicit_constraints>
 
-<success_metrics>
-${query.success_metrics.map(m => `• ${m}`).join('\n')}
-</success_metrics>
-
 <available_candidates>
 ${candidateList}
 </available_candidates>
 
 <critical_rules>
 RÈGLE 1 — BUDGET: Le total_cost DOIT être ≤ ${BUDGET_MAP[ctx.budget]}€/mois. Violation = stack inutilisable.
+
 RÈGLE 2 — NOMBRE: Sélectionne entre 4 et 6 agents. Ni plus, ni moins.
+
 RÈGLE 3 — ORDRE: Les agents sont classés dans l'ordre CHRONOLOGIQUE d'implémentation. L'agent 1 est le premier à installer.
+
 RÈGLE 4 — SPÉCIFICITÉ: Chaque description doit mentionner CE projet précis. INTERDIT de parler d'un outil en général.
+
 RÈGLE 5 — RÉSULTATS CONCRETS: Chaque concrete_result doit être chiffré. "Tu gagnes X heures" ou "Tu économises Y€" ou "Tes clients reçoivent une réponse en Z secondes".
+
 RÈGLE 6 — PROFIL: Respecte le niveau technique. Un débutant ne peut pas utiliser un outil "hard".
+
 RÈGLE 7 — COMPLÉMENTARITÉ: Les agents doivent s'articuler entre eux. Explique comment l'agent N prépare le travail pour l'agent N+1.
+
+RÈGLE 8 — ANTI-REDONDANCE (CRITIQUE):
+Ne sélectionne JAMAIS deux agents qui font la même fonction principale.
+Ta stack doit être une chaîne logique : Source → Enrichissement → Envoi → Conversion.
+
+Exemples de doublons à ÉVITER :
+• Lavender + Outreach (tous deux font des séquences emails) → Choisis UN SEUL
+• Cursor + GitHub Copilot (tous deux sont des IDE assistés) → Choisis UN SEUL
+• Ahrefs + Semrush (tous deux font du SEO) → Choisis UN SEUL
+• Minea + Sell The Trend (tous deux font de la recherche produits) → Choisis UN SEUL
+
+Si deux agents se chevauchent, choisis le MEILLEUR pour le profil utilisateur (niveau technique + budget + urgence).
+
+RÈGLE 9 — COUVERTURE COMPLÈTE (CRITIQUE):
+Relis l'objectif utilisateur phrase par phrase.
+Pour chaque besoin exprimé, vérifie qu'un agent le couvre.
+Si un besoin n'est PAS couvert par les candidats disponibles, mentionne-le EXPLICITEMENT dans les warnings.
+
+Exemple :
+Objectif : "trouver des emails + envoyer des séquences + qualifier avant calendrier"
+✅ Trouver emails → Lusha
+✅ Séquences → Outreach
+❌ Calendrier/Qualification → AUCUN CANDIDAT DISPONIBLE
+→ Ajoute dans warnings : "Aucun outil de scheduling/qualification disponible dans les candidats. Considère d'ajouter Calendly ou Chili Piper manuellement."
 </critical_rules>
 
 <output_format>
@@ -152,15 +178,63 @@ JSON strict uniquement. Zéro markdown. Zéro backtick. Zéro texte avant ou apr
     let raw = jsonMatch[0]
 
     // Attempt 1: direct parse
+    let stack: FinalStack
     try {
-      return JSON.parse(raw) as FinalStack
+      stack = JSON.parse(raw) as FinalStack
     } catch {
       // Attempt 2: truncated JSON repair
-      // Find the last complete agent object by locating the last valid closing brace
-      // before the agents array closes
       raw = repairTruncatedJSON(raw)
-      return JSON.parse(raw) as FinalStack
+      stack = JSON.parse(raw) as FinalStack
     }
+
+    // ── VALIDATION POST-GÉNÉRATION : Anti-Redondance ──────────────────────
+    // Détecte et supprime les outils avec la même fonction principale
+    const emailTools = ['Lavender', 'Outreach']
+    const ideTools = ['Cursor', 'GitHub Copilot', 'Windsurf']
+    const seoTools = ['Ahrefs', 'Semrush']
+    const productTools = ['Minea', 'Sell The Trend']
+    const redundantPairs = [emailTools, ideTools, seoTools, productTools]
+
+    for (const pair of redundantPairs) {
+      const found = stack.agents.filter(a => pair.includes(a.name))
+      if (found.length > 1) {
+        // Garder seulement le premier (meilleur score/rank)
+        const toRemove = found.slice(1)
+        stack.agents = stack.agents.filter(a => !toRemove.some(r => r.id === a.id))
+        console.warn(`[StackBuilder] ✂️ Removed ${toRemove.map(r => r.name).join(', ')} - redundant with ${found[0].name}`)
+      }
+    }
+
+    // ── VALIDATION POST-GÉNÉRATION : Couverture Complète ──────────────────
+    // Détecte les besoins non couverts et génère des warnings
+    const coverageKeywords = [
+      { keyword: 'calendrier', suggestion: 'Calendly' },
+      { keyword: 'calendar', suggestion: 'Calendly' },
+      { keyword: 'scheduling', suggestion: 'Calendly' },
+      { keyword: 'qualifier', suggestion: 'Chili Piper' },
+      { keyword: 'crm', suggestion: 'HubSpot' },
+      { keyword: 'analytics', suggestion: 'Google Analytics' },
+    ]
+
+    for (const { keyword, suggestion } of coverageKeywords) {
+      if (ctx.objective.toLowerCase().includes(keyword)) {
+        const covered = stack.agents.some(a => 
+          a.role.toLowerCase().includes(keyword) || 
+          a.name.toLowerCase().includes(keyword) ||
+          a.concrete_result.toLowerCase().includes(keyword)
+        )
+        if (!covered) {
+          const warningText = `Besoin non couvert: ${keyword}. Aucun outil disponible dans les candidats. Considère d'ajouter ${suggestion} manuellement.`
+          // Éviter les doublons
+          if (!stack.warnings.some(w => w.includes(keyword))) {
+            stack.warnings.push(warningText)
+            console.warn(`[StackBuilder] ⚠️ ${warningText}`)
+          }
+        }
+      }
+    }
+
+    return stack
   } catch (err) {
     console.error('StackBuilder error:', err)
     return null

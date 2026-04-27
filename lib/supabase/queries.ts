@@ -89,20 +89,16 @@ export const getAllAgents = unstable_cache(
   { revalidate: 300 } // 5 minutes
 )
 
-export const getAgentsByCategories = unstable_cache(
-  async (categories: string[]): Promise<Agent[]> => {
-    if (categories.length === 0) return getAllAgents()
-    const { data, error } = await supabaseServer
-      .from('agents')
-      .select('*')
-      .in('category', categories)
-      .order('score', { ascending: false })
-    if (error) { console.error('getAgentsByCategories error:', error.message); return [] }
-    return data ?? []
-  },
-  ['agents-by-categories'],
-  { revalidate: 300 }
-)
+export const getAgentsByCategories = async (categories: string[]): Promise<Agent[]> => {
+  if (categories.length === 0) return getAllAgents()
+  const { data, error } = await supabaseServer
+    .from('agents')
+    .select('*')
+    .in('category', categories)
+    .order('score', { ascending: false })
+  if (error) { console.error('getAgentsByCategories error:', error.message); return [] }
+  return data ?? []
+}
 
 export async function searchAgents(query: string): Promise<Agent[]> {
   const { data, error } = await supabaseServer
@@ -260,11 +256,13 @@ export async function incrementReferenceUsage(id: string) {
 // ─── Vector Search ────────────────────────────────────────────────────────────
 
 export async function getVectorMatchedAgents(embedding: number[], budget: number, category?: string) {
-  // On utilise supabaseService car on a besoin de droits pour appeler le RPC
-  const { data, error } = await (supabaseService as any).rpc('smart_search_agents', {
+  // Utilise la fonction RPC smart_search_agents_v2 avec HNSW index
+  // match_count=40 pour un meilleur recall (vs 17 par défaut)
+  // category=null pour ne pas filtrer par catégorie unique — le Matcher RRF s'en charge
+  const { data, error } = await (supabaseService as any).rpc('smart_search_agents_v2', {
     query_embedding: embedding,
     user_budget_max: budget || 0,
-    user_category: category || null,
+    user_category: null,
   })
 
   if (error) {

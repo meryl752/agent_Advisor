@@ -43,20 +43,23 @@ function computeBusinessScore(
 
   let score = 0
 
-  // Catégorie exacte requise par l'analyseur (+30)
-  if (query.required_categories.includes(agent.category)) score += 30
+  // Catégorie exacte requise par l'analyseur (+20)
+  // Réduit de 30 → 20 pour éviter la domination de la catégorie
+  if (query.required_categories.includes(agent.category)) score += 20
 
-  // Match use_cases sur objectif + sous-tâches (jusqu'à +25)
+  // Match use_cases sur objectif + sous-tâches (jusqu'à +35)
+  // Augmenté de 25 → 35 car plus précis que la catégorie
   const useCaseMatches = (agent.use_cases ?? []).filter(uc =>
     allText.includes(uc.toLowerCase())
   ).length
-  score += Math.min(useCaseMatches * 8, 25)
+  score += Math.min(useCaseMatches * 10, 35)
 
-  // Match best_for — cas d'usage prioritaires (jusqu'à +15)
+  // Match best_for — cas d'usage prioritaires (jusqu'à +20)
+  // Augmenté de 15 → 20 car très pertinent
   const bestForMatches = (agent.best_for ?? []).filter(bf =>
     allText.includes(bf.toLowerCase())
   ).length
-  score += Math.min(bestForMatches * 8, 15)
+  score += Math.min(bestForMatches * 10, 20)
 
   // Pénalité not_for — éliminer les mauvais matchs (-20 par match)
   const notForMatches = (agent.not_for ?? []).filter(nf =>

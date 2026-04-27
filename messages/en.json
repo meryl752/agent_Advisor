@@ -1,0 +1,465 @@
+{
+  "common": {
+    "continue": "Continue",
+    "skip": "Skip",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "signOut": "Sign out",
+    "themeLight": "Light mode",
+    "themeDark": "Dark mode",
+    "getStarted": "Get started",
+    "newStack": "New stack",
+    "seeMore": "See more",
+    "manage": "Manage",
+    "view": "View",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or"
+  },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "signIn": "Sign in",
+      "signUp": "Sign up",
+      "logo": "Raspquery"
+    },
+    "hero": {
+      "title": "Your custom AI stack in 60 seconds",
+      "subtitle": "Describe your business, we analyze 200+ AI agents and deliver a personalized stack with estimated ROI, costs, and implementation guides.",
+      "cta": "Generate my stack for free",
+      "ctaSecondary": "Watch a demo",
+      "badge": "New — Analysis of 200+ AI agents"
+    },
+    "features": {
+      "title": "Everything you need to automate",
+      "subtitle": "Powerful tools to build, analyze, and optimize your AI stack.",
+      "items": [
+        {
+          "title": "AI Stack Builder",
+          "description": "Describe your business in one sentence and receive a complete AI stack with estimated ROI and implementation guides."
+        },
+        {
+          "title": "ROI Calculator",
+          "description": "Estimate the return on investment of each AI tool before making a financial commitment."
+        },
+        {
+          "title": "Implementation Guides",
+          "description": "Step-by-step guides to integrate each tool into your existing workflow, even without technical skills."
+        },
+        {
+          "title": "Stack Monitoring",
+          "description": "Monitor your stack's performance, receive alerts, and continuously optimize."
+        }
+      ]
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "subtitle": "Three simple steps to get your personalized AI stack.",
+      "steps": [
+        {
+          "step": "Describe your business",
+          "description": "Explain your sector, goals, and budget in one sentence. Our AI understands the context."
+        },
+        {
+          "step": "We analyze for you",
+          "description": "Our engine scans 200+ AI agents and selects the best tools suited to your profile."
+        },
+        {
+          "step": "Receive your stack",
+          "description": "Get a complete stack with estimated ROI, monthly costs, and detailed implementation guides."
+        }
+      ]
+    },
+    "pricing": {
+      "title": "Simple and transparent pricing",
+      "subtitle": "Start for free, scale as you grow.",
+      "plans": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "description": "To discover Raspquery",
+          "features": [
+            "1 recommendation per month",
+            "Access to StackMap",
+            "Basic ROI calculator",
+            "Community support"
+          ],
+          "cta": "Start for free"
+        },
+        {
+          "name": "Pro",
+          "price": "$29",
+          "description": "For serious entrepreneurs",
+          "features": [
+            "10 recommendations per month",
+            "Full implementation guides",
+            "Stack Monitoring",
+            "Custom alerts",
+            "Priority support"
+          ],
+          "cta": "Go Pro"
+        },
+        {
+          "name": "Agency",
+          "price": "$99",
+          "description": "For agencies and teams",
+          "features": [
+            "50 recommendations per hour",
+            "API access",
+            "Client reports",
+            "Multi-account",
+            "Dedicated support"
+          ],
+          "cta": "Go Agency"
+        }
+      ]
+    },
+    "socialProof": {
+      "title": "They trust Raspquery",
+      "subtitle": "Entrepreneurs and agencies who have transformed their business with AI."
+    },
+    "cta": {
+      "title": "Ready to automate your business?",
+      "subtitle": "Join hundreds of entrepreneurs already using Raspquery to optimize their AI stack.",
+      "button": "Generate my stack for free"
+    },
+    "footer": {
+      "copyright": "© {year} Raspquery. All rights reserved.",
+      "links": {
+        "privacy": "Privacy",
+        "terms": "Terms of service",
+        "contact": "Contact"
+      }
+    }
+  },
+  "onboarding": {
+    "stepOf": "Step {current} of {total}",
+    "steps": {
+      "role": {
+        "question": "What is your role?",
+        "subtitle": "This helps us personalize your recommendations."
+      },
+      "sector": {
+        "question": "What sector do you work in?",
+        "subtitle": "We adapt AI tools to your field of activity."
+      },
+      "team_size": {
+        "question": "What is the size of your team?",
+        "subtitle": "To recommend tools suited to your organization."
+      },
+      "budget": {
+        "question": "What is your monthly budget for AI tools?",
+        "subtitle": "We optimize recommendations based on your financial constraints."
+      },
+      "main_goal": {
+        "question": "What is your main goal?",
+        "subtitle": "To target the tools that will have the most impact."
+      },
+      "referral_source": {
+        "question": "How did you discover Raspquery?",
+        "subtitle": "Help us understand how you found us."
+      }
+    },
+    "options": {
+      "role": {
+        "founder": "Founder / CEO",
+        "marketing": "Marketing",
+        "ecommerce": "E-commerce",
+        "freelancer": "Freelancer",
+        "developer": "Developer",
+        "contentCreator": "Content creator",
+        "sales": "Sales",
+        "other": "Other"
+      },
+      "sector": {
+        "ecommerce": "E-commerce",
+        "saas": "SaaS",
+        "agence": "Agency",
+        "consultant": "Consultant",
+        "createur": "Content creator",
+        "b2b": "B2B / Sales",
+        "other": "Other"
+      },
+      "team_size": {
+        "solo": "Solo",
+        "small": "2–5 people",
+        "medium": "6–20 people",
+        "large": "20+ people"
+      },
+      "budget": {
+        "zero": "$0 — Free only",
+        "low": "Less than $50/month",
+        "medium": "$50–$200/month",
+        "high": "$200+/month"
+      },
+      "main_goal": {
+        "automate": "Automate repetitive tasks",
+        "grow": "Grow my business",
+        "save_time": "Save time",
+        "reduce_costs": "Reduce costs",
+        "improve_quality": "Improve quality",
+        "other": "Other"
+      },
+      "referral_source": {
+        "google": "Google / Search",
+        "social": "Social media",
+        "friend": "Friend's recommendation",
+        "newsletter": "Newsletter",
+        "other": "Other"
+      }
+    },
+    "otherPlaceholder": "Specify your answer...",
+    "getStarted": "Get started",
+    "error": "An error occurred. Please try again.",
+    "completing": "Completing your profile...",
+    "welcome": "Welcome to Raspquery!"
+  },
+  "dashboard": {
+    "greeting": "Hello, {name}",
+    "nav": {
+      "dashboard": "Dashboard",
+      "recommend": "Build your stack",
+      "blueprint": "StackMap",
+      "stacks": "My stacks",
+      "roi": "ROI Tracker",
+      "alerts": "Stack Alerts",
+      "score": "Stack Score",
+      "settings": "Settings",
+      "billing": "Billing",
+      "account": "My account"
+    },
+    "sidebar": {
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar",
+      "newStack": "Build your stack"
+    },
+    "metrics": {
+      "activeStacks": "{count, plural, one {# active stack} other {# active stacks}}",
+      "monthlyCost": "Monthly cost",
+      "avgRoi": "Average ROI",
+      "avgScore": "Average score",
+      "roiTooltip": "ROI estimates the financial gain relative to the monthly cost of your stacks.",
+      "scoreTooltip": "Evaluates the overall quality of your stacks: reliability, popularity, and fit with your needs."
+    },
+    "emptyState": {
+      "title": "Your first stack is waiting",
+      "description": "Describe your business in one sentence — we analyze 200+ AI agents and deliver a custom stack with estimated ROI, costs, and implementation guides.",
+      "cta": "Generate my stack →"
+    },
+    "latestStack": {
+      "label": "Latest stack",
+      "viewLink": "View →",
+      "cost": "Cost",
+      "roi": "ROI",
+      "score": "Score",
+      "empty": "No stack yet.",
+      "perMonth": "/month"
+    },
+    "allStacks": {
+      "label": "All your stacks",
+      "manageLink": "Manage →"
+    },
+    "recommend": {
+      "idle": {
+        "title": "Your AI stack, tailored for you",
+        "subtitle": "Describe your business and receive a personalized stack with estimated ROI.",
+        "placeholder": "E.g.: I want to automate my Shopify customer service, budget $50, beginner...",
+        "send": "Send"
+      },
+      "session": {
+        "new": "↺ New",
+        "roadmapPlaceholder": "The roadmap will appear here",
+        "questionSend": "Ask a question about this stack..."
+      },
+      "reasoning": {
+        "steps": [
+          "Analyzing your objective...",
+          "Scanning 200+ AI agents...",
+          "Optimizing budget...",
+          "Assembling the final stack...",
+          "Searching documentation...",
+          "Generating implementation guides..."
+        ]
+      },
+      "suggestions": [
+        "Automate my Shopify customer service",
+        "Boost my B2B prospecting",
+        "Create Instagram content at scale",
+        "Automate my inventory management",
+        "Analyze my customer data",
+        "Optimize my sales processes"
+      ],
+      "results": {
+        "ready": "Stack ready — {count} tools with implementation guides.",
+        "financialSummary": "Financial summary",
+        "monthlyCost": "Monthly cost",
+        "estimatedRoi": "Estimated ROI",
+        "timeSaved": "Time saved",
+        "perWeek": "h/week"
+      },
+      "errors": {
+        "rateLimit": "Limit reached.",
+        "rateLimitUpgrade": "Upgrade to Pro →",
+        "server": "Server error",
+        "network": "Network error",
+        "retry": "↺ Retry"
+      },
+      "tasks": {
+        "title": "Agent tasks",
+        "analyze": "Request analysis",
+        "match": "Agent selection",
+        "build": "Stack construction",
+        "roadmap": "Roadmap generated",
+        "guides": "Implementation guides"
+      },
+      "upgradeBanner": {
+        "free": "Free plan — 1 recommendation/month",
+        "pro": "Pro plan — upgrade to Agency for 50 recommendations/hour",
+        "upgradeTo": "Upgrade to {plan} →"
+      },
+      "models": {
+        "title": "AI Model"
+      }
+    },
+    "blueprint": {
+      "title": "StackMap",
+      "subtitle": "Explore the complete map of AI tools by sector.",
+      "selectSector": "Select a sector",
+      "tasks": "Tasks",
+      "useCases": "Use cases",
+      "sector": "Sector",
+      "dailyTasks": "Daily tasks",
+      "viewFullGuide": "View full guide →",
+      "resume": "recent",
+      "continue": "Continue",
+      "recentLabel": "recent",
+      "emptyState": {
+        "title": "Select a sector",
+        "description": "Choose your sector from the list to discover the complete AI tools map."
+      }
+    },
+    "stack": {
+      "title": "My stacks",
+      "empty": "No stacks yet.",
+      "viewStack": "View stack",
+      "deleteStack": "Delete",
+      "confirmDelete": "Confirm deletion?",
+      "cost": "Cost",
+      "roi": "ROI",
+      "score": "Score",
+      "objective": "Objective",
+      "perMonth": "/month",
+      "agents": "tools",
+      "createdAt": "Created on"
+    },
+    "alerts": {
+      "title": "Stack Alerts",
+      "subtitle": "Receive alerts about updates to your AI tools.",
+      "empty": "No alerts yet.",
+      "newAlert": "New alert",
+      "deleteAlert": "Delete alert"
+    },
+    "score": {
+      "title": "Stack Score",
+      "subtitle": "Evaluate the overall quality of your AI stacks.",
+      "empty": "No score available."
+    },
+    "billing": {
+      "title": "Billing",
+      "subtitle": "Manage your subscription and payments.",
+      "currentPlan": "Current plan",
+      "upgrade": "Upgrade",
+      "manage": "Manage subscription",
+      "free": "Free",
+      "pro": "Pro",
+      "agency": "Agency"
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Customize your Raspquery experience.",
+      "save": "Save",
+      "saved": "Saved!",
+      "language": "Language",
+      "theme": "Theme",
+      "notifications": "Notifications"
+    },
+    "account": {
+      "title": "My account",
+      "subtitle": "Manage your personal information.",
+      "name": "Name",
+      "email": "Email",
+      "save": "Save",
+      "saved": "Saved!",
+      "deleteAccount": "Delete my account",
+      "confirmDelete": "This action is irreversible. Confirm?"
+    },
+    "roi": {
+      "title": "ROI Tracker",
+      "subtitle": "Track the return on investment of your AI stacks.",
+      "empty": "No ROI data available.",
+      "totalSaved": "Total saved",
+      "perMonth": "per month",
+      "perYear": "per year"
+    }
+  },
+  "metadata": {
+    "home": {
+      "title": "Raspquery — Your custom AI stack",
+      "description": "Describe your business and receive a personalized AI stack with estimated ROI, costs, and implementation guides in 60 seconds."
+    },
+    "dashboard": {
+      "title": "Dashboard — Raspquery",
+      "description": "Overview of your AI stacks, metrics, and performance."
+    },
+    "recommend": {
+      "title": "Build your stack — Raspquery",
+      "description": "Generate a custom AI stack tailored to your business and budget."
+    },
+    "blueprint": {
+      "title": "StackMap — Raspquery",
+      "description": "Explore the complete map of AI tools by sector."
+    },
+    "stack": {
+      "title": "My stacks — Raspquery",
+      "description": "Manage and view all your saved AI stacks."
+    },
+    "alerts": {
+      "title": "Stack Alerts — Raspquery",
+      "description": "Receive alerts about updates and changes to your AI tools."
+    },
+    "score": {
+      "title": "Stack Score — Raspquery",
+      "description": "Evaluate the quality and relevance of your AI stacks."
+    },
+    "billing": {
+      "title": "Billing — Raspquery",
+      "description": "Manage your subscription and view your invoices."
+    },
+    "settings": {
+      "title": "Settings — Raspquery",
+      "description": "Customize your preferences and account settings."
+    },
+    "account": {
+      "title": "My account — Raspquery",
+      "description": "Manage your personal information and security settings."
+    },
+    "roi": {
+      "title": "ROI Tracker — Raspquery",
+      "description": "Track and analyze the return on investment of your AI stacks."
+    },
+    "onboarding": {
+      "title": "Welcome to Raspquery",
+      "description": "Set up your profile to receive personalized recommendations."
+    },
+    "notFound": {
+      "title": "Page not found — Raspquery",
+      "description": "The page you are looking for does not exist or has been moved."
+    }
+  }
+}

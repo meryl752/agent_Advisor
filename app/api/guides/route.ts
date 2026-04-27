@@ -12,7 +12,7 @@ import type { StackAgent, UserContext } from '@/lib/agents/types'
  */
 export async function POST(req: NextRequest) {
   const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
 
   const body = await req.json().catch(() => null)
   if (!body?.agents || !body?.ctx) {

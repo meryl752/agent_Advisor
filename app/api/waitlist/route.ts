@@ -19,11 +19,11 @@ export async function POST(req: Request) {
     const success = await addToWaitlist(email)
 
     if (!success) {
-      return NextResponse.json({ error: 'Erreur lors de l\'inscription' }, { status: 500 })
+      return NextResponse.json({ error: 'SIGNUP_FAILED' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, message: 'Inscrit avec succès' })
+    return NextResponse.json({ success: true, message: 'OK' })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
   }
 }
