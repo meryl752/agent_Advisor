@@ -25,109 +25,77 @@
     "nav": {
       "features": "Funcionalidades",
       "pricing": "Precios",
+      "about": "Acerca de",
+      "blog": "Blog",
       "signIn": "Iniciar sesión",
-      "signUp": "Registrarse",
-      "logo": "Raspquery"
+      "signUp": "Empezar →",
+      "dashboard": "Dashboard →"
     },
     "hero": {
-      "title": "Tu stack de IA personalizado en 60 segundos",
-      "subtitle": "Describe tu negocio, analizamos más de 200 agentes de IA y te entregamos un stack personalizado con ROI estimado, costes y guías de implementación.",
-      "cta": "Generar mi stack gratis",
+      "word1": "Shopify",
+      "word2": "LinkedIn",
+      "word3": "Prospección",
+      "word4": "YouTube",
+      "word5": "Soporte",
+      "word6": "SEO",
+      "word7": "SaaS",
+      "headline1Prefix": "Lanza tu proyecto",
+      "headline1Suffix": "con las herramientas IA correctas",
+      "headline2Prefix": "Escala tu negocio",
+      "headline2Suffix": "sin contratar",
+      "subheadline": "Tu stack IA personalizado en 30 segundos — con los",
+      "subheadlineCosts": "costes",
+      "subheadlineEnd": ", el ROI y el flujo de trabajo llave en mano.",
+      "ctaPrimary": "Obtener mi stack gratis →",
       "ctaSecondary": "Ver una demo",
-      "badge": "Nuevo — Análisis de más de 200 agentes de IA"
+      "trustedBy": "Impulsado por los mejores modelos IA"
     },
     "features": {
-      "title": "Todo lo que necesitas para automatizar",
-      "subtitle": "Herramientas potentes para construir, analizar y optimizar tu stack de IA.",
-      "items": [
-        {
-          "title": "AI Stack Builder",
-          "description": "Describe tu negocio en una frase y recibe un stack de IA completo con ROI estimado y guías de implementación."
-        },
-        {
-          "title": "Calculadora ROI",
-          "description": "Estima el retorno de inversión de cada herramienta de IA antes de comprometerte financieramente."
-        },
-        {
-          "title": "Guías de implementación",
-          "description": "Guías paso a paso para integrar cada herramienta en tu flujo de trabajo existente, incluso sin conocimientos técnicos."
-        },
-        {
-          "title": "Stack Monitoring",
-          "description": "Monitoriza el rendimiento de tu stack, recibe alertas y optimiza continuamente."
-        }
-      ]
+      "badge": "El Motor Raspquery",
+      "title": "Sin más improvisación. Modo experto.",
+      "subtitle": "Cinco funcionalidades pensadas para una sola obsesión: maximizar el ROI de cada euro invertido en IA."
     },
     "howItWorks": {
-      "title": "Cómo funciona",
-      "subtitle": "Tres pasos sencillos para obtener tu stack de IA personalizado.",
-      "steps": [
-        {
-          "step": "Describe tu negocio",
-          "description": "Explica tu sector, objetivos y presupuesto en una frase. Nuestra IA entiende el contexto."
-        },
-        {
-          "step": "Analizamos por ti",
-          "description": "Nuestro motor escanea más de 200 agentes de IA y selecciona las mejores herramientas adaptadas a tu perfil."
-        },
-        {
-          "step": "Recibe tu stack",
-          "description": "Obtén un stack completo con ROI estimado, costes mensuales y guías de implementación detalladas."
-        }
-      ]
+      "badge": "Cómo funciona",
+      "title": "De la idea al stack",
+      "titleHighlight": "en 30 segundos",
+      "step1Title": "Describe tu objetivo",
+      "step1Desc": "En lenguaje natural, sin formularios. \"Quiero lanzar una tienda Shopify y automatizar mi atención al cliente\" es suficiente.",
+      "step2Title": "La IA analiza y empareja",
+      "step2Desc": "Nuestro pipeline multi-agente descompone tu solicitud, identifica subtareas y puntúa 200+ agentes según tu contexto exacto.",
+      "step3Title": "Recibes el stack perfecto",
+      "step3Desc": "Herramientas clasificadas, roles explicados, costes detallados, ROI estimado y victorias rápidas inmediatas.",
+      "step4Title": "Ajustas y optimizas",
+      "step4Desc": "Filtra por presupuesto, nivel técnico o urgencia. El stack se adapta instantáneamente sin regenerar."
     },
     "pricing": {
-      "title": "Precios simples y transparentes",
-      "subtitle": "Empieza gratis, escala según tus necesidades.",
-      "plans": [
-        {
-          "name": "Gratis",
-          "price": "0€",
-          "description": "Para descubrir Raspquery",
-          "features": [
-            "1 recomendación al mes",
-            "Acceso al StackMap",
-            "Calculadora ROI básica",
-            "Soporte comunitario"
-          ],
-          "cta": "Empezar gratis"
-        },
-        {
-          "name": "Pro",
-          "price": "29€",
-          "description": "Para emprendedores serios",
-          "features": [
-            "10 recomendaciones al mes",
-            "Guías de implementación completas",
-            "Stack Monitoring",
-            "Alertas personalizadas",
-            "Soporte prioritario"
-          ],
-          "cta": "Pasarse a Pro"
-        },
-        {
-          "name": "Agency",
-          "price": "99€",
-          "description": "Para agencias y equipos",
-          "features": [
-            "50 recomendaciones por hora",
-            "Acceso a la API",
-            "Informes para clientes",
-            "Multi-cuenta",
-            "Soporte dedicado"
-          ],
-          "cta": "Pasarse a Agency"
-        }
-      ]
+      "badge": "Acceso Early Adopter — Gratis",
+      "title": "Únete a los primeros —",
+      "titleHighlight": "es gratis durante el lanzamiento.",
+      "subtitle": "Sin tarjeta. Sin compromiso. Acceso completo ahora — los Early Adopters tendrán una tarifa preferencial de por vida.",
+      "perksTitle": "Lo que obtienes gratis:",
+      "perks": [
+        "Acceso completo a todas las funcionalidades",
+        "Stack IA personalizado en 30 segundos",
+        "ROI y costes calculados automáticamente",
+        "Alertas sobre las mejores herramientas IA",
+        "Flujo de trabajo visualizado llave en mano",
+        "Insignia Early Adopter de por vida"
+      ],
+      "price": "0€",
+      "priceSub": "durante el lanzamiento",
+      "cta": "Unirse gratis →",
+      "disclaimer": "Sin tarjeta requerida · Cancela cuando quieras"
+    },
+    "cta": {
+      "title": "¿Listo para construir tu",
+      "titleHighlight": "stack IA perfecto?",
+      "subtitle": "Gratis durante el lanzamiento. Sin tarjeta requerida.",
+      "cta": "Empezar gratis →"
     },
     "socialProof": {
       "title": "Confían en Raspquery",
       "subtitle": "Emprendedores y agencias que han transformado su negocio con la IA."
-    },
-    "cta": {
-      "title": "¿Listo para automatizar tu negocio?",
-      "subtitle": "Únete a cientos de emprendedores que ya usan Raspquery para optimizar su stack de IA.",
-      "button": "Generar mi stack gratis"
     },
     "footer": {
       "copyright": "© {year} Raspquery. Todos los derechos reservados.",

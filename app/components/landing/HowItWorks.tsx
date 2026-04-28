@@ -2,37 +2,39 @@
 
 import { useRef, useState } from 'react'
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion'
-
-const STEPS = [
-    {
-        num: '01',
-        title: 'Décris ton objectif',
-        desc: 'En langage naturel, sans formulaire. "Je veux lancer une boutique Shopify et automatiser mon SAV" suffit.',
-        color: '#CAFF32',
-    },
-    {
-        num: '02',
-        title: 'L\'IA analyse et matche',
-        desc: 'Notre pipeline multi-agents décompose ta requête, identifie les sous-tâches et score 200+ agents en fonction de ton contexte exact.',
-        color: '#FF6B35',
-    },
-    {
-        num: '03',
-        title: 'Tu reçois le stack parfait',
-        desc: 'Outils classés, rôles expliqués, coûts détaillés, ROI estimé et quick wins immédiats. Tout ce dont tu as besoin pour agir.',
-        color: '#6B4FFF',
-    },
-    {
-        num: '04',
-        title: 'Tu ajustes et optimises',
-        desc: 'Filtre par budget, niveau technique ou urgence. Le stack s\'adapte instantanément sans nouvelle génération.',
-        color: '#20B8CD',
-    },
-]
+import { useTranslations } from 'next-intl'
 
 export default function HowItWorks() {
     const containerRef = useRef<HTMLDivElement>(null)
     const [activeIndex, setActiveIndex] = useState(0)
+    const t = useTranslations('landing')
+
+    const STEPS = [
+        {
+            num: '01',
+            title: t('howItWorks.step1Title'),
+            desc: t('howItWorks.step1Desc'),
+            color: '#CAFF32',
+        },
+        {
+            num: '02',
+            title: t('howItWorks.step2Title'),
+            desc: t('howItWorks.step2Desc'),
+            color: '#FF6B35',
+        },
+        {
+            num: '03',
+            title: t('howItWorks.step3Title'),
+            desc: t('howItWorks.step3Desc'),
+            color: '#6B4FFF',
+        },
+        {
+            num: '04',
+            title: t('howItWorks.step4Title'),
+            desc: t('howItWorks.step4Desc'),
+            color: '#20B8CD',
+        },
+    ]
 
     const { scrollYProgress } = useScroll({
         target: containerRef,
@@ -50,7 +52,7 @@ export default function HowItWorks() {
     });
 
     return (
-        <section ref={containerRef} className="relative h-[400vh] bg-zinc-950">
+        <section ref={containerRef} className="relative h-[400vh] bg-zinc-950" data-theme="dark">
             {/* The sticky container that acts as a viewport */}
             <div className="sticky top-0 min-h-screen w-full flex flex-col items-center justify-center overflow-hidden py-24">
                 
@@ -65,14 +67,14 @@ export default function HowItWorks() {
                     >
                         <span className="inline-block bg-zinc-800 text-zinc-400 text-xs font-bold
                                uppercase tracking-widest px-4 py-2 rounded-full mb-6">
-                            Comment ça marche
+                            {t('howItWorks.badge')}
                         </span>
                         <h2 className="font-black text-white leading-tight"
                             style={{ fontSize: 'clamp(2.5rem, 4vw, 4rem)' }}>
-                            De l'idée au stack<br />
+                            {t('howItWorks.title')}<br />
                             <span className="text-transparent bg-clip-text"
                                 style={{ backgroundImage: 'linear-gradient(135deg, #CAFF32, #7FFF00)' }}>
-                                en 30 secondes
+                                {t('howItWorks.titleHighlight')}
                             </span>
                         </h2>
                     </motion.div>

@@ -172,6 +172,15 @@ body::before {
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
@@ -221,6 +230,11 @@ body::before {
   -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
 }
 
+.mask-vertical-faded-extended {
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 85%, transparent);
+}
+
 @keyframes scanline {
   0% { top: -2px; opacity: 0; }
   5% { opacity: 1; }
@@ -265,4 +279,16 @@ body::before {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ─── Line light animation ───────────────────────────────────────────────── */
+@keyframes line-light {
+  0% { transform: translateX(-100%); opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { transform: translateX(calc(100vw + 100%)); opacity: 0; }
+}
+
+.animate-line-light {
+  animation: line-light 4s ease-in-out infinite;
 }
