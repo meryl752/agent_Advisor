@@ -19,9 +19,16 @@ async function callGroq(prompt: string, maxTokens: number, retryCount = 0): Prom
     throw new Error('Groq not configured')
   }
   
-  // Utiliser Llama 3.3 70B directement (fonctionne bien)
-  const model = retryCount === 0 ? GROQ_MODEL : GROQ_MODEL_FALLBACK
-  console.log(`[LLM] Calling Groq ${model} with ${maxTokens} max tokens... (retry: ${retryCount})`)
+  // Toujours utiliser Llama (GROQ_MODEL) en premier
+  // Qwen (GROQ_MODEL_FALLBACK) uniquement en retry sur petits prompts
+  const promptTokensEstimate = Math.ceil(prompt.length / 4)
+  const totalTokensEstimate = promptTokensEstimate + maxTokens
+  const isLargePrompt = totalTokensEstimate > 4000
+
+  // Gros prompt → toujours Llama (Qwen ne peut pas gérer >6000 tokens)
+  // Petit prompt → Llama en premier, Qwen en fallback
+  const model = isLargePrompt ? GROQ_MODEL : (retryCount === 0 ? GROQ_MODEL : GROQ_MODEL_FALLBACK)
+  console.log(`[LLM] Calling Groq ${model} with ${maxTokens} max tokens... (retry: ${retryCount}${isLargePrompt ? ', large prompt→Llama' : ''})`)
   
   try {
     const res = await withTimeout(
@@ -36,20 +43,29 @@ async function callGroq(prompt: string, maxTokens: number, retryCount = 0): Prom
     )
     const text = res.choices[0]?.message?.content?.trim()
     if (!text) throw new Error('Groq empty response')
-    // Strip Qwen3 thinking tags if present (<think>...</think>)
-    const cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+    // Strip thinking tags — handles both closed (<think>...</think>) and unclosed (<think>...)
+    const cleaned = text
+      .replace(/<think>[\s\S]*?<\/think>/g, '')
+      .replace(/<think>[\s\S]*/g, '')
+      .trim()
     console.log(`[LLM] Groq ${model} success - ${cleaned.length} chars`)
     return cleaned
   } catch (err: any) {
+    // 413 — prompt trop grand pour ce modèle → switcher immédiatement à Llama
+    if ((err.status === 413 || err.message?.includes('Request too large')) && retryCount === 0 && model === GROQ_MODEL) {
+      console.warn(`[LLM] Prompt too large for ${model} (413), switching to Llama...`)
+      return callGroq(prompt, maxTokens, 1)
+    }
+
     // Rate limit - retry after delay
     if (err.message?.includes('rate_limit_exceeded') && retryCount < 2) {
-      const waitTime = 3000
+      const waitTime = 5000
       console.warn(`[LLM] Groq rate limit, retrying in ${waitTime}ms...`)
       await new Promise(resolve => setTimeout(resolve, waitTime))
       return callGroq(prompt, maxTokens, retryCount + 1)
     }
     
-    // Si Qwen échoue, essayer Llama en fallback
+    // Autre erreur Qwen → fallback Llama
     if (retryCount === 0 && model === GROQ_MODEL) {
       console.warn(`[LLM] Groq ${model} failed, trying fallback model...`)
       return callGroq(prompt, maxTokens, 1)
@@ -122,46 +138,45 @@ async function callGeminiFlash(prompt: string, maxTokens: number): Promise<strin
 /**
  * Stratégie de routing LLM
  *
- * Fast mode (≤1200 tokens) — QueryAnalyzer :
- *   Groq Llama 70B direct (gratuit, rapide, fiable)
- *
- * Slow mode (>1200 tokens) — StackBuilder :
- *   Claude 3.5 Sonnet (raisonnement multi-critères, fiable à 99%)
- *   Fallback Groq Llama 70B si Claude indisponible
+ * Principal : Groq (Llama 4 Scout pour gros prompts, Llama 3.3 70B pour petits)
+ * Fallback : Gemini Flash-Lite (250k TPM, excellent instruction following)
  */
 export async function callLLM(prompt: string, maxTokens = 1024): Promise<string> {
-  const groqClient   = getGroqClient()
-  const claudeClient = getAnthropicClient()
+  const groqClient = getGroqClient()
+  const geminiClient = getGeminiClient()
 
-  console.log(`[LLM] callLLM invoked - maxTokens: ${maxTokens}, claude: ${!!claudeClient}, groq: ${!!groqClient}`)
+  console.log(`[LLM] callLLM invoked - maxTokens: ${maxTokens}, groq: ${!!groqClient}, gemini: ${!!geminiClient}`)
 
-  if (!groqClient && !claudeClient) {
-    throw new Error('No LLM configured — check ANTHROPIC_API_KEY, GROQ_API_KEY')
+  if (!groqClient && !geminiClient) {
+    throw new Error('No LLM configured — check GROQ_API_KEY or GEMINI_API_KEY')
   }
 
-  // Fast mode — Groq Llama 70B direct (QueryAnalyzer)
   if (maxTokens <= 1200) {
-    console.log('[LLM] Fast mode — Groq Llama 70B')
-    if (groqClient) return callGroq(prompt, maxTokens)
-    // Fallback Claude si Groq indisponible
-    if (claudeClient) return callClaude(prompt, maxTokens)
-    throw new Error('No LLM available for fast mode')
+    console.log('[LLM] Fast mode — Groq')
+  } else {
+    console.log('[LLM] Slow mode — Groq (fallback Gemini si rate limit)')
   }
 
-  // Slow mode — Claude en priorité (StackBuilder)
-  console.log('[LLM] Slow mode — Claude 3.5 Sonnet')
-  if (claudeClient) {
+  // Essayer Groq en premier
+  if (groqClient) {
     try {
-      return await callClaude(prompt, maxTokens)
+      return await callGroq(prompt, maxTokens)
     } catch (err: any) {
-      console.warn('[LLM] Claude failed, falling back to Groq Llama 70B:', err.message)
+      // Si Groq rate-limite, essayer Gemini
+      if (err.message?.includes('rate_limit') || err.status === 429) {
+        console.warn('[LLM] Groq rate limited, falling back to Gemini Flash-Lite...')
+        if (geminiClient) {
+          return await callGeminiFlash(prompt, maxTokens)
+        }
+      }
+      throw err
     }
   }
 
-  if (groqClient) {
-    console.log('[LLM] Slow mode fallback — Groq Llama 70B')
-    return callGroq(prompt, maxTokens)
+  // Si Groq indisponible, utiliser Gemini directement
+  if (geminiClient) {
+    return await callGeminiFlash(prompt, maxTokens)
   }
 
-  throw new Error('No LLM available for slow mode')
+  throw new Error('No LLM available')
 }

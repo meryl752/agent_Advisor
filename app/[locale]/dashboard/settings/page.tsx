@@ -23,6 +23,16 @@ export default async function SettingsPage() {
     day: 'numeric', month: 'long', year: 'numeric'
   })
 
+  // Onboarding data
+  const onboardingData = {
+    role: (dbUser as any)?.role ?? null,
+    sector: (dbUser as any)?.sector ?? null,
+    team_size: (dbUser as any)?.team_size ?? null,
+    budget: (dbUser as any)?.budget ?? null,
+    main_goal: (dbUser as any)?.main_goal ?? null,
+    referral_source: (dbUser as any)?.referral_source ?? null,
+  }
+
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
   const stacks = await getUserStacks(user.id, clerkToken, email)
   const stackCount = stacks.length
@@ -70,6 +80,12 @@ export default async function SettingsPage() {
           <div className="flex flex-col gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <Row label="Membre depuis" value={createdAt} />
             <Row label="Stacks créés" value={`${stackCount} stack${stackCount !== 1 ? 's' : ''}`} />
+            {onboardingData.role && <Row label="Rôle" value={onboardingData.role} />}
+            {onboardingData.sector && <Row label="Secteur" value={onboardingData.sector} />}
+            {onboardingData.team_size && <Row label="Taille d'équipe" value={onboardingData.team_size} />}
+            {onboardingData.budget && <Row label="Budget mensuel" value={onboardingData.budget} />}
+            {onboardingData.main_goal && <Row label="Objectif principal" value={onboardingData.main_goal} />}
+            {onboardingData.referral_source && <Row label="Source de découverte" value={onboardingData.referral_source} />}
           </div>
         </section>
 

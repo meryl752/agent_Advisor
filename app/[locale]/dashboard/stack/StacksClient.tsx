@@ -4,17 +4,103 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from '@/lib/i18n/navigation'
 import { useTranslations } from 'next-intl'
+import { getLogoUrl } from '@/lib/utils/logo'
 import type { Stack } from '@/lib/supabase/types'
 
-export default function StacksClient({ initialStacks }: { initialStacks: Stack[] }) {
+const COLORS = ['#FF6B35', '#6B4FFF', '#20B8CD', '#CAFF32', '#FF7A59', '#10A37F', '#5E6AD2', '#FFE01B']
+
+function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace('www.', '')
+  } catch {
+    return ''
+  }
+}
+
+function ToolAvatar({ agentId, agentData, index }: {
+  agentId: string
+  agentData?: { name: string; url: string }
+  index: number
+}) {
+  const [imgErr, setImgErr] = useState(false)
+  const domain = agentData?.url ? getDomain(agentData.url) : ''
+  const color = COLORS[index % COLORS.length]
+  const initials = agentData?.name?.slice(0, 2).toUpperCase() ?? agentId.slice(0, 2).toUpperCase()
+
+  return (
+    <div
+      className="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 overflow-hidden flex items-center justify-center"
+      style={{
+        marginLeft: index === 0 ? 0 : -10,
+        zIndex: 10 - index,
+        position: 'relative',
+        background: color,
+      }}
+    >
+      {domain && !imgErr ? (
+        <img
+          src={getLogoUrl(domain)}
+          alt={agentData?.name ?? agentId}
+          className="w-full h-full object-cover"
+          onError={() => setImgErr(true)}
+        />
+      ) : (
+        <span className="text-[10px] font-black text-white">{initials}</span>
+      )}
+    </div>
+  )
+}
+
+function ToolAvatars({ agentIds, agentsMap }: {
+  agentIds: string[]
+  agentsMap: Record<string, { name: string; url: string }>
+}) {
+  const max = 5
+  const shown = agentIds.slice(0, max)
+  const extra = agentIds.length - max
+
+  return (
+    <div className="flex items-center">
+      {shown.map((id, i) => (
+        <ToolAvatar key={id} agentId={id} agentData={agentsMap[id]} index={i} />
+      ))}
+      {extra > 0 && (
+        <div
+          className="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 flex items-center justify-center text-[10px] font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+          style={{ marginLeft: -10, position: 'relative', zIndex: 0 }}
+        >
+          +{extra}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function StacksClient({
+  initialStacks,
+  agentsMap,
+}: {
+  initialStacks: Stack[]
+  agentsMap: Record<string, { name: string; url: string }>
+}) {
   const t = useTranslations('dashboard.stack')
   const tCommon = useTranslations('common')
   const [stacks, setStacks] = useState<Stack[]>(initialStacks)
+  const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Filter stacks by search query
+  const filteredStacks = search.trim()
+    ? stacks.filter(s =>
+        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.objective?.toLowerCase().includes(search.toLowerCase())
+      )
+    : stacks
 
   async function handleRename(id: string) {
     if (!editName.trim()) return
@@ -47,6 +133,7 @@ export default function StacksClient({ initialStacks }: { initialStacks: Stack[]
       setError(e.message)
     } finally {
       setDeletingId(null)
+      setConfirmDeleteId(null)
     }
   }
 
@@ -54,9 +141,8 @@ export default function StacksClient({ initialStacks }: { initialStacks: Stack[]
     return (
       <div className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 p-16 text-center">
         <p className="font-semibold text-zinc-900 dark:text-white text-lg mb-2">{t('empty')}</p>
-        <p className="text-zinc-500 text-sm mb-6">{t('objective')}</p>
         <Link href="/dashboard/recommend"
-          className="inline-block bg-[#CAFF32] text-zinc-900 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-[#d4ff50] transition-colors">
+          className="inline-block bg-[#CAFF32] text-zinc-900 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-[#d4ff50] transition-colors mt-4">
           {t('viewStack')} →
         </Link>
       </div>
@@ -64,24 +150,58 @@ export default function StacksClient({ initialStacks }: { initialStacks: Stack[]
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      {/* Search input */}
+      <div className="relative">
+        <img
+          src="/assets/icons svg/search-01-stroke-rounded.svg"
+          alt="search"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40 dark:invert"
+        />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher un stack..."
+          className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition-colors"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
       {error && (
         <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">{error}</div>
       )}
 
+      {filteredStacks.length === 0 && search && (
+        <div className="text-center py-12 text-zinc-400 text-sm">
+          Aucun stack trouvé pour "<span className="font-medium text-zinc-600 dark:text-zinc-300">{search}</span>"
+        </div>
+      )}
+
       <AnimatePresence>
-        {stacks.map((stack) => {
+        {filteredStacks.map((stack) => {
           const date = new Date(stack.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
           const isEditing = editingId === stack.id
           const isDeleting = deletingId === stack.id
+          const isConfirmingDelete = confirmDeleteId === stack.id
 
           return (
             <motion.div key={stack.id}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+              className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
             >
-              <div className="flex items-start justify-between gap-4 mb-3">
+              {/* Top row — name + date + actions */}
+              <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
                     <div className="flex items-center gap-2">
@@ -106,38 +226,70 @@ export default function StacksClient({ initialStacks }: { initialStacks: Stack[]
                   )}
                   <p className="text-sm text-zinc-500 mt-1 line-clamp-2">{stack.objective}</p>
                 </div>
-                <span className="text-xs text-zinc-400 flex-shrink-0 mt-0.5">{date}</span>
+
+                {/* Action icons + date */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <span className="text-xs text-zinc-400 mr-2">{date}</span>
+
+                  {/* Rename icon */}
+                  <button
+                    onClick={() => { setEditingId(stack.id); setEditName(stack.name) }}
+                    title="Renommer"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                  >
+                    <img src="/assets/icons svg/pencil-edit-02-stroke-rounded.svg" alt="edit" className="w-4 h-4 opacity-60" />
+                  </button>
+
+                  {/* Delete icon / confirm */}
+                  {isConfirmingDelete ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDelete(stack.id)}
+                        disabled={isDeleting}
+                        className="text-xs px-2 py-1 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                      >
+                        {isDeleting ? '…' : 'Confirmer'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="text-xs px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(stack.id)}
+                      title="Supprimer"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                    >
+                      <img src="/assets/icons svg/delete-04-stroke-rounded.svg" alt="delete" className="w-4 h-4 opacity-60" />
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-5 py-3 border-t border-b border-zinc-100 dark:border-zinc-800/60 mb-3">
-                {[
-                  { label: t('cost'), value: `${stack.total_cost}€${t('perMonth')}` },
-                  { label: t('roi'), value: `+${stack.roi_estimate}%`, accent: true },
-                  { label: t('score'), value: `${stack.score}/100` },
-                  { label: t('agents'), value: String(stack.agent_ids?.length ?? 0) },
-                ].map((m, i) => (
-                  <div key={i}>
-                    <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-0.5">{m.label}</p>
-                    <p className={`text-sm font-semibold ${m.accent ? 'text-[#CAFF32]' : 'text-zinc-900 dark:text-white'}`}>{m.value}</p>
-                  </div>
-                ))}
+              {/* Tool avatars + metrics */}
+              <div className="flex items-center justify-between">
+                {/* Tool logos as overlapping circles */}
+                <ToolAvatars agentIds={stack.agent_ids ?? []} agentsMap={agentsMap} />
+
+                {/* Metrics */}
+                <div className="flex items-center gap-5">
+                  {[
+                    { label: t('cost'), value: `${stack.total_cost}€${t('perMonth')}` },
+                    { label: t('roi'), value: `+${stack.roi_estimate}%`, accent: true },
+                    { label: t('score'), value: `${stack.score}/100` },
+                  ].map((m, i) => (
+                    <div key={i} className="text-right">
+                      <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-0.5">{m.label}</p>
+                      <p className={`text-sm font-semibold ${m.accent ? 'text-[#CAFF32]' : 'text-zinc-900 dark:text-white'}`}>{m.value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { setEditingId(stack.id); setEditName(stack.name) }}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
-                >
-                  ✎ Renommer
-                </button>
-                <button
-                  onClick={() => handleDelete(stack.id)}
-                  disabled={isDeleting}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-red-400 hover:border-red-400/40 transition-all disabled:opacity-40"
-                >
-                  {isDeleting ? '…' : `✕ ${t('deleteStack')}`}
-                </button>
-              </div>
+              {/* View link */}
             </motion.div>
           )
         })}
@@ -145,3 +297,4 @@ export default function StacksClient({ initialStacks }: { initialStacks: Stack[]
     </div>
   )
 }
+

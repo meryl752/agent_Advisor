@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { getUserStacks } from '@/lib/supabase/queries'
+import { supabaseService } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Link } from '@/lib/i18n/navigation'
 import StacksClient from './StacksClient'
@@ -18,6 +19,19 @@ export default async function StacksPage() {
   const userEmail = user.emailAddresses[0]?.emailAddress
   const stacks = await getUserStacks(user.id, clerkToken, userEmail)
 
+  // Fetch agent data for all stacks to get logos
+  const allAgentIds = [...new Set(stacks.flatMap(s => s.agent_ids ?? []))]
+  let agentsMap: Record<string, { name: string; url: string }> = {}
+  if (allAgentIds.length > 0) {
+    const { data } = await (supabaseService as any)
+      .from('agents')
+      .select('id, name, url')
+      .in('id', allAgentIds)
+    if (data) {
+      agentsMap = Object.fromEntries(data.map((a: any) => [a.id, { name: a.name, url: a.url }]))
+    }
+  }
+
   return (
     <div className="p-6 md:p-10 w-full max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -30,7 +44,7 @@ export default async function StacksPage() {
           + Nouveau
         </Link>
       </div>
-      <StacksClient initialStacks={stacks} />
+      <StacksClient initialStacks={stacks} agentsMap={agentsMap} />
     </div>
   )
 }

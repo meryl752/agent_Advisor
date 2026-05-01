@@ -59,7 +59,7 @@ const STEPS: StepConfig[] = [
       { label: 'B2B Sales', icon: '🤝' },
       { label: 'Other', icon: '✦' },
     ],
-    hasOther: false,
+    hasOther: true,
   },
   {
     key: 'team_size',
@@ -247,7 +247,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-[#FAFAF7] flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center px-8 py-5 border-b border-zinc-200">
+      <div className="flex items-center justify-between px-8 py-5 border-b border-zinc-200">
         <span className="font-syne font-extrabold text-lg tracking-[-0.02em] text-zinc-900 flex items-center">
           Ras
           <span className="relative flex items-center mx-[1px]">
@@ -256,6 +256,26 @@ export default function OnboardingPage() {
           </span>
           uery
         </span>
+        <button
+          onClick={async () => {
+            setLoading(true)
+            try {
+              await fetch('/api/onboarding/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: {} }),
+              })
+              localStorage.setItem('stackai_welcome_message', "Welcome to Raspquery!")
+              router.push('/dashboard')
+            } catch {
+              setLoading(false)
+            }
+          }}
+          disabled={loading}
+          className="font-dm-mono text-[10px] text-zinc-400 hover:text-zinc-700 transition-colors uppercase tracking-[0.2em] disabled:opacity-30"
+        >
+          Skip onboarding →
+        </button>
       </div>
 
       {/* Progress bar */}

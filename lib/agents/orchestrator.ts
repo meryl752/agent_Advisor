@@ -48,14 +48,12 @@ export async function runOrchestrator(
 ): Promise<OrchestratorResult | null> {
   const startTime = Date.now()
 
-  // Timeout réduit à 15s pour une meilleure UX web
-  // Breakdown typique : Analyse LLM (2-3s) + Embedding (1s) + Vector search (0.2s) + Scoring (0.1s) + Build LLM (3-4s) = ~7-9s
-  // Marge de 6s pour les variations réseau et retry
+  // Timeout augmenté à 45s pour absorber les retries Groq
   const timeoutPromise = new Promise<null>(resolve =>
     setTimeout(() => {
-      console.error('❌ [Orchestrator] Timeout après 30s')
+      console.error('❌ [Orchestrator] Timeout après 45s')
       resolve(null)
-    }, 30_000)
+    }, 45_000)
   )
 
   const orchestrationPromise = (async (): Promise<OrchestratorResult | null> => {

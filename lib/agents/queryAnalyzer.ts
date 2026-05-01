@@ -91,140 +91,124 @@ function buildFallback(objective: string, sector: string, budgetValue: number): 
 export async function analyzeQuery(ctx: UserContext): Promise<AnalyzedQuery> {
   const budgetValue = BUDGET_MAP[ctx.budget] ?? 0
 
-  const prompt = `Tu es le moteur d'analyse d'un système de recommandation d'outils IA.
-Ta mission : décomposer une demande utilisateur en un graphe structuré
-de domaines et sous-tâches atomiques, chacune correspondant à exactement
-un outil ou une action réalisable.
+  // ── Passe 1 : Analyse légère — sous-tâches et catégories ─────────────────
+  // Format simple, jamais tronqué, rapide
+  const pass1Prompt = `Tu es un expert en automatisation IA. Décompose cet objectif en sous-tâches concrètes.
 
-<context>
-Objectif: "${ctx.objective}"
-Secteur: ${ctx.sector}
-Taille équipe: ${ctx.team_size}
-Budget mensuel max: ${budgetValue}€
-Niveau technique: ${ctx.tech_level}
-Urgence: ${ctx.timeline}
-Outils existants: ${ctx.current_tools.join(', ') || 'aucun'}
-</context>
+OBJECTIF: "${ctx.objective}"
+SECTEUR: ${ctx.sector} | BUDGET: ${budgetValue}€/mois | NIVEAU: ${ctx.tech_level}
 
-<instructions>
-1. REFORMULE l'objectif de façon précise et actionnable.
-
-2. IDENTIFIE tous les domaines fonctionnels impliqués.
-   Un domaine = un grand axe de travail (ex: "Infrastructure",
-   "Contenu", "Visibilité", "Analytics").
-   Autant de domaines que nécessaire — ne regroupe pas
-   artificiellement.
-
-3. Pour chaque domaine, DÉCOMPOSE en sous-tâches atomiques.
-   Une sous-tâche est atomique quand :
-   - Elle correspond à exactement UN outil ou UNE action précise
-   - Elle ne peut pas être scindée davantage sans perdre son sens
-   - Elle est directement réalisable (pas un concept vague)
-   
-   Profondeur libre — laisse la complexité réelle de l'objectif
-   dicter le nombre de sous-tâches. Ne limite pas artificiellement.
-
-4. Pour chaque sous-tâche, INDIQUE :
-   - La catégorie d'outil requise parmi : ${VALID_CATEGORIES.join(', ')}
-     Raisonne sur le sens fonctionnel, pas sur les mots exacts
-     de l'utilisateur.
-   - Les dépendances : quelles autres sous-tâches doivent être
-     complétées avant celle-ci (utilise les ids)
-   - Si elle peut être automatisée ou si elle requiert une action
-     humaine initiale
-
-5. DÉTECTE les contraintes implicites non mentionnées mais évidentes
-   selon le secteur et le contexte (ex: conformité RGPD, besoin
-   mobile-first, contraintes légales sectorielles...).
-   Laisse vide si aucune contrainte réelle n'est identifiable.
-
-6. CONTEXTUALISE le secteur en 1-2 phrases sur les spécificités
-   réelles qui influencent les choix d'outils.
-
-7. Retourne UNIQUEMENT un JSON valide. Aucun markdown,
-   aucun backtick, aucun texte avant ou après.
-</instructions>
-
-<output>
+Retourne UNIQUEMENT ce JSON (sans markdown, sans backtick) :
 {
-  "original": "reformulation claire et actionnable de l'objectif",
-  "domains": [
-    {
-      "name": "Nom du domaine fonctionnel",
-      "priority": 1,
-      "subtasks": [
-        {
-          "id": "d1_t1",
-          "action": "description précise de la sous-tâche atomique",
-          "required_category": "categorie_exacte",
-          "depends_on": [],
-          "can_be_automated": true
-        },
-        {
-          "id": "d1_t2",
-          "action": "description précise",
-          "required_category": "categorie_exacte",
-          "depends_on": ["d1_t1"],
-          "can_be_automated": false
-        }
-      ]
-    }
-  ],
-  "implicit_constraints": ["contrainte implicite réelle avec explication courte"],
-  "sector_context": "1-2 phrases sur les spécificités sectorielles",
-  "budget_max": ${budgetValue}
+  "subtasks": ["sous-tâche 1 précise", "sous-tâche 2 précise", "..."],
+  "categories": ["categorie1", "categorie2"],
+  "sector_context": "1 phrase sur les spécificités sectorielles",
+  "constraints": ["contrainte implicite si évidente"]
 }
-</output>`
+
+Catégories disponibles: ${VALID_CATEGORIES.join(', ')}
+Règle: autant de sous-tâches que nécessaire pour couvrir TOUT l'objectif.`
+
+  let subtasks: string[] = []
+  let required_categories: string[] = []
+  let sector_context = ctx.sector
+  let implicit_constraints: string[] = []
 
   try {
-    // Force Qwen 2.5 72B ou Gemini Flash pour une analyse plus précise (maxTokens > 1200)
-    // Sacrifie 1-2s de latence pour une meilleure détection des catégories
-    const text = await callLLM(prompt, 1300)
+    const pass1Text = await callLLM(pass1Prompt, 800)
+    const cleaned1 = pass1Text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const parsed1 = JSON.parse(cleaned1)
 
-    // Strip markdown fences if LLM wraps in ```json ... ```
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    subtasks = Array.isArray(parsed1.subtasks) ? parsed1.subtasks : [ctx.objective]
+    required_categories = Array.isArray(parsed1.categories)
+      ? parsed1.categories.filter((c: string) => (VALID_CATEGORIES as readonly string[]).includes(c))
+      : []
+    sector_context = parsed1.sector_context || ctx.sector
+    implicit_constraints = Array.isArray(parsed1.constraints) ? parsed1.constraints : []
 
-    const parsed = JSON.parse(cleaned)
-
-    // Validate structure — throws if LLM returned unexpected shape
-    const validated = AnalyzedQuerySchema.parse(parsed)
-
-    // Générer les champs dérivés pour compatibilité avec le reste du système
-    const subtasks: string[] = []
-    const categoriesSet = new Set<string>()
-
-    validated.domains.forEach(domain => {
-      domain.subtasks.forEach(subtask => {
-        subtasks.push(subtask.action)
-        // Filter categories to only known valid ones
-        if ((VALID_CATEGORIES as readonly string[]).includes(subtask.required_category)) {
-          categoriesSet.add(subtask.required_category)
-        }
-      })
-    })
-
-    const result: AnalyzedQuery = {
-      original:             validated.original,
-      domains:              validated.domains,
-      implicit_constraints: validated.implicit_constraints,
-      sector_context:       validated.sector_context,
-      budget_max:           validated.budget_max,
-      subtasks:             subtasks,
-      required_categories:  Array.from(categoriesSet),
-    }
-
-    console.log(
-      `[QueryAnalyzer] ✅ ${result.domains.length} domaines | ` +
-      `${result.subtasks.length} sous-tâches atomiques | ` +
-      `catégories: [${result.required_categories.join(', ')}]`
-    )
-    
-    return result
-
+    console.log(`[QueryAnalyzer] ✅ Passe 1 — ${subtasks.length} sous-tâches | catégories: [${required_categories.join(', ')}]`)
   } catch (err) {
-    console.error('[QueryAnalyzer] ❌ Erreur:', err instanceof Error ? err.message : String(err))
-
-    // Safe fallback — pipeline continues with minimal context
+    console.error('[QueryAnalyzer] ❌ Passe 1 échouée:', err instanceof Error ? err.message : String(err))
     return buildFallback(ctx.objective, ctx.sector, budgetValue)
   }
+
+  // ── Passe 2 : Enrichissement pour objectifs complexes (5+ sous-tâches) ───
+  // Génère les domaines fonctionnels et dépendances pour une meilleure structure
+  let domains: AnalyzedQuery['domains'] = [{
+    name: 'Objectif principal',
+    priority: 1,
+    subtasks: subtasks.map((action, i) => ({
+      id: `d1_t${i + 1}`,
+      action,
+      required_category: required_categories[i] ?? required_categories[0] ?? 'automation',
+      depends_on: i > 0 ? [] : [],
+      can_be_automated: true,
+    }))
+  }]
+
+  if (subtasks.length >= 5) {
+    const pass2Prompt = `Regroupe ces sous-tâches en domaines fonctionnels logiques.
+
+SOUS-TÂCHES:
+${subtasks.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+Retourne UNIQUEMENT ce JSON (sans markdown, sans balises think) :
+{
+  "domains": [
+    {
+      "name": "Nom du domaine",
+      "priority": 1,
+      "task_indices": [0, 1, 2]
+    }
+  ]
+}`
+
+    try {
+      const pass2Text = await callLLM(pass2Prompt, 600)
+      // Strip thinking tags and markdown fences
+      const cleaned2 = pass2Text
+        .replace(/<think>[\s\S]*?<\/think>/g, '')
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim()
+      const parsed2 = JSON.parse(cleaned2)
+
+      if (Array.isArray(parsed2.domains) && parsed2.domains.length > 0) {
+        domains = parsed2.domains.map((d: any, di: number) => ({
+          name: d.name ?? `Domaine ${di + 1}`,
+          priority: d.priority ?? di + 1,
+          subtasks: (d.task_indices ?? []).map((idx: number, ti: number) => ({
+            id: `d${di + 1}_t${ti + 1}`,
+            action: subtasks[idx] ?? subtasks[0],
+            required_category: required_categories[idx] ?? required_categories[0] ?? 'automation',
+            depends_on: [],
+            can_be_automated: true,
+          })).filter((s: any) => s.action)
+        })).filter((d: any) => d.subtasks.length > 0)
+
+        console.log(`[QueryAnalyzer] ✅ Passe 2 — ${domains.length} domaines fonctionnels`)
+      }
+    } catch (err) {
+      console.warn('[QueryAnalyzer] ⚠️ Passe 2 échouée, domaine unique utilisé:', err instanceof Error ? err.message : String(err))
+      // Pas grave — on garde le domaine unique de la passe 1
+    }
+  }
+
+  const result: AnalyzedQuery = {
+    original: ctx.objective,
+    domains,
+    implicit_constraints,
+    sector_context,
+    budget_max: budgetValue,
+    subtasks,
+    required_categories,
+  }
+
+  console.log(
+    `[QueryAnalyzer] ✅ ${result.domains.length} domaines | ` +
+    `${result.subtasks.length} sous-tâches | ` +
+    `catégories: [${result.required_categories.join(', ')}]`
+  )
+
+  return result
 }

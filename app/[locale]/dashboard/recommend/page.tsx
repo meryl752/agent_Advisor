@@ -139,21 +139,14 @@ function UpgradeBanner() {
       .catch(() => setPlan('free'))
   }, [])
 
-  if (!plan || plan === 'agency') return null
-
-  const next = plan === 'free' ? 'Pro' : 'Agency'
-  const msg = plan === 'free'
-    ? 'Plan gratuit — 1 recommandation/mois'
-    : 'Plan Pro — passe Agency pour 50 recommandations/heure'
+  if (!plan) return null
 
   return (
     <div className="absolute top-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
-      <div className="flex items-center gap-3 pointer-events-auto">
-        <p className="text-xs text-zinc-500">{msg}</p>
-        <Link href="/dashboard/billing"
-          className="text-xs font-semibold text-white bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg hover:bg-zinc-800 hover:border-zinc-500 transition-all whitespace-nowrap">
-          Passer {next} →
-        </Link>
+      <div className="flex items-center gap-2 pointer-events-auto">
+        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          Accès Early Adopter
+        </p>
       </div>
     </div>
   )
@@ -217,12 +210,13 @@ function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRetry }: 
               {msg.text}
             </div>
           ) : msg.role === 'reasoning' ? (
-            /* Reasoning steps with dotted timeline */
+            /* Reasoning steps with dotted timeline — hidden on error */
+            phase === 'error' ? null : (
             <div className="flex flex-col">
               {REASONING_STEPS.map((step, si) => {
                 if (si > reasoningStep) return null
-                const done = si < reasoningStep
-                const active = si === reasoningStep
+                const done = si < reasoningStep || (si === reasoningStep && phase === 'results')
+                const active = si === reasoningStep && phase === 'reasoning'
                 return (
                   <div key={si} className="relative flex items-start gap-2.5">
                     {/* Dotted line between steps */}
@@ -252,6 +246,7 @@ function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRetry }: 
                 )
               })}
             </div>
+            )
           ) : (
             /* AI message */
             <p className="text-[13px] text-zinc-600 dark:text-zinc-300 leading-relaxed">{msg.text}</p>
@@ -600,49 +595,140 @@ export default function RecommendPage() {
   const handleFirstSend = useCallback((text: string) => {
     if (!text.trim()) return
     setPhase('chat'); setMessages([{ role: 'user', text }]); setInput('')
-    const ctx = extractContext(text)
-    const ans: Record<string, string> = { objective: text, sector: ctx.sector ?? 'général', budget: ctx.budget ?? 'medium', tech_level: ctx.tech ?? 'intermediate' }
-    setAnswers(ans)
-    // Proceed directly if we detected context OR the message is detailed enough
-    if (ctx.sector && ctx.budget) {
-      setIsTyping(true)
-      setTimeout(() => { setIsTyping(false); setMessages(prev => [...prev, { role: 'ai', text: "Parfait, j'analyse ça maintenant." }]); setTimeout(() => launchReasoning(ans), 500) }, 600)
-    } else {
-      // Only ask for clarification if the message is very short/vague
-      const missing: string[] = []
-      if (!ctx.sector) missing.push('ton secteur d\'activité')
-      if (!ctx.budget) missing.push('ton budget mensuel approximatif')
-      setIsTyping(true)
-      setTimeout(() => {
+    setIsTyping(true)
+
+    // Always let the LLM decide intent — no client-side regex detection
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history: [] }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.intent === 'build_stack') {
+          // LLM confirmed stack generation — use extracted objective or fallback to message
+          const objective = data.objective || text
+          
+          // Validate objective is meaningful (not just "oui" or "yes")
+          if (objective.toLowerCase().match(/^(oui|yes|ok|d'accord|vas-y|go)$/)) {
+            // User confirmed but no objective in history — ask for it
+            setIsTyping(false)
+            setMessages(prev => [...prev, { role: 'ai', text: "Super ! Mais dis-moi d'abord : quel est ton objectif business ?" }])
+            return
+          }
+          
+          const ctx = extractContext(objective)
+          const ans = {
+            ...answers,
+            objective,
+            sector: ctx.sector ?? answers.sector ?? 'général',
+            budget: ctx.budget ?? answers.budget ?? 'medium',
+            tech_level: ctx.tech ?? answers.tech_level ?? 'intermediate',
+          }
+          setAnswers(ans)
+          setIsTyping(false)
+          setMessages(prev => [...prev, { role: 'ai', text: data.response ?? "Parfait, j'analyse ça maintenant." }])
+          setTimeout(() => launchReasoning(ans), 500)
+        } else {
+          setIsTyping(false)
+          setMessages(prev => [...prev, { role: 'ai', text: data.response ?? "Bonjour ! Décris-moi ton objectif business pour que je puisse te recommander le meilleur stack IA." }])
+        }
+      })
+      .catch(() => {
         setIsTyping(false)
-        setMessages(prev => [...prev, { role: 'ai', text: `Bonjour ! Pour personnaliser ton stack, dis-moi ${missing.join(' et ')}.` }])
-      }, 900)
-    }
+        setMessages(prev => [...prev, { role: 'ai', text: "Erreur réseau. Réessaie." }])
+      })
   }, [launchReasoning])
 
   const handleContextMessage = useCallback((text: string) => {
     setMessages(prev => [...prev, { role: 'user', text }]); setInput(''); setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      const ctx = extractContext(text)
-      const ans = { ...answers, sector: ctx.sector ?? answers.sector ?? 'général', budget: ctx.budget ?? answers.budget ?? 'medium', tech_level: ctx.tech ?? answers.tech_level ?? 'intermediate' }
-      setAnswers(ans)
-      setMessages(prev => [...prev, { role: 'ai', text: "Super, je construis ton stack." }])
-      setTimeout(() => launchReasoning(ans), 500)
-    }, 600)
-  }, [answers, launchReasoning])
+
+    // Always go through Groq to determine intent — no more regex detection
+    const history = messages
+      .filter(m => m.role === 'user' || m.role === 'ai')
+      .map(m => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.text ?? '' }))
+
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history,
+        stackContext: result ? {
+          stack_name: result.stack_name,
+          objective: answers.objective ?? '',
+          total_cost: result.total_cost,
+          agents: result.agents.map(a => ({ name: a.name, role: a.role })),
+        } : undefined,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.intent === 'build_stack') {
+          // Groq detected a stack request — use extracted objective
+          const objective = data.objective || text
+          
+          // Validate objective is meaningful
+          if (objective.toLowerCase().match(/^(oui|yes|ok|d'accord|vas-y|go)$/)) {
+            setIsTyping(false)
+            setMessages(prev => [...prev, { role: 'ai', text: "Super ! Mais dis-moi d'abord : quel est ton objectif business ?" }])
+            return
+          }
+          
+          const ctx = extractContext(objective)
+          const ans = {
+            ...answers,
+            objective,
+            sector: ctx.sector ?? answers.sector ?? 'général',
+            budget: ctx.budget ?? answers.budget ?? 'medium',
+            tech_level: ctx.tech ?? answers.tech_level ?? 'intermediate',
+          }
+          setAnswers(ans)
+          setIsTyping(false)
+          setMessages(prev => [...prev, { role: 'ai', text: data.response ?? "Super, je construis ton stack." }])
+          setTimeout(() => launchReasoning(ans), 500)
+        } else {
+          setIsTyping(false)
+          setMessages(prev => [...prev, { role: 'ai', text: data.response ?? "Je ne comprends pas. Peux-tu reformuler ?" }])
+        }
+      })
+      .catch(() => {
+        setIsTyping(false)
+        setMessages(prev => [...prev, { role: 'ai', text: "Erreur réseau. Réessaie." }])
+      })
+  }, [answers, launchReasoning, messages, result])
 
   const handleFollowUp = useCallback((text: string) => {
     setMessages(prev => [...prev, { role: 'user', text }]); setInput(''); setIsTyping(true)
-    if (result) {
-      fetch('/api/stack-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, stackContext: { stack_name: result.stack_name, objective: answers.objective ?? '', total_cost: result.total_cost, agents: result.agents.map(a => ({ name: a.name, role: a.role })) } }) })
-        .then(r => r.json()).then(data => { setIsTyping(false); setMessages(prev => [...prev, { role: 'ai', text: data.response ?? "Je ne peux pas répondre à ça." }]) })
-        .catch(() => { setIsTyping(false); setMessages(prev => [...prev, { role: 'ai', text: "Erreur. Réessaie." }]) })
-    } else {
-      setTimeout(() => { setIsTyping(false); setMessages(prev => [...prev, { role: 'ai', text: "Génère d'abord un stack." }]) }, 500)
-    }
-  }, [result, answers])
+    
+    const history = messages
+      .filter(m => m.role === 'user' || m.role === 'ai')
+      .map(m => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.text ?? '' }))
+
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history,
+        stackContext: result ? {
+          stack_name: result.stack_name,
+          objective: answers.objective ?? '',
+          total_cost: result.total_cost,
+          agents: result.agents.map(a => ({ name: a.name, role: a.role })),
+        } : undefined,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        setIsTyping(false)
+        setMessages(prev => [...prev, { role: 'ai', text: data.response ?? "Je ne peux pas répondre à ça." }])
+      })
+      .catch(() => {
+        setIsTyping(false)
+        setMessages(prev => [...prev, { role: 'ai', text: "Erreur réseau. Réessaie." }])
+      })
+  }, [result, answers, messages])
 
   const handleSend = useCallback(() => {
     const text = input.trim(); if (!text) return
@@ -821,9 +907,8 @@ export default function RecommendPage() {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                 placeholder={phase === 'results' ? "Pose une question..." : "Envoyer un message..."}
                 rows={2} disabled={phase === 'reasoning'}
-                className="w-full bg-transparent text-zinc-800 dark:text-zinc-200 text-sm px-4 pt-3 pb-12 outline-none resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 leading-relaxed disabled:opacity-40" />
-              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                <ModelSelector />
+                className="w-full bg-transparent text-zinc-800 dark:text-zinc-200 text-sm px-4 pt-3 pb-10 outline-none resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 leading-relaxed disabled:opacity-40" />
+              <div className="absolute bottom-2.5 right-3">
                 <button onClick={handleSend} disabled={!input.trim() || phase === 'reasoning'}
                   className="w-8 h-8 rounded-lg bg-[#CAFF32] text-zinc-900 font-bold text-sm hover:bg-[#d4ff50] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center">↑</button>
               </div>

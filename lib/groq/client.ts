@@ -13,7 +13,8 @@ export function getGroqClient(): Groq | null {
   return groqInstance
 }
 
-// Qwen3-32B sur Groq — 400 tok/s, meilleur raisonnement structuré que Llama
-// Model ID confirmé: https://console.groq.com/docs/models
-export const GROQ_MODEL = 'qwen/qwen3-32b'
-export const GROQ_MODEL_FALLBACK = 'llama-3.3-70b-versatile' // fallback si Qwen indisponible
+// Llama 4 Scout 17B — 30 000 TPM sur le plan gratuit (vs 12 000 pour Llama 3.3 70B)
+// Meilleur pour les gros prompts comme le buildStack
+export const GROQ_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+// Llama 3.3 70B — fallback, excellent pour les petits prompts
+export const GROQ_MODEL_FALLBACK = 'llama-3.3-70b-versatile'

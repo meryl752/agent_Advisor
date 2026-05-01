@@ -37,6 +37,11 @@ function computeBusinessScore(
   allowedDiff: string[],
 ): number | null {
   // ── Élimination stricte hors budget ──────────────────────────────────────
+  // budget='zero' (0€) means free-only — filter out any paid agent
+  // budget > 0 means filter agents exceeding the max
+  if (budgetMax === 0 && agent.price_from > 0) {
+    return null
+  }
   if (budgetMax > 0 && agent.price_from > budgetMax) {
     return null
   }

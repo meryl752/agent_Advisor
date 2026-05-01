@@ -60,7 +60,6 @@ export default function BillingPage() {
       .catch(() => { setPlan('free'); setLoading(false) })
   })
 
-  const meta = plan ? PLANS[plan] : null
   const hasPaid = plan === 'pro' || plan === 'agency'
 
   return (
@@ -71,31 +70,50 @@ export default function BillingPage() {
       </div>
 
       <div className="flex flex-col gap-5">
+
+        {/* Early Access banner — shown during free launch */}
+        {!hasPaid && (
+          <section className="bg-[#CAFF32]/10 border border-[#CAFF32]/30 p-6 rounded-xl">
+            <div className="flex items-start gap-4">
+              <div>
+                <p className="font-black text-zinc-900 dark:text-white text-base mb-1">
+                  Accès Early Adopter
+                </p>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  Pendant le lancement, toutes les fonctionnalités sont accessibles gratuitement et sans limite.
+                  Quand on monétisera, ton tarif préférentiel Early Adopter sera automatiquement appliqué.
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Current plan */}
         <section className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl">
           <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-5">{t('currentPlan')}</p>
           {loading ? (
             <div className="h-16 bg-zinc-100 dark:bg-zinc-800/50 animate-pulse rounded" />
-          ) : meta ? (
+          ) : (
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className={`font-dm-mono text-[10px] font-black uppercase px-3 py-1 ${meta.bg} ${meta.color}`}>
-                    {meta.label}
+                  <span className="font-dm-mono text-[10px] font-black uppercase px-3 py-1 bg-[#CAFF32]/10 text-[#CAFF32]">
+                    {hasPaid ? (plan === 'agency' ? 'Agency' : 'Pro') : 'Early Adopter'}
                   </span>
-                  <span className="font-syne font-black text-zinc-900 dark:text-white text-xl">{meta.price}</span>
+                  <span className="font-syne font-black text-zinc-900 dark:text-white text-xl">
+                    {hasPaid ? (plan === 'agency' ? '79€/mois' : '19€/mois') : '0€'}
+                  </span>
                 </div>
-                <p className="text-zinc-500 text-sm">{meta.requests}</p>
+                <p className="text-zinc-500 text-sm">
+                  {hasPaid ? 'Accès complet' : 'Accès complet — gratuit pendant le lancement'}
+                </p>
               </div>
-              {!hasPaid && (
-                <Link href="/#pricing"
-                  className="bg-[#CAFF32] text-zinc-900 font-bold text-sm px-5 py-2.5 hover:bg-[#d4ff50] transition-colors rounded-lg">
-                  {t('upgrade')} →
-                </Link>
-              )}
+              {hasPaid && <ManageButton hasPaid={hasPaid} />}
             </div>
-          ) : null}
+          )}
         </section>
 
+        {/* Stripe portal for paid users */}
         {hasPaid && (
           <section className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl">
             <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-5">{t('manage')}</p>
@@ -103,31 +121,38 @@ export default function BillingPage() {
           </section>
         )}
 
-        <section className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl">
-          <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-5">Tous les plans</p>
-          <div className="border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-lg">
-            <div className="grid grid-cols-4 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2">
-              {['Plan', 'Prix', 'Recommandations', 'Période'].map(h => (
-                <p key={h} className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.12em]">{h}</p>
+        {/* Coming soon — pricing plans */}
+        {!hasPaid && (
+          <section className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl">
+            <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-5">Plans à venir</p>
+            <div className="border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-lg">
+              <div className="grid grid-cols-3 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2">
+                {['Plan', 'Prix', 'Statut'].map(h => (
+                  <p key={h} className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-[0.12em]">{h}</p>
+                ))}
+              </div>
+              {[
+                { label: 'Early Adopter', price: 'Gratuit', status: 'Actif maintenant', active: true },
+                { label: 'Pro', price: 'Bientôt', status: 'En préparation', active: false },
+                { label: 'Agency', price: 'Bientôt', status: 'En préparation', active: false },
+              ].map((row, i) => (
+                <div key={i}
+                  className={`grid grid-cols-3 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 ${row.active ? 'bg-[#CAFF32]/5' : ''}`}>
+                  <p className={`text-sm font-bold ${row.active ? 'text-[#CAFF32]' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                    {row.label} {row.active && '✓'}
+                  </p>
+                  <p className={`text-sm ${row.active ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-400 dark:text-zinc-600'}`}>
+                    {row.price}
+                  </p>
+                  <p className={`text-sm ${row.active ? 'text-zinc-500' : 'text-zinc-400 dark:text-zinc-600'}`}>
+                    {row.status}
+                  </p>
+                </div>
               ))}
             </div>
-            {Object.entries(PLANS).map(([key, cfg]) => (
-              <div key={key}
-                className={`grid grid-cols-4 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 ${key === plan ? 'bg-[#CAFF32]/5' : ''}`}>
-                <p className={`text-sm font-bold capitalize ${key === plan ? cfg.color : 'text-zinc-400 dark:text-zinc-500'}`}>
-                  {cfg.label} {key === plan && '✓'}
-                </p>
-                <p className={`text-sm ${key === plan ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-400 dark:text-zinc-600'}`}>{cfg.price}</p>
-                <p className={`text-sm ${key === plan ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-400 dark:text-zinc-600'}`}>
-                  {key === 'free' ? '1' : key === 'pro' ? '10' : '50'}
-                </p>
-                <p className={`text-sm ${key === plan ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-400 dark:text-zinc-600'}`}>
-                  {key === 'free' ? 'par mois' : 'par heure'}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
+          </section>
+        )}
+
       </div>
     </div>
   )
