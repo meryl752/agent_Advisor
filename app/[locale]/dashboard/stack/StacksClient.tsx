@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from '@/lib/i18n/navigation'
 import { useTranslations } from 'next-intl'
@@ -79,12 +80,15 @@ function ToolAvatars({ agentIds, agentsMap }: {
 export default function StacksClient({
   initialStacks,
   agentsMap,
+  stackSessionMap,
 }: {
   initialStacks: Stack[]
   agentsMap: Record<string, { name: string; url: string }>
+  stackSessionMap: Record<string, string>
 }) {
   const t = useTranslations('dashboard.stack')
   const tCommon = useTranslations('common')
+  const router = useRouter()
   const [stacks, setStacks] = useState<Stack[]>(initialStacks)
   const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -198,13 +202,18 @@ export default function StacksClient({
             <motion.div key={stack.id}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+              className={`rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 p-5 transition-all ${stackSessionMap[stack.id] ? 'hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer' : 'hover:border-zinc-300 dark:hover:border-zinc-700'}`}
+              onClick={() => {
+                if (stackSessionMap[stack.id] && !isEditing && !isConfirmingDelete) {
+                  router.push(`/dashboard/recommend/${stackSessionMap[stack.id]}`)
+                }
+              }}
             >
               {/* Top row — name + date + actions */}
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                       <input
                         autoFocus
                         value={editName}
@@ -233,16 +242,16 @@ export default function StacksClient({
 
                   {/* Rename icon */}
                   <button
-                    onClick={() => { setEditingId(stack.id); setEditName(stack.name) }}
+                    onClick={(e) => { e.stopPropagation(); setEditingId(stack.id); setEditName(stack.name) }}
                     title="Renommer"
                     className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
                   >
-                    <img src="/assets/icons svg/pencil-edit-02-stroke-rounded.svg" alt="edit" className="w-4 h-4 opacity-60" />
+                    <img src="/assets/icons svg/pencil-edit-02-stroke-rounded.svg" alt="edit" className="w-4 h-4 opacity-60 dark:invert" />
                   </button>
 
                   {/* Delete icon / confirm */}
                   {isConfirmingDelete ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                       <button
                         onClick={() => handleDelete(stack.id)}
                         disabled={isDeleting}
@@ -259,11 +268,11 @@ export default function StacksClient({
                     </div>
                   ) : (
                     <button
-                      onClick={() => setConfirmDeleteId(stack.id)}
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(stack.id) }}
                       title="Supprimer"
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
                     >
-                      <img src="/assets/icons svg/delete-04-stroke-rounded.svg" alt="delete" className="w-4 h-4 opacity-60" />
+                      <img src="/assets/icons svg/delete-04-stroke-rounded.svg" alt="delete" className="w-4 h-4 opacity-60 dark:invert" />
                     </button>
                   )}
                 </div>
@@ -289,7 +298,20 @@ export default function StacksClient({
                 </div>
               </div>
 
-              {/* View link */}
+              {/* View conversation link */}
+              {stackSessionMap[stack.id] && (
+                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                  <Link
+                    href={`/dashboard/recommend/${stackSessionMap[stack.id]}`}
+                    className="text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors flex items-center gap-1"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Voir la conversation
+                  </Link>
+                </div>
+              )}
             </motion.div>
           )
         })}

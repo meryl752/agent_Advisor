@@ -137,6 +137,25 @@ export class RateLimiter {
     return `ratelimit:${userId}:${endpoint}:${windowStart}`
   }
 
+  /**
+   * Refund a credit when a request fails due to a server error (not user fault).
+   * Call this after a failed stack generation to restore the user's credit.
+   */
+  async refundCredit(userId: string, endpoint: string): Promise<void> {
+    if (!this.enabled) return
+    try {
+      const now = Math.floor(Date.now() / 1000)
+      const plan = await this.getUserPlan(userId)
+      const config = this.getConfig(plan)
+      const windowStart = this.calculateWindowStart(now, config.windowSeconds)
+      const key = this.getRedisKey(userId, endpoint, windowStart)
+      await this.redis.decrement(key)
+      console.log(`[RateLimiter] Credit refunded for user ${userId.substring(0, 8)}*** (${plan} tier)`)
+    } catch (err) {
+      console.warn('[RateLimiter] Failed to refund credit:', err)
+    }
+  }
+
   private calculateWindowStart(timestamp: number, windowSeconds: number): number {
     return Math.floor(timestamp / windowSeconds) * windowSeconds
   }

@@ -72,6 +72,17 @@ export class RedisClient {
     }
   }
 
+  async decrement(key: string): Promise<void> {
+    try {
+      await Promise.race([
+        this.redis.decr(key),
+        this.timeoutPromise<number>()
+      ])
+    } catch (error) {
+      this.handleError(error as Error, 'decrement')
+    }
+  }
+
   async reset(key: string): Promise<void> {
     try {
       await Promise.race([

@@ -19,7 +19,7 @@ export const recommendSchema = z.object({
   objective: z
     .string()
     .min(10, { message: "L'objectif doit contenir au moins 10 caractères" })
-    .max(1000, { message: "L'objectif ne peut pas dépasser 1000 caractères" })
+    .max(2000, { message: "L'objectif ne peut pas dépasser 2000 caractères" })
     .trim(),
   sector: z.string().min(1).max(100).trim(),
   budget: z.enum(['zero', 'low', 'medium', 'high']),
@@ -27,6 +27,7 @@ export const recommendSchema = z.object({
   team_size: z.enum(['solo', 'small', 'medium', 'large']).default('solo'),
   timeline: z.enum(['asap', 'weeks', 'months']).default('weeks'),
   current_tools: z.array(z.string().max(100)).max(20).optional().default([]),
+  session_id: z.string().uuid().optional(),
 })
 
 export type RecommendInput = z.infer<typeof recommendSchema>

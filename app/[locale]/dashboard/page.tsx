@@ -66,6 +66,21 @@ export default async function DashboardPage() {
 
   const latestStack = stacks[0] ?? null
 
+  // Fetch session_id for each stack to enable navigation to conversations
+  const stackIds = stacks.map(s => s.id).filter(Boolean)
+  let stackSessionMap: Record<string, string> = {}
+  if (stackIds.length > 0) {
+    const { data: convData } = await (supabaseService as any)
+      .from('conversations')
+      .select('stack_id, session_id')
+      .in('stack_id', stackIds)
+    if (convData) {
+      stackSessionMap = Object.fromEntries(
+        convData.map((c: any) => [c.stack_id, c.session_id])
+      )
+    }
+  }
+
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
 
@@ -131,14 +146,14 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t('latestStack.label')}</p>
               {latestStack && (
-                <Link href={`/dashboard/stack/${latestStack.id}`}
+                <Link href={stackSessionMap[latestStack.id] ? `/dashboard/recommend/${stackSessionMap[latestStack.id]}` : '/dashboard/stack'}
                   className="text-[10px] text-zinc-400 hover:text-[#CAFF32] transition-colors">
                   {t('latestStack.viewLink')}
                 </Link>
               )}
             </div>
             {latestStack ? (
-              <Link href={`/dashboard/stack/${latestStack.id}`} className="flex flex-col gap-3 group flex-1">
+              <Link href={stackSessionMap[latestStack.id] ? `/dashboard/recommend/${stackSessionMap[latestStack.id]}` : '/dashboard/stack'} className="flex flex-col gap-3 group flex-1">
                 <p className="font-syne font-bold text-zinc-900 dark:text-white group-hover:text-[#CAFF32] transition-colors text-base">
                   {latestStack.name}
                 </p>
@@ -177,7 +192,7 @@ export default async function DashboardPage() {
           </div>
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {stacks.map((s, i) => (
-              <Link key={i} href={`/dashboard/stack/${s.id}`}
+              <Link key={i} href={stackSessionMap[s.id] ? `/dashboard/recommend/${stackSessionMap[s.id]}` : '/dashboard/stack'}
                 className="flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors group">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-lg bg-[#CAFF32]/10 border border-[#CAFF32]/20 flex items-center justify-center flex-shrink-0">

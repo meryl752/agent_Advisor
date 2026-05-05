@@ -32,6 +32,21 @@ export default async function StacksPage() {
     }
   }
 
+  // Fetch session_id for each stack from conversations table
+  const stackIds = stacks.map(s => s.id).filter(Boolean)
+  let stackSessionMap: Record<string, string> = {}
+  if (stackIds.length > 0) {
+    const { data: convData } = await (supabaseService as any)
+      .from('conversations')
+      .select('stack_id, session_id')
+      .in('stack_id', stackIds)
+    if (convData) {
+      stackSessionMap = Object.fromEntries(
+        convData.map((c: any) => [c.stack_id, c.session_id])
+      )
+    }
+  }
+
   return (
     <div className="p-6 md:p-10 w-full max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -44,7 +59,7 @@ export default async function StacksPage() {
           + Nouveau
         </Link>
       </div>
-      <StacksClient initialStacks={stacks} agentsMap={agentsMap} />
+      <StacksClient initialStacks={stacks} agentsMap={agentsMap} stackSessionMap={stackSessionMap} />
     </div>
   )
 }

@@ -180,3 +180,63 @@ export async function callLLM(prompt: string, maxTokens = 1024): Promise<string>
 
   throw new Error('No LLM available')
 }
+
+/**
+ * Streaming version — returns a ReadableStream of text chunks.
+ * Used by /api/chat for real-time token streaming to the client.
+ */
+export function streamLLM(prompt: string, maxTokens = 600): ReadableStream<Uint8Array> {
+  const groqClient = getGroqClient()
+  if (!groqClient) throw new Error('Groq not configured — streaming requires Groq')
+
+  const encoder = new TextEncoder()
+
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        const stream = await groqClient.chat.completions.create({
+          model: GROQ_MODEL,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: maxTokens,
+          temperature: 0.7,
+          stream: true,
+        })
+
+        let buffer = ''
+        let inThinkTag = false
+
+        for await (const chunk of stream) {
+          const token = chunk.choices[0]?.delta?.content ?? ''
+          if (!token) continue
+
+          buffer += token
+
+          // Strip <think>...</think> tags from streaming output
+          if (buffer.includes('<think>')) inThinkTag = true
+          if (inThinkTag) {
+            if (buffer.includes('</think>')) {
+              buffer = buffer.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>[\s\S]*/g, '')
+              inThinkTag = false
+            } else {
+              continue // still inside think tag, skip
+            }
+          }
+
+          if (buffer) {
+            controller.enqueue(encoder.encode(buffer))
+            buffer = ''
+          }
+        }
+
+        // Flush any remaining buffer
+        if (buffer && !inThinkTag) {
+          controller.enqueue(encoder.encode(buffer))
+        }
+
+        controller.close()
+      } catch (err) {
+        controller.error(err)
+      }
+    },
+  })
+}
