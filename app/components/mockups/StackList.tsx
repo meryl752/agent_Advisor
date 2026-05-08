@@ -1,4 +1,7 @@
-import type { StackItem } from '@/types'
+interface StackItem {
+  name: string
+  score: number
+}
 
 const DEFAULT_ITEMS: StackItem[] = [
   { name: 'Claude Sonnet', score: 92 },

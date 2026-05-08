@@ -26,15 +26,11 @@ function makeAgent(overrides: Partial<VectorAgent> = {}): VectorAgent {
     name: 'TestAgent',
     category: 'automation',
     description: 'A test agent',
-    pricing_model: 'freemium',
     price_from: 0,
     score: 80,
     roi_score: 75,
     use_cases: ['automatisation', 'email'],
     compatible_with: [],
-    url: 'https://test.com',
-    last_updated: new Date().toISOString(),
-    created_at: new Date().toISOString(),
     similarity: 0.8,
     best_for: [],
     integrations: [],
@@ -49,10 +45,19 @@ function makeAgent(overrides: Partial<VectorAgent> = {}): VectorAgent {
 function makeQuery(overrides: Partial<AnalyzedQuery> = {}): AnalyzedQuery {
   return {
     original: 'Je veux automatiser mon service client Shopify',
+    domains: [{
+      name: 'Objectif principal',
+      priority: 1,
+      subtasks: [
+        { id: 'd1_t1', action: 'automatiser emails', required_category: 'automation', depends_on: [], can_be_automated: true },
+        { id: 'd1_t2', action: 'chatbot SAV', required_category: 'customer_service', depends_on: [], can_be_automated: true },
+      ],
+    }],
     subtasks: ['automatiser emails', 'chatbot SAV', 'gestion commandes'],
     required_categories: ['automation', 'customer-support', 'ecommerce'],
     sector_context: 'e-commerce boutique en ligne',
     implicit_constraints: [],
+    budget_max: 50,
     ...overrides,
   }
 }

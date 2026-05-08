@@ -1,5 +1,11 @@
 import { cn } from '@/lib/utils'
-import type { DashboardMetric } from '@/types'
+
+interface DashboardMetric {
+  label: string
+  value: string
+  sub: string
+  variant?: 'green' | 'orange' | 'default'
+}
 
 export default function DashboardCard({ label, value, sub, variant = 'default' }: DashboardMetric) {
   return (

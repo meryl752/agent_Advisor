@@ -1,5 +1,11 @@
 import { cn } from '@/lib/utils'
-import type { AlertItem } from '@/types'
+
+interface AlertItem {
+  type: 'success' | 'warning' | 'info'
+  title: string
+  message: string
+  time: string
+}
 
 const DEFAULT_ALERTS: AlertItem[] = [
   {
