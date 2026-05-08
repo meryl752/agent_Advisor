@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { getLogoUrl } from '@/lib/utils/logo'
-import { useTranslations } from 'next-intl'
 
 const TOOLS = [
     { name: 'Claude', domain: 'claude.ai', color: '#FF6B35' },
@@ -47,40 +46,40 @@ const TOOLS = [
 const WORDS = ['Shopify', 'LinkedIn', 'Prospection', 'YouTube', 'SAV', 'SEO', 'SaaS']
 
 const HEADLINES = [
-    { prefix: 'Lance ton projet', suffix: 'avec les bons outils IA' },
-    { prefix: 'Scale ton business', suffix: 'sans recruter' }
+    { prefix: 'Launch your project', suffix: 'with the right AI tools' },
+    { prefix: 'Scale your business', suffix: 'without hiring' }
 ]
 
 const DEMO_SCENARIOS = [
     {
-        query: "Je veux lancer une boutique Shopify et automatiser mon service client",
+        query: "I want to launch a Shopify store and automate customer service",
         tools: [
-            { name: 'Claude Sonnet', role: 'Fiches produits', price: '0€', color: '#FF6B35', domain: 'claude.ai' },
-            { name: 'Midjourney', role: 'Visuels produits', price: '10€', color: '#000', domain: 'midjourney.com' },
-            { name: 'Tidio AI', role: 'Chatbot SAV', price: '29€', color: '#4F8EF7', domain: 'tidio.com' },
+            { name: 'Claude Sonnet', role: 'Product descriptions', price: '0€', color: '#FF6B35', domain: 'claude.ai' },
+            { name: 'Midjourney', role: 'Product visuals', price: '10€', color: '#000', domain: 'midjourney.com' },
+            { name: 'Tidio AI', role: 'Support chatbot', price: '29€', color: '#4F8EF7', domain: 'tidio.com' },
             { name: 'Make.com', role: 'Automation', price: '9€', color: '#6B4FFF', domain: 'make.com' },
         ],
-        metrics: { cost: '48€/mois', roi: '+380%', time: '8h/sem', tools: '4 outils' }
+        metrics: { cost: '48€/month', roi: '+380%', time: '8h/week', tools: '4 tools' }
     },
     {
-        query: "Je veux créer du contenu LinkedIn et automatiser ma prospection",
+        query: "I want to create LinkedIn content and automate prospecting",
         tools: [
-            { name: 'ChatGPT', role: 'Posts LinkedIn', price: '20€', color: '#10A37F', domain: 'openai.com' },
+            { name: 'ChatGPT', role: 'LinkedIn posts', price: '20€', color: '#10A37F', domain: 'openai.com' },
             { name: 'Taplio', role: 'Scheduling', price: '39€', color: '#4F8EF7', domain: 'taplio.com' },
             { name: 'Lemlist', role: 'Cold email', price: '59€', color: '#FF6B35', domain: 'lemlist.com' },
             { name: 'Phantombuster', role: 'Scraping', price: '30€', color: '#6B4FFF', domain: 'phantombuster.com' },
         ],
-        metrics: { cost: '148€/mois', roi: '+520%', time: '12h/sem', tools: '4 outils' }
+        metrics: { cost: '148€/month', roi: '+520%', time: '12h/week', tools: '4 tools' }
     },
     {
-        query: "Je veux lancer une chaîne YouTube et automatiser le montage vidéo",
+        query: "I want to launch a YouTube channel and automate video editing",
         tools: [
-            { name: 'Claude', role: 'Scripts vidéo', price: '0€', color: '#FF6B35', domain: 'claude.ai' },
-            { name: 'ElevenLabs', role: 'Voix off IA', price: '22€', color: '#000', domain: 'elevenlabs.io' },
-            { name: 'Descript', role: 'Montage auto', price: '24€', color: '#4F8EF7', domain: 'descript.com' },
-            { name: 'TubeBuddy', role: 'SEO YouTube', price: '9€', color: '#FF6B35', domain: 'tubebuddy.com' },
+            { name: 'Claude', role: 'Video scripts', price: '0€', color: '#FF6B35', domain: 'claude.ai' },
+            { name: 'ElevenLabs', role: 'AI voiceover', price: '22€', color: '#000', domain: 'elevenlabs.io' },
+            { name: 'Descript', role: 'Auto editing', price: '24€', color: '#4F8EF7', domain: 'descript.com' },
+            { name: 'TubeBuddy', role: 'YouTube SEO', price: '9€', color: '#FF6B35', domain: 'tubebuddy.com' },
         ],
-        metrics: { cost: '55€/mois', roi: '+290%', time: '10h/sem', tools: '4 outils' }
+        metrics: { cost: '55€/month', roi: '+290%', time: '10h/week', tools: '4 tools' }
     }
 ]
 
@@ -110,18 +109,6 @@ export default function Hero() {
     const [visible, setVisible] = useState(true)
     const [isMounted, setIsMounted] = useState(false)
     const [windowWidth, setWindowWidth] = useState(0)
-    const t = useTranslations('landing')
-
-    // Build translated arrays
-    const WORDS = [
-        t('hero.word1'), t('hero.word2'), t('hero.word3'), t('hero.word4'),
-        t('hero.word5'), t('hero.word6'), t('hero.word7'),
-    ]
-
-    const HEADLINES = [
-        { prefix: t('hero.headline1Prefix'), suffix: t('hero.headline1Suffix') },
-        { prefix: t('hero.headline2Prefix'), suffix: t('hero.headline2Suffix') },
-    ]
 
     // Animation states for demo card
     const [scenarioIdx, setScenarioIdx] = useState(0)
@@ -305,9 +292,9 @@ export default function Hero() {
                 {/* Subheadline - with scribbled circles around key words */}
                 <p className="text-xl text-zinc-500 max-w-2xl mx-auto mb-10 font-light leading-relaxed animate-fadeUp text-center"
                     style={{ animationDelay: '0.2s' }}>
-                    {t('hero.subheadline')}{' '}
+                    Discover the perfect AI tools for your project,{' '}
                     <span className="relative inline-block px-2 mx-1" translate="no">
-                        <span className="relative z-10">{t('hero.subheadlineCosts')}</span>
+                        <span className="relative z-10">at the best cost</span>
                         <svg className="absolute -inset-2 w-[calc(100%+16px)] h-[calc(100%+16px)] pointer-events-none" viewBox="0 0 100 60" preserveAspectRatio="none">
                             <ellipse cx="50" cy="30" rx="45" ry="25" fill="none" stroke="#18181b" strokeWidth="2" opacity="0.7" 
                                      style={{ transform: 'rotate(2deg)', transformOrigin: 'center' }} />
@@ -319,7 +306,7 @@ export default function Hero() {
                                      style={{ transform: 'rotate(4deg)', transformOrigin: 'center' }} />
                         </svg>
                     </span>
-                    {t('hero.subheadlineEnd')}
+                    , in 30 seconds.
                 </p>
 
                 {/* CTA */}
@@ -329,12 +316,12 @@ export default function Hero() {
                         className="bg-zinc-900 text-white font-bold text-sm px-7 py-3 rounded-lg
                        hover:bg-zinc-800 transition-colors
                        flex items-center gap-2">
-                        <span>{t('hero.ctaPrimary')}</span>
+                        <span>Get started free</span>
                     </Link>
                     <a href="#demo"
                         className="flex items-center justify-center gap-2 bg-zinc-50/50 backdrop-blur-sm text-zinc-700 font-medium text-sm px-6 py-3 rounded-lg
                                    hover:bg-zinc-100/50 transition-colors">
-                        <span>{t('hero.ctaSecondary')}</span>
+                        <span>See how it works</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -399,25 +386,25 @@ export default function Hero() {
                             {/* Metrics row - always visible, values change per scenario */}
                             <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
                                 <div className="text-center">
-                                    <p className="text-xs text-zinc-400 mb-0.5">Coût total</p>
+                                    <p className="text-xs text-zinc-400 mb-0.5">Total cost</p>
                                     <p className="font-black text-zinc-900 text-sm transition-all duration-500">
                                         {visibleTools.length === 4 ? DEMO_SCENARIOS[scenarioIdx].metrics.cost : '—'}
                                     </p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-xs text-zinc-400 mb-0.5">ROI estimé</p>
+                                    <p className="text-xs text-zinc-400 mb-0.5">Estimated ROI</p>
                                     <p className="font-black text-sm text-[#22c55e] transition-all duration-500">
                                         {visibleTools.length === 4 ? DEMO_SCENARIOS[scenarioIdx].metrics.roi : '—'}
                                     </p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-xs text-zinc-400 mb-0.5">Temps économisé</p>
+                                    <p className="text-xs text-zinc-400 mb-0.5">Time saved</p>
                                     <p className="font-black text-zinc-900 text-sm transition-all duration-500">
                                         {visibleTools.length === 4 ? DEMO_SCENARIOS[scenarioIdx].metrics.time : '—'}
                                     </p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-xs text-zinc-400 mb-0.5">Outils</p>
+                                    <p className="text-xs text-zinc-400 mb-0.5">Tools</p>
                                     <p className="font-black text-zinc-900 text-sm transition-all duration-500">
                                         {visibleTools.length === 4 ? DEMO_SCENARIOS[scenarioIdx].metrics.tools : '—'}
                                     </p>
@@ -430,7 +417,7 @@ export default function Hero() {
                 {/* Trusted by logos */}
                 <div className="mt-16 animate-fadeUp" style={{ animationDelay: '0.5s' }}>
                     <p className="text-sm text-zinc-400 mb-6 font-medium">
-                        {t('hero.trustedBy')}
+                        Powered by the best AI models
                     </p>
                     <div className="flex items-center justify-center gap-8 flex-wrap opacity-40 grayscale">
                         {['openai.com', 'anthropic.com', 'google.com', 'groq.com', 'mistral.ai'].map(domain => (

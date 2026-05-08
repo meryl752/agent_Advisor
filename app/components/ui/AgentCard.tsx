@@ -115,7 +115,7 @@ export default function AgentCard({
               </span>
             </div>
             <span className="font-syne font-bold text-sm text-accent flex-shrink-0 bg-accent/10 px-2 py-1 rounded-full border border-accent/20">
-              {price_from === 0 ? 'Gratuit' : `${price_from}€/m`}
+              {price_from === 0 ? 'Free' : `${price_from}€/mo`}
             </span>
           </div>
 
@@ -147,7 +147,7 @@ export default function AgentCard({
               </span>
             )}
             <span className="font-dm-mono text-[0.58rem] text-muted ml-auto group-hover:text-accent transition-colors">
-              {expanded ? '↑ Réduire' : '↓ Voir détail'}
+              {expanded ? '↑ Collapse' : '↓ View details'}
             </span>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function AgentCard({
               {concrete_result && (
                 <div className="border-l-2 border-accent/50 pl-4 py-2 bg-gradient-to-r from-accent/10 to-transparent rounded-r-lg">
                   <p className="font-dm-mono text-[0.6rem] text-accent uppercase mb-1 drop-shadow-sm">
-                    ✦ Résultat concret
+                    ✦ Concrete result
                   </p>
                   <p className="font-dm-sans text-sm text-cream font-light leading-relaxed">
                     {concrete_result}

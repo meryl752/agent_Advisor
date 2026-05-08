@@ -62,7 +62,7 @@ export default function WaitlistForm({ id, centered = false }: WaitlistFormProps
           'font-dm-mono text-[0.66rem] text-muted mt-3',
           centered && 'text-center'
         )}>
-          ✦ Bêta privée · Places limitées · Aucun spam
+          ✦ Private beta · Limited spots · No spam
         </p>
       )}
     </div>

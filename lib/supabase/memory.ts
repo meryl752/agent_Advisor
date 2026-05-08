@@ -145,6 +145,7 @@ export interface ConversationMessage {
 
 /**
  * Save or update a chat session in the conversations table.
+ * CRITICAL: This function ONLY manages messages. Never call it to update stack_id.
  */
 export async function saveConversation(
   clerkId: string,
@@ -160,23 +161,76 @@ export async function saveConversation(
 
   const userId = (dbUser as any).id
 
-  const { error } = await (supabaseService as any)
+  // Check if conversation exists
+  const { data: existing, error: fetchError } = await (supabaseService as any)
     .from('conversations')
-    .upsert(
-      {
-        user_id:         userId,
-        session_id:      sessionId,
+    .select('id, stack_id, stack_generated')
+    .eq('session_id', sessionId)
+    .maybeSingle()
+
+  if (fetchError) {
+    console.error('[saveConversation] Fetch error:', fetchError.message, fetchError.code)
+    return
+  }
+
+  if (existing) {
+    // Conversation exists - UPDATE only messages, preserve stack info
+    const { error } = await (supabaseService as any)
+      .from('conversations')
+      .update({
+        messages,
+        // Preserve existing stack info unless explicitly provided
+        stack_generated: options?.stackGenerated ?? existing.stack_generated,
+        stack_id: options?.stackId ?? existing.stack_id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('session_id', sessionId)
+
+    if (error) {
+      console.error('[saveConversation] Update error:', error.message, error.code)
+    }
+  } else {
+    // New conversation - INSERT
+    const { error } = await (supabaseService as any)
+      .from('conversations')
+      .insert({
+        user_id: userId,
+        session_id: sessionId,
         messages,
         stack_generated: options?.stackGenerated ?? false,
-        stack_id:        options?.stackId ?? null,
-        updated_at:      new Date().toISOString(),
-      },
-      { onConflict: 'session_id' }
-    )
+        stack_id: options?.stackId ?? null,
+        updated_at: new Date().toISOString(),
+      })
+
+    if (error) {
+      console.error('[saveConversation] Insert error:', error.message, error.code)
+    }
+  }
+}
+
+/**
+ * Link a stack to an existing conversation.
+ * CRITICAL: This function ONLY updates stack_id and stack_generated. Never touches messages.
+ */
+export async function linkStackToConversation(
+  sessionId: string,
+  stackId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await (supabaseService as any)
+    .from('conversations')
+    .update({
+      stack_generated: true,
+      stack_id: stackId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('session_id', sessionId)
 
   if (error) {
-    console.error('[saveConversation] Supabase error:', error.message, error.code)
+    console.error('[linkStackToConversation] Error:', error.message, error.code)
+    return { success: false, error: error.message }
   }
+
+  return { success: true }
 }
 
 // ─── Compress & update memory ─────────────────────────────────────────────────

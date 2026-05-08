@@ -18,10 +18,10 @@ interface StackChatProps {
 }
 
 const QUICK_QUESTIONS = [
-  'Par où commencer ?',
-  'Quel est le ROI réaliste ?',
-  'Des alternatives moins chères ?',
-  'Délai de mise en place ?',
+  'Where to start?',
+  'What is the realistic ROI?',
+  'Any cheaper alternatives?',
+  'How long to set up?',
 ]
 
 export default function StackChat({ stackContext }: StackChatProps) {
@@ -53,12 +53,12 @@ export default function StackChat({ stackContext }: StackChatProps) {
       const data = await res.json()
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.response ?? data.error ?? 'Erreur inattendue.'
+        content: data.response ?? data.error ?? 'Server error. Please try again.'
       }])
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Erreur réseau — réessaie dans un instant.'
+        content: 'Network error. Please check your connection.'
       }])
     } finally {
       setLoading(false)
@@ -75,7 +75,7 @@ export default function StackChat({ stackContext }: StackChatProps) {
         <div className="flex items-center gap-2.5">
           <div className="w-1.5 h-1.5 rounded-full bg-[#CAFF32] animate-pulse" />
           <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-[0.15em]">
-            Expert StackAI — Pose une question
+            Ask a question about this stack
           </p>
         </div>
         <span className="text-zinc-600 text-xs group-hover:text-zinc-400 transition-colors">
@@ -161,7 +161,7 @@ export default function StackChat({ stackContext }: StackChatProps) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send(input)}
-              placeholder="Une question sur ce stack..."
+              placeholder="Ask a question about this stack..."
               className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs
                          px-3 py-2 outline-none focus:border-[#CAFF32]/30
                          placeholder:text-zinc-600 transition-colors font-mono"

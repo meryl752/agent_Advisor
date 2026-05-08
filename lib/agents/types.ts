@@ -106,6 +106,8 @@ export interface StackAgent {
   concrete_result: string
   prompt_to_use: string
   website_domain?: string
+  logo_url?: string
+  url?: string
   setup_difficulty?: string
   time_to_value?: string
   implementation_steps?: ImplementationStep[]  // peuplé par guideBuilder après affichage

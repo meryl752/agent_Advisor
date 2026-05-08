@@ -7,7 +7,6 @@ import { AnimatedBeam } from '../ui/animated-beam'
 import { NumberTicker } from '../ui/number-ticker'
 import { TextGenerateEffect } from '../ui/text-generate-effect'
 import { getLogoUrl } from '@/lib/utils/logo'
-import { useTranslations } from 'next-intl'
 
 // ─── Bento cards data ────────────────────────────────────────────────────────
 
@@ -16,9 +15,9 @@ const CARDS = [
         id: '01',
         col: 'md:col-span-2',
         accent: '#CAFF32',
-        tag: 'Recommandation IA',
-        title: 'Ton stack parfait en 30 secondes',
-        description: 'Notre moteur analyse ton objectif et valide la meilleure combinaison parmi +200 outils IA — coûts, ROI et workflow inclus.',
+        tag: 'AI Recommendation',
+        title: 'Your perfect stack in 30 seconds',
+        description: 'Our engine analyzes your goal and validates the best combination from 200+ AI tools — costs, ROI and workflow included.',
         visual: 'search',
     },
     {
@@ -26,8 +25,8 @@ const CARDS = [
         col: 'md:col-span-1',
         accent: '#FF6B35',
         tag: 'ROI Tracker',
-        title: 'Vois ton retour sur investissement en temps réel',
-        description: 'Temps économisé, coûts évités, gains estimés. Le chiffre qui justifie chaque euro.',
+        title: 'See your return on investment in real-time',
+        description: 'Time saved, costs avoided, estimated gains. The number that justifies every euro.',
         visual: 'roi',
     },
     {
@@ -35,8 +34,8 @@ const CARDS = [
         col: 'md:col-span-1',
         accent: '#6B4FFF',
         tag: 'Stack Alerts',
-        title: 'Alertes intelligentes sur ton stack',
-        description: 'Un outil baisse ses prix ? Un meilleur concurrent sort ? Tu reçois une alerte et tu switches en un clic.',
+        title: 'Smart alerts on your stack',
+        description: 'A tool drops its prices? A better competitor launches? You get an alert and switch in one click.',
         visual: 'alerts',
     },
     {
@@ -44,8 +43,8 @@ const CARDS = [
         col: 'md:col-span-2',
         accent: '#20B8CD',
         tag: 'Workflow Visualizer',
-        title: 'Visualise comment tes outils s\'interconnectent',
-        description: 'De l\'idée à l\'exécution. Observe comment ChatGPT, Make et ton CRM s\'enchaînent sur un canvas clair.',
+        title: 'Visualize how your tools interconnect',
+        description: 'From idea to execution. See how ChatGPT, Make and your CRM chain together on a clear canvas.',
         visual: 'flow',
     },
     {
@@ -53,8 +52,8 @@ const CARDS = [
         col: 'md:col-span-1',
         accent: '#CAFF32',
         tag: 'Audit & Score',
-        title: 'Score 0-100 sur ta stack chaque mois',
-        description: 'Audit automatique mensuel : on note ta config et on te dit exactement quoi désabonner.',
+        title: '0-100 score on your stack every month',
+        description: 'Automatic monthly audit: we rate your config and tell you exactly what to unsubscribe from.',
         visual: 'score',
     },
 ]
@@ -102,19 +101,19 @@ function ROIVisual({ accent }: { accent: string }) {
     return (
         <div ref={ref} className="p-6 flex flex-col gap-3 min-h-[120px]">
             <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400">Temps économisé</span>
+                <span className="text-xs text-zinc-400">Time saved</span>
                 <span className="font-black text-zinc-900 text-lg">
-                    {inView && <NumberTicker value={8} className="font-black" />}h/sem
+                    {inView && <NumberTicker value={8} className="font-black" />}h/week
                 </span>
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400">ROI estimé</span>
+                <span className="text-xs text-zinc-400">Estimated ROI</span>
                 <span className="font-black text-lg" style={{ color: accent }}>
                     +{inView && <NumberTicker value={380} className="font-black" />}%
                 </span>
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400">Coût mensuel</span>
+                <span className="text-xs text-zinc-400">Monthly cost</span>
                 <span className="font-black text-zinc-900 text-lg">
                     {inView && <NumberTicker value={48} className="font-black" />}€
                 </span>
@@ -127,9 +126,9 @@ function AlertsVisual({ accent }: { accent: string }) {
     return (
         <div className="p-4 flex flex-col gap-2 min-h-[120px]">
             {[
-                { text: 'GPT-4o a baissé ses prix de 50%', color: '#22c55e', time: 'Il y a 2h' },
-                { text: 'Jasper → remplacer par Claude', color: '#FF6B35', time: 'Hier' },
-                { text: 'Nouveau: Perplexity Pages', color: accent, time: 'Cette semaine' },
+                { text: 'GPT-4o dropped prices by 50%', color: '#22c55e', time: '2h ago' },
+                { text: 'Jasper → replace with Claude', color: '#FF6B35', time: 'Yesterday' },
+                { text: 'New: Perplexity Pages', color: accent, time: 'This week' },
             ].map((alert, i) => (
                 <motion.div
                     key={i}
@@ -208,9 +207,9 @@ function ScoreVisual({ accent }: { accent: string }) {
             </div>
             <div className="flex flex-col gap-1.5">
                 {[
-                    { label: 'Pertinence', val: 92 },
-                    { label: 'Coût/ROI', val: 78 },
-                    { label: 'Intégration', val: 85 },
+                    { label: 'Relevance', val: 92 },
+                    { label: 'Cost/ROI', val: 78 },
+                    { label: 'Integration', val: 85 },
                 ].map(item => (
                     <div key={item.label} className="flex items-center gap-2">
                         <span className="text-[10px] text-zinc-400 w-20">{item.label}</span>
@@ -342,7 +341,6 @@ function AnimatedCard({ children, className, delay = 0 }: { children: React.Reac
 export default function Features() {
     const ref = useRef(null)
     const inView = useInView(ref, { once: true, margin: '-100px' })
-    const t = useTranslations('landing')
 
     return (
         <section id="features" className="py-32 bg-[#FAFAF7]" ref={ref}>
@@ -356,11 +354,11 @@ export default function Features() {
                         transition={{ duration: 0.5 }}
                         className="inline-flex items-center gap-2 bg-zinc-900 text-[#CAFF32] text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-6"
                     >
-                        {t('features.badge')}
+                        Features
                     </motion.span>
 
                     <TextGenerateEffect
-                        words={t('features.title')}
+                        words="Everything you need to build and optimize your AI stack"
                         className="font-black text-zinc-900 leading-tight tracking-tight mb-4"
                         style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}
                         duration={0.4}
@@ -372,7 +370,7 @@ export default function Features() {
                         transition={{ duration: 0.6, delay: 0.6 }}
                         className="text-xl text-zinc-500 max-w-2xl mx-auto font-light leading-relaxed"
                     >
-                        {t('features.subtitle')}
+                        From discovery to optimization, we guide you at every step
                     </motion.p>
                 </div>
 

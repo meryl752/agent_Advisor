@@ -58,7 +58,7 @@ export default function Hero() {
                        px-[30px] py-[15px]
                        hover:opacity-85 hover:-translate-y-[2px] transition-all duration-150"
           >
-            Accès gratuit →
+            Free access →
           </button>
           <a href="#features"
             className="border border-border-2 text-cream font-syne font-bold

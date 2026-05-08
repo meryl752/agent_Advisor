@@ -19,26 +19,26 @@ export default function GlobalError({
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white p-8">
       <div className="max-w-md text-center">
         <p className="font-dm-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-4">
-          Erreur système
+          System error
         </p>
         <h1 className="font-syne font-black text-4xl mb-4 text-white">
-          Quelque chose s'est mal passé
+          Something went wrong
         </h1>
         <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
-          Une erreur inattendue s'est produite. Notre équipe a été notifiée automatiquement.
+          An unexpected error occurred. Our team has been automatically notified.
         </p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
             className="bg-[#CAFF32] text-zinc-900 font-bold px-6 py-3 text-sm hover:bg-[#d4ff50] transition-colors"
           >
-            Réessayer
+            Retry
           </button>
           <Link
             href="/"
             className="border border-zinc-700 text-zinc-300 font-bold px-6 py-3 text-sm hover:border-zinc-500 transition-colors"
           >
-            Accueil
+            Home
           </Link>
         </div>
         {error.digest && (

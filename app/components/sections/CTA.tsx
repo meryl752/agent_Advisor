@@ -22,7 +22,7 @@ export default function CTA() {
 
       <RevealWrapper delay={0.2}>
         <p className="text-muted-2 text-[1rem] font-light mb-11">
-          Les 50 premiers accèdent gratuitement à la bêta privée.
+          The first 50 get free access to the private beta.
         </p>
       </RevealWrapper>
 

@@ -3,14 +3,21 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
 
 export default function Pricing() {
     const ref = useRef(null)
     const inView = useInView(ref, { once: true, margin: '-100px' })
-    const t = useTranslations('landing')
 
-    const perks = t.raw('pricing.perks') as string[]
+    const perks = [
+        'Unlimited AI stack recommendations',
+        'Real-time ROI tracking',
+        'Smart alerts on price changes',
+        'Workflow visualization',
+        'Monthly audit & optimization score',
+        'Access to 200+ AI tools database',
+        'Implementation guides for each tool',
+        'Priority support'
+    ]
 
     return (
         <section id="pricing" className="py-32 bg-[#FAFAF7] relative overflow-hidden" ref={ref}>
@@ -32,7 +39,7 @@ export default function Pricing() {
                 >
                     <span className="inline-flex items-center gap-2 bg-zinc-900 text-[#CAFF32] text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#CAFF32] animate-pulse" />
-                        {t('pricing.badge')}
+                        Pricing
                     </span>
                 </motion.div>
 
@@ -45,14 +52,14 @@ export default function Pricing() {
                 >
                     <h2 className="font-black text-zinc-900 leading-tight mb-4"
                         style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)' }}>
-                        {t('pricing.title')}{' '}
+                        Simple pricing,{' '}
                         <span className="text-transparent bg-clip-text"
                             style={{ backgroundImage: 'linear-gradient(135deg, #5a8a00, #7aaa00)' }}>
-                            {t('pricing.titleHighlight')}
+                            maximum value
                         </span>
                     </h2>
                     <p className="text-zinc-500 text-base max-w-xl mx-auto leading-relaxed">
-                        {t('pricing.subtitle')}
+                        One plan, all features. Start free, upgrade when you're ready.
                     </p>
                 </motion.div>
 
@@ -68,7 +75,7 @@ export default function Pricing() {
 
                         {/* Left — perks */}
                         <div>
-                            <p className="text-zinc-900 font-black text-xl mb-6">{t('pricing.perksTitle')}</p>
+                            <p className="text-zinc-900 font-black text-xl mb-6">Everything included:</p>
                             <div className="flex flex-col gap-3">
                                 {perks.map((perk, i) => (
                                     <motion.div
@@ -92,16 +99,16 @@ export default function Pricing() {
                         {/* Right — CTA */}
                         <div className="flex flex-col items-center text-center">
                             <div className="mb-6">
-                                <div className="text-6xl font-black text-zinc-900 mb-1">{t('pricing.price')}</div>
-                                <div className="text-zinc-400 text-sm">{t('pricing.priceSub')}</div>
+                                <div className="text-6xl font-black text-zinc-900 mb-1">Free</div>
+                                <div className="text-zinc-400 text-sm">Forever. No credit card required.</div>
                             </div>
 
                             <div className="w-full flex flex-col gap-3">
                                 <Link href="/sign-up"
                                     className="w-full bg-[#CAFF32] text-zinc-900 font-black py-3 rounded-xl text-sm hover:bg-[#d4ff50] transition-colors text-center">
-                                    {t('pricing.cta')}
+                                    Start building your stack
                                 </Link>
-                                <p className="text-zinc-400 text-xs">{t('pricing.disclaimer')}</p>
+                                <p className="text-zinc-400 text-xs">No commitment. Cancel anytime.</p>
                             </div>
                         </div>
                     </div>

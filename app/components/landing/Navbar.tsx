@@ -4,13 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
-import { useTranslations } from 'next-intl'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const { isSignedIn } = useAuth()
-  const t = useTranslations('landing')
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20)
@@ -65,10 +63,10 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-8">
             {[
-              { href: '#features', label: t('nav.features') },
-              { href: '#pricing', label: t('nav.pricing') },
-              { href: '#about', label: t('nav.about') },
-              { href: '#blog', label: t('nav.blog') },
+              { href: '#features', label: 'Features' },
+              { href: '#pricing', label: 'Pricing' },
+              { href: '#about', label: 'About' },
+              { href: '#blog', label: 'Blog' },
             ].map(item => (
               <a key={item.href} href={item.href}
                 className={cn(
@@ -91,7 +89,7 @@ export default function Navbar() {
                     ? 'bg-white text-zinc-900 hover:bg-zinc-100'
                     : 'bg-zinc-900 text-white hover:bg-zinc-800'
                 )}>
-                {t('nav.dashboard')}
+                Dashboard →
               </Link>
             ) : (
               <>
@@ -102,12 +100,12 @@ export default function Navbar() {
                       ? 'bg-white/10 text-white hover:bg-white/20'
                       : 'bg-white/40 backdrop-blur-sm text-zinc-900 hover:bg-white/60'
                   )}>
-                  {t('nav.signIn')}
+                  Sign in
                 </Link>
                 <Link href="/sign-up"
                   className="bg-[#CAFF32] text-zinc-900 text-sm font-semibold px-5 py-2 rounded-lg
                              hover:bg-[#b8e82d] transition-colors">
-                  {t('nav.signUp')}
+                  Get started →
                 </Link>
               </>
             )}

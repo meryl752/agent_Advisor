@@ -88,7 +88,7 @@ function AgentChip({ agent, inStack, onAdd, stackFull, plan }: AgentChipProps) {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className={`font-dm-mono text-[10px] font-bold ${agent.price_from === 0 ? 'text-[#CAFF32]' : 'text-zinc-500 dark:text-zinc-400'}`}>
-            {agent.price_from === 0 ? 'Gratuit' : `${agent.price_from}€/m`}
+            {agent.price_from === 0 ? 'Free' : `${agent.price_from}€/mo`}
           </span>
           <span className="font-dm-mono text-[9px] text-zinc-400 dark:text-zinc-600">
             ★ {agent.score}/100
@@ -119,8 +119,8 @@ function AgentChip({ agent, inStack, onAdd, stackFull, plan }: AgentChipProps) {
         {showUpgrade && (
           <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
             className="absolute bottom-full left-0 mb-2 z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
-            <p className="font-dm-mono text-[10px] text-zinc-600 dark:text-zinc-300 mb-1">Plan gratuit limité à 3 agents</p>
-            <a href="/dashboard/billing" className="font-dm-mono text-[10px] text-[#CAFF32] hover:underline">Passer en Pro →</a>
+            <p className="font-dm-mono text-[10px] text-zinc-600 dark:text-zinc-300 mb-1">Free plan limited to 3 agents</p>
+            <a href="/dashboard/billing" className="font-dm-mono text-[10px] text-[#CAFF32] hover:underline">Upgrade to Pro →</a>
           </motion.div>
         )}
       </AnimatePresence>
@@ -189,7 +189,7 @@ export default function BlueprintTaskCard({
           <div className="flex items-center gap-3 mt-0.5">
             <span className="font-dm-mono text-[10px] text-[#CAFF32]">⏱ {task.roi_estimate}</span>
             <span className="font-dm-mono text-[10px] text-zinc-400 dark:text-zinc-600">
-              {agents.length > 0 ? `${agents.length} outil${agents.length > 1 ? 's' : ''}` : 'Bientôt disponible'}
+              {agents.length > 0 ? `${agents.length} tool${agents.length > 1 ? 's' : ''}` : 'Coming soon'}
             </span>
           </div>
         </div>
@@ -235,7 +235,7 @@ export default function BlueprintTaskCard({
               ) : (
                 <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-3">
                   <span className="text-zinc-400 text-sm">⏳</span>
-                  <span className="font-dm-mono text-[10px] text-zinc-400 dark:text-zinc-600">Bientôt disponible</span>
+                  <span className="font-dm-mono text-[10px] text-zinc-400 dark:text-zinc-600">Coming soon</span>
                 </div>
               )}
             </div>

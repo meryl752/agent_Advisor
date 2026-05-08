@@ -4,7 +4,6 @@ import { saveStack } from '@/lib/supabase/queries'
 import { updateStacksSummary, saveConversation } from '@/lib/supabase/memory'
 import { runOrchestrator } from '@/lib/agents/orchestrator'
 import { recommendSchema } from '@/lib/validators/api'
-import { getRateLimiter, withRateLimit } from '@/lib/rate-limit'
 import { captureError, setSentryUser } from '@/lib/monitoring/sentry'
 import { assertEnv } from '@/lib/utils/env'
 
@@ -52,22 +51,14 @@ async function recommendHandler(req: NextRequest) {
     try {
       result = await runOrchestrator(userContext)
     } catch (orchestratorErr) {
-      // Orchestrator failed — refund the credit since it's not the user's fault
-      const rateLimiter = getRateLimiter()
-      if (rateLimiter) {
-        rateLimiter.refundCredit(user.id, 'recommend').catch(() => {})
-      }
+      // Orchestrator failed
       captureError(orchestratorErr, { endpoint: '/api/recommend', action: 'orchestrator_failure' })
       console.error('Orchestrator error:', orchestratorErr)
       return NextResponse.json({ error: 'Recommandation impossible' }, { status: 500 })
     }
 
     if (!result) {
-      // No result — refund credit
-      const rateLimiter = getRateLimiter()
-      if (rateLimiter) {
-        rateLimiter.refundCredit(user.id, 'recommend').catch(() => {})
-      }
+      // No result
       return NextResponse.json({ error: 'Recommandation impossible' }, { status: 500 })
     }
 
@@ -92,22 +83,20 @@ async function recommendHandler(req: NextRequest) {
       cost: result.stack.total_cost,
     }).catch(err => console.warn('[memory] updateStacksSummary error:', err))
 
-    // Link stack to conversation if session_id provided — non-blocking
-    // Only update stack_generated and stack_id, don't touch messages
+    // Link stack to conversation if session_id provided
     if (sessionId && savedStack?.id) {
-      const { supabaseService } = await import('@/lib/supabase/server')
-      const { getUserByClerkId } = await import('@/lib/supabase/queries')
-      getUserByClerkId(user.id).then(dbUser => {
-        if (!dbUser) return
-        const userId = (dbUser as any).id
-        ;(supabaseService as any)
-          .from('conversations')
-          .update({ stack_generated: true, stack_id: savedStack.id, updated_at: new Date().toISOString() })
-          .eq('user_id', userId)
-          .eq('session_id', sessionId)
-          .then(() => {})
-          .catch((err: any) => console.warn('[memory] link stack to conversation error:', err))
-      }).catch(() => {})
+      try {
+        const { linkStackToConversation } = await import('@/lib/supabase/memory')
+        const result = await linkStackToConversation(sessionId, savedStack.id)
+        
+        if (result.success) {
+          console.log('[memory] stack linked to conversation:', sessionId, savedStack.id)
+        } else {
+          console.error('[memory] failed to link stack:', result.error)
+        }
+      } catch (err) {
+        console.error('[memory] link stack to conversation exception:', err)
+      }
     }
 
     return NextResponse.json({ success: true, result: result.stack, stackId: savedStack?.id, meta: result.meta })
@@ -118,18 +107,6 @@ async function recommendHandler(req: NextRequest) {
   }
 }
 
-// Rate limiting:
-// - Production: MANDATORY — returns 503 if Redis not configured
-// - Development: bypassed to allow local testing without Redis
-const rateLimiter = getRateLimiter()
-const isDev = process.env.NODE_ENV !== 'production'
-
-if (!rateLimiter && !isDev) {
-  console.error('❌ [/api/recommend] Rate limiter not configured in production — requests will be blocked')
-}
-
-export const POST = rateLimiter
-  ? withRateLimit(recommendHandler, { limiter: rateLimiter, endpoint: 'recommend' })
-  : isDev
-    ? recommendHandler
-    : async () => NextResponse.json({ error: 'Service temporairement indisponible' }, { status: 503 })
+// Rate limiting: DISABLED
+// All users can create unlimited stacks during early access
+export const POST = recommendHandler

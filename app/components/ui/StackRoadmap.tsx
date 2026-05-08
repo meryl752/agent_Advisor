@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { StackAgent, ImplementationStep } from '@/lib/agents/types'
 import { getLogoUrl } from '@/lib/utils/logo'
@@ -146,7 +146,7 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
                 {agent.category}
               </span>
             </div>
-            <p className="text-xs text-zinc-500 mt-0.5">{agent.price_from === 0 ? 'Gratuit' : `${agent.price_from}€/mois`} · Score {agent.score}</p>
+            <p className="text-xs text-zinc-500 mt-0.5">{agent.price_from === 0 ? 'Free' : `${agent.price_from}€/mo`} · Score {agent.score}</p>
           </div>
         </div>
 
@@ -156,7 +156,7 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
         {/* Concrete result */}
         <div className="rounded-xl p-3 mb-4"
           style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
-          <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color }}>Résultat</p>
+          <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color }}>Result</p>
           <p className="text-sm text-zinc-300 leading-relaxed">{agent.concrete_result}</p>
         </div>
 
@@ -165,12 +165,12 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
           <div className="rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 p-3 mb-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
-                {isLLM ? 'Prompt' : 'Prise en main'}
+                {isLLM ? 'Prompt' : 'Quick start'}
               </p>
               <button
                 onClick={() => { navigator.clipboard.writeText(agent.prompt_to_use); setCopied(true); setTimeout(() => setCopied(false), 1800) }}
                 className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all">
-                {copied ? '✓' : '⎘ Copier'}
+                {copied ? '✓' : '⎘ Copy'}
               </button>
             </div>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">{agent.prompt_to_use}</p>
@@ -180,13 +180,13 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
         {/* Implementation steps */}
         <div>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">
-            {steps.length > 0 ? `Guide d'implémentation — ${steps.length} étapes` : 'Guide d\'implémentation'}
+            {steps.length > 0 ? `Implementation guide — ${steps.length} steps` : 'Implementation guide'}
           </p>
           {steps.length === 0 ? (
             <div className="flex items-center gap-2 py-2">
               <motion.div className="w-1.5 h-1.5 rounded-full bg-zinc-600"
                 animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }} />
-              <p className="text-xs text-zinc-600 italic">Génération du guide en cours...</p>
+              <p className="text-xs text-zinc-600 italic">Generating guide...</p>
             </div>
           ) : (
             <div className="flex flex-col">
@@ -213,14 +213,14 @@ export default function StackRoadmap({ agents, stackName, objective, streamedCou
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Roadmap d'implémentation</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Implementation Roadmap</p>
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">{stackName}</h2>
           <p className="text-sm text-zinc-500 mt-0.5 max-w-xl">{objective}</p>
         </div>
         <button
           onClick={() => setFullscreen(f => !f)}
           className="text-[10px] px-3 py-1.5 rounded-lg border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-600 transition-all flex-shrink-0 ml-4">
-          {fullscreen ? '⊠ Réduire' : '⛶ Plein écran'}
+          {fullscreen ? '⊠ Collapse' : '⛶ Fullscreen'}
         </button>
       </div>
 
@@ -233,10 +233,10 @@ export default function StackRoadmap({ agents, stackName, objective, streamedCou
 
       {/* Footer */}
       <div className="flex items-center gap-5 pt-4 border-t border-zinc-200 dark:border-zinc-800/60 text-xs text-zinc-500 mt-2">
-        <span>Total <span className="text-zinc-900 dark:text-white font-medium">{agents.reduce((s, a) => s + a.price_from, 0)}€/mois</span></span>
-        <span>{agents.length} agents</span>
+        <span>Total <span className="text-zinc-900 dark:text-white font-medium">{agents.reduce((s, a) => s + a.price_from, 0)}€/mo</span></span>
+        <span>{agents.length} {agents.length === 1 ? 'tool' : 'tools'}</span>
         {streamedCount !== undefined && streamedCount < agents.length && (
-          <span className="text-[#CAFF32] animate-pulse">Chargement...</span>
+          <span className="text-[#CAFF32] animate-pulse">Loading...</span>
         )}
       </div>
     </div>

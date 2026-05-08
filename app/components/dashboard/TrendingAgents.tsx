@@ -100,7 +100,7 @@ export function TrendingAgents({ agents }: TrendingAgentsProps) {
       {/* Agents list */}
       <div className="flex flex-col gap-3">
         {filtered.length === 0 ? (
-          <p className="text-sm text-zinc-400 text-center py-4">Aucun outil dans cette catégorie</p>
+          <p className="text-sm text-zinc-400 text-center py-4">No tools in this category</p>
         ) : (
           filtered.map((agent, i) => (
             <motion.div

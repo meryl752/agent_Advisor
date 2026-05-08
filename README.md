@@ -1,144 +1,139 @@
-# StackAI — SaaS Frontend
+# Raspquery — AI Stack Recommender
 
-Landing page Next.js 14 pour StackAI, la plateforme qui recommande les stacks IA optimaux.
+Plateforme SaaS qui recommande les stacks d'agents IA optimaux selon le contexte métier de l'utilisateur (objectif, secteur, budget, niveau technique).
 
 ## Stack technique
 
 | Couche | Tech |
 |--------|------|
-| Framework | Next.js 14 (App Router) |
-| Styles | Tailwind CSS + CSS Variables |
-| Animations | Framer Motion |
-| Types | TypeScript |
-| Fonts | Syne · DM Mono · DM Sans (next/font) |
+| Framework | Next.js 16 (App Router) |
+| Langage | TypeScript strict |
+| Styles | Tailwind CSS + Framer Motion |
+| Auth | Clerk |
+| Base de données | Supabase (PostgreSQL + pgvector) |
+| Cache / Rate-limit | Upstash Redis |
+| LLM principal | Groq (Llama 4 Scout / Llama 3.3 70B) |
+| LLM fallback | Gemini Flash-Lite |
+| Embeddings | Jina AI v3 (1024 dimensions) |
+| Paiements | Stripe |
+| Monitoring | Sentry |
+| Tests | Vitest |
 
 ## Démarrage rapide
 
 ```bash
 npm install
+cp .env.example .env.local
+# Remplir les variables dans .env.local
 npm run dev
 # → http://localhost:3000
 ```
 
-## Structure du projet
-
-```
-stackai/
-├── app/
-│   ├── components/
-│   │   ├── layout/       # Navigation, Marquee, Footer
-│   │   ├── sections/     # Hero, Features, Pricing, CTA
-│   │   ├── mockups/      # Dashboard, Charts, Alerts...
-│   │   └── ui/           # RevealWrapper, WaitlistForm
-│   ├── api/waitlist/     # POST endpoint waitlist
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-├── lib/
-│   ├── constants.ts      # Design tokens, data statique
-│   ├── utils.ts          # cn(), validateEmail()
-│   └── data/
-│       └── mockAgents.ts # TODO: remplacer par Supabase
-├── types/
-│   └── index.ts          # Agent, StackRecommendation, etc.
-└── tailwind.config.ts
-```
-
-## Prochaines étapes
-
-1. **Supabase** — connecter `lib/data/mockAgents.ts` à une vraie DB
-2. **Auth** — ajouter Clerk pour l'authentification
-3. **Algorithm** — implémenter le moteur hybride rule-based + Claude API
-4. **Stripe** — intégrer les paiements pour les plans Pro et Agency
-5. **Dashboard** — pages protégées post-login
-
 ## Variables d'environnement
 
-```env
-# À créer dans .env.local
+Copier `.env.example` vers `.env.local` et remplir toutes les valeurs.
 
-# Clerk Authentication
+Variables **requises** pour le fonctionnement de base :
+
+```env
+# Clerk (auth)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 CLERK_WEBHOOK_SECRET=
 
-# Supabase Database
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# LLM Providers
-GEMINI_API_KEY=
+# LLM — au moins un des deux requis
 GROQ_API_KEY=
+GEMINI_API_KEY=
 
-# Upstash Redis (Rate Limiting)
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
-RATE_LIMIT_ENABLED=true
-
-# Stripe (Optional)
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
+# Embeddings — requis pour la recherche vectorielle
+JINA_API_KEY=
 ```
+
+Variables **optionnelles** :
+
+```env
+ANTHROPIC_API_KEY=          # Claude (si activé dans llm/router)
+UPSTASH_REDIS_REST_URL=     # Rate limiting
+UPSTASH_REDIS_REST_TOKEN=
+STRIPE_SECRET_KEY=          # Paiements
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_SENTRY_DSN=     # Monitoring
+```
+
+## Architecture
+
+```
+app/
+├── api/                    # 17 groupes de routes API
+│   ├── recommend/          # Pipeline principal de recommandation
+│   ├── chat/               # Chat streaming (Groq)
+│   ├── stacks/[id]/        # CRUD stacks
+│   ├── conversations/      # Historique sessions
+│   ├── stripe/             # Checkout, portal, webhook
+│   ├── auth/webhook/       # Sync Clerk → Supabase
+│   └── ...
+├── dashboard/              # Pages protégées (post-login)
+├── onboarding/             # Flow d'onboarding
+└── (landing)/              # Page publique
+
+lib/
+├── agents/                 # Moteur de recommandation
+│   ├── orchestrator.ts     # Pipeline 5 étapes
+│   ├── matcher.ts          # Scoring hybride RRF
+│   ├── queryAnalyzer.ts    # Analyse LLM (2 passes)
+│   └── stackBuilder.ts     # Construction stack via LLM
+├── llm/router.ts           # Routing multi-provider (Groq → Gemini)
+├── embeddings/service.ts   # Jina AI avec retry exponentiel
+├── supabase/               # Clients, queries, mémoire utilisateur
+├── rate-limit/             # Redis + Upstash
+└── validators/api.ts       # Schémas Zod pour toutes les routes
+
+supabase/
+├── migrations/             # Migrations SQL versionnées
+└── scripts/                # Scripts ad-hoc (non-versionnés)
+
+scripts/                    # Scripts Node.js (enrichissement DB, embeddings)
+docs/                       # Documentation technique interne
+```
+
+## Pipeline de recommandation
+
+1. **Analyse** — 2 passes LLM : décomposition en sous-tâches + regroupement en domaines fonctionnels
+2. **Embedding** — Jina AI v3 (1024 dims) sur le texte enrichi (objectif + secteur + catégories)
+3. **Recherche vectorielle** — RPC Supabase `smart_search_agents_v2` (HNSW index, 40 agents)
+4. **Scoring hybride RRF** — Reciprocal Rank Fusion : classement vectoriel × score métier (catégorie, use_cases, best_for, intégrations, budget)
+5. **Construction du stack** — LLM (4000 tokens) avec validation anti-redondance
 
 ## Rate Limiting
 
-L'API `/api/recommend` est protégée par un système de rate limiting basé sur Upstash Redis.
-
-### Limites par tier
-
 | Plan | Limite | Période |
 |------|--------|---------|
-| Free | 1 requête | 30 jours |
-| Pro | 10 requêtes | 1 heure |
-| Agency | 50 requêtes | 1 heure |
+| Free | 10 requêtes | 30 jours |
+| Pro | 50 requêtes | 1 heure |
+| Agency | 200 requêtes | 1 heure |
 
-### Headers de réponse
+Pour désactiver en développement : `RATE_LIMIT_ENABLED=false`
 
-Toutes les réponses incluent les headers suivants :
+Health check Redis : `GET /api/health/rate-limit`
 
-- `X-RateLimit-Limit`: Nombre maximum de requêtes autorisées
-- `X-RateLimit-Remaining`: Nombre de requêtes restantes
-- `X-RateLimit-Reset`: Timestamp Unix de réinitialisation du compteur
-
-### Erreur 429 (Rate Limit Exceeded)
-
-Quand la limite est atteinte, l'API retourne :
-
-```json
-{
-  "error": "Rate limit exceeded",
-  "message": "Rate limit exceeded for free tier: 1 request per 30 days",
-  "limit": 1,
-  "remaining": 0,
-  "reset": "2024-01-31T12:00:00.000Z",
-  "retryAfter": 2592000
-}
-```
-
-Header additionnel : `Retry-After` (secondes avant de pouvoir réessayer)
-
-### Configuration
-
-Pour désactiver le rate limiting (développement uniquement) :
-
-```env
-RATE_LIMIT_ENABLED=false
-```
-
-### Health Check
-
-Vérifier l'état du rate limiting :
+## Tests
 
 ```bash
-GET /api/health/rate-limit
+npm run test          # Run once
+npm run test:watch    # Watch mode
 ```
 
-Réponse :
-```json
-{
-  "status": "healthy",
-  "redis": "connected",
-  "timestamp": "2024-01-01T12:00:00.000Z"
-}
+## Scripts utilitaires
+
+```bash
+# Générer les embeddings pour les agents sans vecteur
+JINA_API_KEY=... node -r dotenv/config scripts/generate_embeddings.mjs
+
+# Valider la qualité des agents en DB
+node scripts/analyze-db-quality.mjs
 ```

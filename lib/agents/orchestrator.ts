@@ -145,11 +145,15 @@ export async function runOrchestrator(
 
       console.log(`[Orchestrator] ✅ "${stack.stack_name}" — ${stack.agents.length} agents, ${stack.total_cost}€/mois`)
 
-      // Inject website domains
+      // Inject website domains, URLs, and logos
       stack.agents = stack.agents.map(agent => {
         const source = vectorAgents.find(a => String(a.id) === String(agent.id))
-        if (source?.website_domain) return { ...agent, website_domain: source.website_domain }
-        return agent
+        return {
+          ...agent,
+          website_domain: source?.website_domain || agent.website_domain,
+          logo_url: (source as any)?.logo_url || agent.logo_url,
+          url: (source as any)?.website_url || agent.url,
+        }
       })
 
       const processingTime = Date.now() - startTime

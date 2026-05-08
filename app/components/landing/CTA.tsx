@@ -3,12 +3,10 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
 
 export default function CTA() {
     const ref = useRef(null)
     const inView = useInView(ref, { once: true, margin: '-100px' })
-    const t = useTranslations('landing')
 
     return (
         <section className="py-16 bg-zinc-950 relative overflow-hidden" ref={ref} data-theme="dark">
@@ -27,23 +25,24 @@ export default function CTA() {
                 >
                     <h2 className="font-black text-white leading-tight mb-3"
                         style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
-                        {t('cta.title')}{' '}
+                        Ready to build{' '}
                         <span className="text-transparent bg-clip-text"
                             style={{ backgroundImage: 'linear-gradient(135deg, #CAFF32, #7FFF00)' }}>
-                            {t('cta.titleHighlight')}
+                            your perfect stack?
                         </span>
                     </h2>
                     <p className="text-zinc-400 text-sm mb-8 font-light">
-                        {t('cta.subtitle')}
+                        Join thousands of entrepreneurs who are scaling their business with AI
                     </p>
 
                     <Link href="/sign-up"
                         className="inline-flex items-center gap-2 bg-[#CAFF32] text-zinc-900 font-black px-8 py-4 rounded-xl
                                    hover:bg-[#d4ff50] transition-all text-sm">
-                        {t('cta.cta')}
+                        Get Started Free
                     </Link>
                 </motion.div>
             </div>
         </section>
     )
 }
+

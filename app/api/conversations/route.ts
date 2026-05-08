@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await (supabaseService as any)
     .from('conversations')
-    .select('session_id, messages, stack_generated, created_at, updated_at')
+    .select('session_id, messages, stack_generated, stack_id, custom_title, created_at, updated_at')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
     .limit(30)
@@ -28,15 +28,16 @@ export async function GET(req: NextRequest) {
   const conversations = (data ?? []).map((c: any) => {
     const msgs = c.messages as Array<{ role: string; content: string }>
     const firstUserMsg = msgs.find(m => m.role === 'user')?.content ?? 'Conversation'
-    // Truncate title to 40 chars
-    const title = firstUserMsg.length > 40
+    // Use custom_title if available, otherwise generate from first message
+    const title = c.custom_title || (firstUserMsg.length > 40
       ? firstUserMsg.slice(0, 40) + '...'
-      : firstUserMsg
+      : firstUserMsg)
 
     return {
       session_id:      c.session_id,
       title,
       stack_generated: c.stack_generated,
+      stack_id:        c.stack_id,
       updated_at:      c.updated_at,
     }
   })

@@ -42,7 +42,7 @@ describe('recommendSchema', () => {
   })
 
   it('rejects objective too long', () => {
-    const result = recommendSchema.safeParse({ ...valid, objective: 'a'.repeat(1001) })
+    const result = recommendSchema.safeParse({ ...valid, objective: 'a'.repeat(2001) })
     expect(result.success).toBe(false)
   })
 

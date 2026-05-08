@@ -49,15 +49,34 @@ export async function POST(req: NextRequest) {
 TON RÔLE:
 - Converser naturellement avec l'utilisateur pour comprendre son contexte et ses besoins
 - Répondre à ses questions sur les outils IA, l'automatisation, la productivité
-- L'aider à clarifier son besoin si c'est vague — une seule question à la fois, pas un interrogatoire
-- Ne jamais générer de stack toi-même — c'est le moteur de recommandation qui s'en charge quand l'utilisateur le décide
+- Décider automatiquement quand générer un stack — comme Claude génère un artifact
+
+RÈGLES DE GÉNÉRATION DE STACK:
+Tu dois mettre "generate_stack": true si L'UNE de ces conditions est remplie :
+1. L'utilisateur demande explicitement de générer ("génère", "crée", "fais-le", "go", "let's go", "vas-y", "maintenant", "bordel", "putain", "allez")
+2. L'objectif business est clair ET tu as posé au moins 1 question de clarification
+3. L'utilisateur confirme après ta question de clarification ("oui", "ok", "d'accord", "exactement")
+
+IMPORTANT - MOTS DÉCLENCHEURS ABSOLUS:
+Si l'utilisateur dit l'un de ces mots, tu DOIS générer IMMÉDIATEMENT sans exception:
+- "génère", "génère-la", "génère la", "génère le"
+- "vas-y", "vas y", "allez", "go"
+- "fais-le", "fais le", "crée-le", "crée le"
+- "bordel", "putain" (frustration = il veut que tu génères)
+- "maintenant", "tout de suite"
+
+Tu dois mettre "generate_stack": false UNIQUEMENT si :
+- Le message est une salutation initiale (hello, bonjour, ça va)
+- L'utilisateur pose une question générale sans contexte business
+- L'objectif est complètement vague et tu n'as AUCUNE info (premier message flou)
 
 COMPORTEMENT:
-- Si le besoin est clair dès le départ, réponds directement et mentionne que tu peux générer un stack si l'utilisateur le souhaite
-- Si le besoin est vague, pose UNE seule question de clarification
-- Si l'utilisateur pose une question simple sur un outil, réponds directement sans pousser vers un stack
-- Utilise le profil et l'historique de l'utilisateur pour personnaliser tes réponses — ne repose jamais des questions auxquelles il a déjà répondu
-- Reste concis, naturel, utile — pas de questions en cascade
+- Si l'utilisateur dit "go", "génère", "fais-le" → génère IMMÉDIATEMENT même si tu as des doutes
+- Si le besoin est clair → génère automatiquement sans poser de question
+- Si le besoin est vague → pose UNE seule question de clarification, puis génère à la réponse suivante
+- Ne pose JAMAIS plus de 2 questions avant de générer
+- Utilise le profil utilisateur pour personnaliser — ne repose jamais des questions déjà répondues
+- Reste concis, naturel, utile
 
 ${memoryText}${stackText}${historyText}
 Utilisateur: ${message}
@@ -65,7 +84,9 @@ Utilisateur: ${message}
 Retourne ce JSON:
 {
   "response": "ta réponse naturelle à l'utilisateur",
-  "objective": "résumé du besoin/objectif si identifié dans la conversation (null sinon)"
+  "objective": "résumé précis du besoin/objectif si identifié (null sinon)",
+  "generate_stack": true ou false,
+  "ready_reason": "pourquoi tu génères maintenant (null si generate_stack est false)"
 }`
 
   try {
@@ -77,6 +98,7 @@ Retourne ce JSON:
         return NextResponse.json({
           response: parsed.response ?? raw,
           objective: parsed.objective ?? null,
+          generate_stack: parsed.generate_stack === true,
         })
       } catch { /* fall through */ }
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseService } from '@/lib/supabase/server'
 import { uuidSchema, stackPatchSchema } from '@/lib/validators/api'
+import { getLogoUrl } from '@/lib/utils/logo'
 
 // ─── Helper: verify stack belongs to user ────────────────────────────────────
 
@@ -42,15 +43,23 @@ export async function GET(
 
     if (error || !stack) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
-    // Fetch agent details
+    // Fetch agent details with all necessary fields
     const agentIds = stack.agent_ids ?? []
+    console.log('[GET /api/stacks] agent_ids from stack:', agentIds)
     let agents: any[] = []
     if (agentIds.length > 0) {
-      const { data: agentData } = await (supabaseService as any)
+      // Query only columns that exist in the agents table
+      const { data: agentData, error: agentError } = await (supabaseService as any)
         .from('agents')
-        .select('id, name, description, url, category, pricing, score')
+        .select('id, name, description, category, score, logo_url, website_domain, website_url, url')
         .in('id', agentIds)
+      console.log('[GET /api/stacks] agents query result:', { count: agentData?.length ?? 0, error: agentError })
+      if (agentError) {
+        console.error('[GET /api/stacks] agents query error:', agentError)
+      }
       agents = agentData ?? []
+    } else {
+      console.warn('[GET /api/stacks] No agent_ids in stack')
     }
 
     // Reconstruct a FinalStack-compatible object
@@ -63,18 +72,38 @@ export async function GET(
       quick_wins: [],
       warnings: [],
       subtasks: [],
-      agents: agents.map((a: any) => ({
-        id: a.id,
-        name: a.name,
-        role: a.description ?? a.category ?? '',
-        url: a.url ?? '',
-        pricing: a.pricing ?? 'freemium',
-        score: a.score ?? 0,
-        why_selected: '',
-        implementation_steps: [],
-        subtasks: [],
-      })),
+      agents: agents.map((a: any, index: number) => {
+        // Generate logo URL from website_url if logo_url not available
+        let logoUrl = a.logo_url
+        if (!logoUrl && a.website_url) {
+          try {
+            const domain = new URL(a.website_url).hostname.replace('www.', '')
+            logoUrl = getLogoUrl(domain)
+          } catch {
+            logoUrl = ''
+          }
+        }
+        
+        return {
+          id: a.id,
+          name: a.name,
+          role: a.description ?? '',
+          category: a.category ?? 'automation',
+          url: a.url || a.website_url || (a.website_domain ? `https://${a.website_domain}` : ''),
+          pricing: 'freemium', // Default value since column doesn't exist
+          price_from: 0, // Default value since column doesn't exist
+          score: a.score ?? 0,
+          rank: index + 1,
+          logo_url: logoUrl,
+          website_domain: a.website_domain,
+          reason: '',
+          implementation_steps: [],
+          subtasks: [],
+        }
+      }),
     }
+
+    console.log('[GET /api/stacks] Returning stack with', finalStack.agents.length, 'agents')
 
     return NextResponse.json({ stack: finalStack, stackId: stack.id, objective: stack.objective })
   } catch (err) {

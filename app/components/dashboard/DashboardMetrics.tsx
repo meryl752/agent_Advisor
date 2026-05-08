@@ -123,7 +123,7 @@ export default function DashboardMetrics({ stackCount }: { stackCount: number })
         {
             label: 'ROI ce mois',
             value: stackCount > 0 ? '+340€' : '—',
-            sub: 'vs mois dernier',
+            sub: 'vs last month',
             trend: '23%',
             trendUp: true,
             sparklineData: [280, 290, 310, 305, 330, 340],
@@ -131,9 +131,9 @@ export default function DashboardMetrics({ stackCount }: { stackCount: number })
             delay: 0
         },
         {
-            label: 'Stacks créés',
+            label: 'Stacks created',
             value: String(stackCount),
-            sub: stackCount === 0 ? 'Lance ton premier' : 'Stacks actifs',
+            sub: stackCount === 0 ? 'Launch your first' : 'Active stacks',
             trend: stackCount > 0 ? '+12%' : undefined,
             trendUp: true,
             sparklineData: [2, 3, 2, 4, 5, stackCount || 4],

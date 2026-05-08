@@ -128,6 +128,71 @@ const SCENARIOS: Array<{ name: string; ctx: UserContext; minScore: number }> = [
     },
     minScore: 6,
   },
+  {
+    name: 'Agence marketing contenu Instagram',
+    ctx: {
+      objective: 'Je dirige une agence et je veux créer du contenu Instagram en masse pour mes clients e-commerce',
+      sector: 'agence',
+      team_size: 'small',
+      budget: 'medium',
+      tech_level: 'intermediate',
+      timeline: 'weeks',
+      current_tools: [],
+    },
+    minScore: 6,
+  },
+  {
+    name: 'Freelance budget zéro',
+    ctx: {
+      objective: 'Je suis freelance développeur et je veux des outils IA gratuits pour coder plus vite',
+      sector: 'tech',
+      team_size: 'solo',
+      budget: 'zero',
+      tech_level: 'advanced',
+      timeline: 'asap',
+      current_tools: [],
+    },
+    minScore: 5, // budget zéro = moins d'options, score minimum plus bas
+  },
+  {
+    name: 'SaaS support client automatisé',
+    ctx: {
+      objective: 'Je développe un SaaS et je veux automatiser mon support client, réduire les tickets et améliorer la satisfaction',
+      sector: 'saas',
+      team_size: 'small',
+      budget: 'medium',
+      tech_level: 'intermediate',
+      timeline: 'weeks',
+      current_tools: ['Intercom'],
+    },
+    minScore: 6,
+  },
+  {
+    name: 'Restaurant gestion réseaux sociaux',
+    ctx: {
+      objective: 'Je gère un restaurant et je veux automatiser ma présence sur les réseaux sociaux et gérer mes avis clients',
+      sector: 'commerce',
+      team_size: 'solo',
+      budget: 'low',
+      tech_level: 'beginner',
+      timeline: 'weeks',
+      current_tools: [],
+    },
+    minScore: 5,
+  },
+  {
+    name: 'Consultant veille concurrentielle',
+    ctx: {
+      objective: 'Je suis consultant et je veux automatiser ma veille concurrentielle, générer des rapports et rédiger des propositions commerciales',
+      sector: 'consultant',
+      team_size: 'solo',
+      budget: 'medium',
+      tech_level: 'intermediate',
+      timeline: 'weeks',
+      current_tools: ['Notion'],
+    },
+    minScore: 6,
+  },
 ]
 
 // ─── Tests ────────────────────────────────────────────────────────────────────

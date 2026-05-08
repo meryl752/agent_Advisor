@@ -2,36 +2,34 @@
 
 import { useRef, useState } from 'react'
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion'
-import { useTranslations } from 'next-intl'
 
 export default function HowItWorks() {
     const containerRef = useRef<HTMLDivElement>(null)
     const [activeIndex, setActiveIndex] = useState(0)
-    const t = useTranslations('landing')
 
     const STEPS = [
         {
             num: '01',
-            title: t('howItWorks.step1Title'),
-            desc: t('howItWorks.step1Desc'),
+            title: 'Describe your project',
+            desc: 'Tell us what you want to build or automate. In plain English, no technical jargon needed.',
             color: '#CAFF32',
         },
         {
             num: '02',
-            title: t('howItWorks.step2Title'),
-            desc: t('howItWorks.step2Desc'),
+            title: 'Get your personalized stack',
+            desc: 'Our AI analyzes 200+ tools and recommends the perfect combination for your needs and budget.',
             color: '#FF6B35',
         },
         {
             num: '03',
-            title: t('howItWorks.step3Title'),
-            desc: t('howItWorks.step3Desc'),
+            title: 'Follow the implementation guide',
+            desc: 'Step-by-step instructions, prompts, and workflows to set up each tool in minutes.',
             color: '#6B4FFF',
         },
         {
             num: '04',
-            title: t('howItWorks.step4Title'),
-            desc: t('howItWorks.step4Desc'),
+            title: 'Track and optimize',
+            desc: 'Monitor your ROI, get alerts on better alternatives, and continuously improve your stack.',
             color: '#20B8CD',
         },
     ]
@@ -67,14 +65,14 @@ export default function HowItWorks() {
                     >
                         <span className="inline-block bg-zinc-800 text-zinc-400 text-xs font-bold
                                uppercase tracking-widest px-4 py-2 rounded-full mb-6">
-                            {t('howItWorks.badge')}
+                            How it works
                         </span>
                         <h2 className="font-black text-white leading-tight"
                             style={{ fontSize: 'clamp(2.5rem, 4vw, 4rem)' }}>
-                            {t('howItWorks.title')}<br />
+                            From idea to execution<br />
                             <span className="text-transparent bg-clip-text"
                                 style={{ backgroundImage: 'linear-gradient(135deg, #CAFF32, #7FFF00)' }}>
-                                {t('howItWorks.titleHighlight')}
+                                in 4 simple steps
                             </span>
                         </h2>
                     </motion.div>
