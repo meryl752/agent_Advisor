@@ -4,17 +4,13 @@ import { unstable_cache } from 'next/cache'
 import type { Agent, Stack } from './types'
 import { anonymizeEmail, anonymizeId } from '@/lib/utils/logger'
 
-// ─── In-memory cache for Clerk ID → Supabase UUID mapping ────────────────────
-// Avoids redundant Supabase lookups on every dashboard load
-const userIdCache = new Map<string, string>()
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-async function getInternalUserId(clerkId: string): Promise<string | null> {
-  // Check cache first
-  if (userIdCache.has(clerkId)) {
-    return userIdCache.get(clerkId)!
-  }
+// Note: no in-memory cache here — serverless functions (Vercel) don't share
+// memory between invocations, so a Map() cache would be unreliable and could
+// serve stale data across concurrent instances. The DB lookup is fast (~5ms)
+// on an indexed column and is the correct approach in a serverless context.
 
+async function getInternalUserId(clerkId: string): Promise<string | null> {
   const { data, error } = await supabaseServer
     .from('users')
     .select('id')
@@ -26,51 +22,47 @@ async function getInternalUserId(clerkId: string): Promise<string | null> {
     return null
   }
 
-  const id = (data as any).id
-  userIdCache.set(clerkId, id) // Cache for subsequent requests
-  return id
+  return (data as any).id
+}
+
+// Exported for use in API route handlers that need the Clerk → Supabase UUID mapping
+export async function getInternalUserIdForRoute(clerkId: string): Promise<string | null> {
+  return getInternalUserId(clerkId)
 }
 
 async function ensureUserExists(clerkId: string, email?: string): Promise<string | null> {
-  // Check cache first — skip DB lookup entirely if we've seen this user
-  if (userIdCache.has(clerkId)) {
-    return userIdCache.get(clerkId)!
+  const userId = await getInternalUserId(clerkId)
+
+  if (userId) return userId
+
+  // User not found — auto-create
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('❌ SUPABASE_SERVICE_ROLE_KEY is missing - cannot auto-create users')
+    return null
   }
 
-  let userId = await getInternalUserId(clerkId)
-  
-  if (!userId) {
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('❌ SUPABASE_SERVICE_ROLE_KEY is missing - cannot auto-create users')
-      return null
-    }
-    
-    const userData: any = { clerk_id: clerkId, plan: 'free' }
-    if (email) {
-      userData.email = email
-      console.log(`[ensureUserExists] Creating user with email: ${anonymizeEmail(email)}`)
-    } else {
-      console.warn(`[ensureUserExists] Creating user WITHOUT email for: ${anonymizeId(clerkId)}`)
-    }
-    
-    const { data, error } = await (supabaseService as any)
-      .from('users')
-      .insert(userData)
-      .select('id')
-      .single()
-    
-    if (!error && data) {
-      userId = data.id
-      userIdCache.set(clerkId, userId!) // Cache the new user
-      console.log(`✅ Auto-created user for Clerk ID: ${anonymizeId(clerkId)}`)
-    } else {
-      console.error(`❌ Failed to create user for Clerk ID: ${anonymizeId(clerkId)}`)
-      console.error('   Supabase error:', JSON.stringify(error, null, 2))
-      return null
-    }
+  const userData: any = { clerk_id: clerkId, plan: 'free' }
+  if (email) {
+    userData.email = email
+    console.log(`[ensureUserExists] Creating user with email: ${anonymizeEmail(email)}`)
+  } else {
+    console.warn(`[ensureUserExists] Creating user WITHOUT email for: ${anonymizeId(clerkId)}`)
   }
-  
-  return userId
+
+  const { data, error } = await (supabaseService as any)
+    .from('users')
+    .insert(userData)
+    .select('id')
+    .single()
+
+  if (!error && data) {
+    console.log(`✅ Auto-created user for Clerk ID: ${anonymizeId(clerkId)}`)
+    return data.id
+  }
+
+  console.error(`❌ Failed to create user for Clerk ID: ${anonymizeId(clerkId)}`)
+  console.error('   Supabase error:', JSON.stringify(error, null, 2))
+  return null
 }
 
 // ─── Agents ──────────────────────────────────────────────────────────────────

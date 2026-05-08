@@ -3,17 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { supabaseService } from '@/lib/supabase/server'
 import { uuidSchema, stackPatchSchema } from '@/lib/validators/api'
 import { getLogoUrl } from '@/lib/utils/logo'
-
-// ─── Helper: verify stack belongs to user ────────────────────────────────────
-
-async function getInternalUserId(clerkId: string): Promise<string | null> {
-  const { data } = await (supabaseService as any)
-    .from('users')
-    .select('id')
-    .eq('clerk_id', clerkId)
-    .single()
-  return data?.id ?? null
-}
+import { getInternalUserIdForRoute } from '@/lib/supabase/queries'
 
 // ─── GET /api/stacks/[id] ─────────────────────────────────────────────────────
 
@@ -30,7 +20,7 @@ export async function GET(
     const idValidation = uuidSchema.safeParse(id)
     if (!idValidation.success) return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
 
-    const internalId = await getInternalUserId(userId)
+    const internalId = await getInternalUserIdForRoute(userId)
     if (!internalId) return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
 
     // Fetch the stack
@@ -130,7 +120,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
     }
 
-    const internalId = await getInternalUserId(userId)
+    const internalId = await getInternalUserIdForRoute(userId)
     if (!internalId) return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
 
     const { error } = await (supabaseService as any)
@@ -178,7 +168,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'INVALID_DATA', details: validation.error.errors }, { status: 400 })
     }
 
-    const internalId = await getInternalUserId(userId)
+    const internalId = await getInternalUserIdForRoute(userId)
     if (!internalId) return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
 
     const { data, error } = await (supabaseService as any)
