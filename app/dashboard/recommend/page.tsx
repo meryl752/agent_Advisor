@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
+import { useTheme } from 'next-themes'
 import { SUGGESTIONS } from './_components/types'
 
 // Load sidebar client-only — never SSR to avoid hydration mismatch
@@ -15,6 +16,48 @@ const RecentConversationsSidebar = dynamic(
 export default function RecommendPage() {
   const router = useRouter()
   const [input, setInput] = useState('')
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+
+  const glassStyle = isDark ? {
+    background: 'rgba(30,30,32,0.65)',
+    backdropFilter: 'blur(24px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: `
+      0 8px 32px rgba(0,0,0,0.35),
+      0 1px 0 rgba(255,255,255,0.07) inset,
+      0 -1px 0 rgba(0,0,0,0.3) inset
+    `,
+  } : {
+    background: 'rgba(255,255,255,0.55)',
+    backdropFilter: 'blur(24px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+    border: '1px solid rgba(255,255,255,0.7)',
+    boxShadow: `
+      0 8px 32px rgba(0,0,0,0.08),
+      0 1px 0 rgba(255,255,255,0.9) inset,
+      0 -1px 0 rgba(0,0,0,0.04) inset
+    `,
+  }
+
+  const glassFocusStyle = isDark ? {
+    border: '1px solid rgba(202,255,50,0.4)',
+    boxShadow: `
+      0 8px 32px rgba(0,0,0,0.4),
+      0 0 0 3px rgba(202,255,50,0.08),
+      0 1px 0 rgba(255,255,255,0.07) inset,
+      0 -1px 0 rgba(0,0,0,0.3) inset
+    `,
+  } : {
+    border: '1px solid rgba(202,255,50,0.6)',
+    boxShadow: `
+      0 8px 32px rgba(0,0,0,0.10),
+      0 0 0 3px rgba(202,255,50,0.12),
+      0 1px 0 rgba(255,255,255,0.9) inset,
+      0 -1px 0 rgba(0,0,0,0.04) inset
+    `,
+  }
 
   const handleSend = () => {
     const text = input.trim()
@@ -76,32 +119,38 @@ export default function RecommendPage() {
             </h1>
           </div>
 
-          {/* Input */}
+          {/* Input — Liquid Glass */}
           <div
             className="relative rounded-2xl transition-all duration-300"
-            style={{ background: 'var(--bg2)', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+            style={glassStyle}
             onFocusCapture={e => {
-              (e.currentTarget as HTMLElement).style.border = '1px solid rgba(202,255,50,0.5)'
-              ;(e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px rgba(202,255,50,0.08), 0 2px 12px rgba(0,0,0,0.06)'
+              Object.assign((e.currentTarget as HTMLElement).style, glassFocusStyle)
             }}
             onBlurCapture={e => {
-              (e.currentTarget as HTMLElement).style.border = '1px solid var(--border)'
-              ;(e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'
+              Object.assign((e.currentTarget as HTMLElement).style, glassStyle)
             }}
           >
+            {/* Reflet haut — highlight lumineux */}
+            <div className="absolute top-0 left-4 right-4 h-px rounded-full pointer-events-none"
+              style={{ background: isDark
+                ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent)'
+                : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 30%, rgba(255,255,255,0.9) 70%, transparent)'
+              }} />
+
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
               placeholder="Ex: Je veux automatiser mon service client Shopify, budget 50€, débutant..."
               rows={3}
-              className="w-full bg-transparent text-zinc-900 dark:text-white text-sm px-6 pt-5 pb-12 outline-none resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500 leading-relaxed"
+              className="w-full bg-transparent text-zinc-900 dark:text-white text-sm px-6 pt-5 pb-12 outline-none resize-none placeholder:text-zinc-400 leading-relaxed"
             />
             <div className="absolute bottom-3 right-3">
               <button
                 onClick={handleSend}
                 disabled={input.trim().length < 2}
                 className="w-9 h-9 rounded-xl font-bold text-base bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+                style={{ boxShadow: '0 2px 8px rgba(202,255,50,0.4)' }}
               >↑</button>
             </div>
           </div>
