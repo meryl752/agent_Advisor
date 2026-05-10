@@ -51,7 +51,8 @@ export default function Hero() {
           le combo exact — avec les coûts, le ROI estimé et le workflow clé en main.
         </motion.p>
 
-        <motion.div {...fadeUp(0.4)} className="flex gap-[14px] mt-10 flex-wrap">
+        <motion.div {...fadeUp(0.4)}>
+          <div className="flex gap-[14px] mt-10 flex-wrap">
           <button
             onClick={() => document.getElementById('cta-email')?.focus()}
             className="bg-accent text-bg font-syne font-bold text-[0.88rem]
@@ -66,16 +67,19 @@ export default function Hero() {
                        hover:border-accent hover:-translate-y-[2px] transition-all duration-150">
             Voir la démo ↓
           </a>
+          </div>
         </motion.div>
 
-        <motion.div {...fadeUp(0.5)} className="flex gap-7 mt-10">
-          {['200+ outils indexés', 'Mis à jour chaque semaine', '0€ pour commencer'].map((t) => (
-            <div key={t} className="font-dm-mono text-[0.68rem] text-muted
-                                    flex items-center gap-[6px]">
-              <div className="w-[5px] h-[5px] rounded-full bg-accent flex-shrink-0" />
-              {t}
-            </div>
-          ))}
+        <motion.div {...fadeUp(0.5)}>
+          <div className="flex gap-7 mt-10">
+            {['200+ outils indexés', 'Mis à jour chaque semaine', '0€ pour commencer'].map((t) => (
+              <div key={t} className="font-dm-mono text-[0.68rem] text-muted
+                                      flex items-center gap-[6px]">
+                <div className="w-[5px] h-[5px] rounded-full bg-accent flex-shrink-0" />
+                {t}
+              </div>
+            ))}
+          </div>
         </motion.div>
       </div>
 

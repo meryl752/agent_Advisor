@@ -55,8 +55,11 @@ export function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRe
                             </svg>
                           : active
                             ? <div className="w-4 h-4 rounded-full border border-[#CAFF32]/60 flex items-center justify-center">
-                                <motion.div className="w-1 h-1 rounded-full bg-[#CAFF32]"
-                                  animate={{ scale: [1, 1.8, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
+                                <motion.div
+                                  animate={{ scale: [1, 1.8, 1] }}
+                                  transition={{ duration: 0.8, repeat: Infinity }}
+                                  style={{ width: 4, height: 4, borderRadius: '50%', background: '#CAFF32' }}
+                                />
                               </div>
                             : <div className="w-4 h-4 rounded-full border border-zinc-700" />}
                       </motion.div>
@@ -89,12 +92,17 @@ export function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRe
       ))}
 
       {isTyping && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex gap-1 py-1">
-          {[0, 1, 2].map(i => (
-            <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-zinc-600"
-              animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-              transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.2 }} />
-          ))}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <div className="flex gap-1 py-1">
+            {[0, 1, 2].map(i => (
+              <motion.div
+                key={i}
+                animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
+                transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.2 }}
+                style={{ width: 6, height: 6, borderRadius: '50%', background: '#52525b', flexShrink: 0 }}
+              />
+            ))}
+          </div>
         </motion.div>
       )}
 

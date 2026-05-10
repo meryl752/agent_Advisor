@@ -184,8 +184,11 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
           </p>
           {steps.length === 0 ? (
             <div className="flex items-center gap-2 py-2">
-              <motion.div className="w-1.5 h-1.5 rounded-full bg-zinc-600"
-                animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }} />
+              <motion.div
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1.2, repeat: Infinity }}
+                style={{ width: 6, height: 6, borderRadius: '50%', background: '#52525b', flexShrink: 0 }}
+              />
               <p className="text-xs text-zinc-600 italic">Generating guide...</p>
             </div>
           ) : (

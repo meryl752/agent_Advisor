@@ -132,11 +132,20 @@ export default function RecommendPage() {
               </div>
             ))}
           </div>
+
+
         </motion.div>
       </div>
 
       {/* RIGHT — Recent conversations sidebar (client-only, no SSR) */}
       <RecentConversationsSidebar />
+
+      {/* Footer disclaimer */}
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-3 z-20 pointer-events-none">
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-600 leading-relaxed">
+          Raspquery peut faire des erreurs. Les recommandations sont générées par IA — vérifie toujours les tarifs, avis et compatibilités avant de t'abonner.
+        </p>
+      </div>
 
     </div>
   )

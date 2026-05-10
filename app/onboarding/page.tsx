@@ -280,9 +280,11 @@ export default function OnboardingPage() {
 
       {/* Progress bar */}
       <div className="h-0.5 bg-zinc-200">
-        <motion.div className="h-full bg-zinc-900"
+        <motion.div
           animate={{ width: `${progressPercent}%` }}
-          transition={{ duration: 0.4, ease: 'easeOut' }} />
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          style={{ height: '100%', background: '#18181b' }}
+        />
       </div>
 
       {/* Main content */}

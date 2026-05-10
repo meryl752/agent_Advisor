@@ -117,10 +117,11 @@ function AgentChip({ agent, inStack, onAdd, stackFull, plan }: AgentChipProps) {
 
       <AnimatePresence>
         {showUpgrade && (
-          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
-            className="absolute bottom-full left-0 mb-2 z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
-            <p className="font-dm-mono text-[10px] text-zinc-600 dark:text-zinc-300 mb-1">Free plan limited to 3 agents</p>
-            <a href="/dashboard/billing" className="font-dm-mono text-[10px] text-[#CAFF32] hover:underline">Upgrade to Pro →</a>
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}>
+            <div className="absolute bottom-full left-0 mb-2 z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
+              <p className="font-dm-mono text-[10px] text-zinc-600 dark:text-zinc-300 mb-1">Free plan limited to 3 agents</p>
+              <a href="/dashboard/billing" className="font-dm-mono text-[10px] text-[#CAFF32] hover:underline">Upgrade to Pro →</a>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

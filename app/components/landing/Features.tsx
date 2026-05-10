@@ -358,7 +358,7 @@ export default function Features() {
                     </motion.span>
 
                     <TextGenerateEffect
-                        words="Everything you need to build and optimize your AI stack"
+                        words="No more guesswork. Go expert mode."
                         className="font-black text-zinc-900 leading-tight tracking-tight mb-4"
                         style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}
                         duration={0.4}

@@ -259,8 +259,11 @@ export default function StackArtifact({
 
           {streamedCount !== undefined && streamedCount < agents.length && (
             <div className="flex items-center gap-2 px-3 py-2">
-              <motion.div className="w-1.5 h-1.5 rounded-full bg-[#CAFF32]"
-                animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 0.8, repeat: Infinity }} />
+              <motion.div
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+                style={{ width: 6, height: 6, borderRadius: '50%', background: '#CAFF32', flexShrink: 0 }}
+              />
               <p className="text-[10px] text-zinc-500">Loading...</p>
             </div>
           )}
@@ -342,8 +345,11 @@ export default function StackArtifact({
 
                     {steps.length === 0 && (
                       <div className="flex items-center gap-2 py-2">
-                        <motion.div className="w-1.5 h-1.5 rounded-full bg-zinc-500"
-                          animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }} />
+                        <motion.div
+                          animate={{ opacity: [0.3, 1, 0.3] }}
+                          transition={{ duration: 1.2, repeat: Infinity }}
+                          style={{ width: 6, height: 6, borderRadius: '50%', background: '#71717a', flexShrink: 0 }}
+                        />
                         <p className="text-xs text-zinc-500 italic">Generating guide...</p>
                       </div>
                     )}
