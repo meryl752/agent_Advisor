@@ -208,7 +208,7 @@ export default function BlueprintTaskCard({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="overflow-hidden"
+            style={{ overflow: 'hidden' }}
           >
             <div className="px-4 pb-4 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
               <p className="font-dm-mono text-[10px] text-zinc-500 mb-3 leading-relaxed">
