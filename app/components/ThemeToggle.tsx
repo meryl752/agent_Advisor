@@ -33,7 +33,7 @@ export function ThemeToggle() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 16, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="absolute"
+            style={{ position: 'absolute' }}
           >
             <Moon className="w-4 h-4" />
           </motion.div>
@@ -44,7 +44,7 @@ export function ThemeToggle() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 16, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="absolute"
+            style={{ position: 'absolute' }}
           >
             <Sun className="w-4 h-4" />
           </motion.div>
