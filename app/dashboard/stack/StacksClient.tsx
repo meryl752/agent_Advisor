@@ -127,8 +127,8 @@ function StackCard({
       transition={{ duration: 0.25 }}
       className={`rounded-2xl border bg-white dark:bg-zinc-900/50 p-5 transition-all cursor-pointer ${
         isSelected
-          ? 'border-[#CAFF32] ring-2 ring-[#CAFF32]/20'
-          : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600'
+          ? 'border-zinc-200 dark:border-zinc-800 ring-1 ring-zinc-300 dark:ring-zinc-700'
+          : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
       }`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -143,7 +143,7 @@ function StackCard({
               type="checkbox"
               checked={isSelected}
               onChange={onToggleSelect}
-              className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-[#CAFF32] focus:ring-[#CAFF32] focus:ring-offset-0"
+              className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 accent-zinc-600 focus:ring-0 focus:ring-offset-0"
             />
           </div>
         )}
@@ -376,7 +376,7 @@ export default function StacksClient({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search stacks..."
-            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 outline-none transition-colors"
           />
           {search && (
             <button
@@ -419,7 +419,7 @@ export default function StacksClient({
             type="checkbox"
             checked={selectedIds.size === filteredStacks.length && filteredStacks.length > 0}
             onChange={toggleSelectAll}
-            className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-[#CAFF32] focus:ring-[#CAFF32] focus:ring-offset-0"
+            className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 accent-zinc-600 focus:ring-0 focus:ring-offset-0"
           />
           <span className="text-sm text-zinc-500">Select all</span>
         </div>

@@ -80,7 +80,7 @@ export default async function DashboardPage() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="font-syne font-black text-3xl text-zinc-900 dark:text-white tracking-tight">
-            Welcome, {firstName}!
+            Overview
           </h1>
         </div>
         {stackCount > 0 && (
