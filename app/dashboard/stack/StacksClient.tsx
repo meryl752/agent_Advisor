@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { getLogoUrl } from '@/lib/utils/logo'
-import { BarChart3 } from 'lucide-react'
 import type { Stack } from '@/lib/supabase/types'
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog'
 
@@ -244,16 +243,7 @@ function StackCard({
         </div>
       </div>
 
-      {/* ROI Tracker button */}
-      <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800" onClick={e => e.stopPropagation()}>
-        <Link
-          href={`/dashboard/roi-tracker/${stack.id}`}
-          className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-[#CAFF32]/10 hover:text-[#8aad00] dark:hover:text-[#CAFF32] transition-all"
-        >
-          <BarChart3 className="w-3.5 h-3.5" />
-          Manage subscriptions
-        </Link>
-      </div>
+      {/* ROI Tracker button — removed until feature is ready */}
     </motion.div>
   )
 }

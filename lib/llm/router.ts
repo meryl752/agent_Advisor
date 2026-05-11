@@ -1,6 +1,7 @@
 import { getGroqClient, GROQ_MODEL, GROQ_MODEL_FALLBACK } from '@/lib/groq/client'
 import { getAnthropicClient, CLAUDE_MODEL } from '@/lib/anthropic/client'
 import { getGeminiClient } from '@/lib/gemini/client'
+import { getCerebrasClient, CEREBRAS_MODEL, CEREBRAS_MODEL_FAST } from '@/lib/cerebras/client'
 
 const CALL_TIMEOUT_MS = 10000 // 10s — timeout raisonnable pour une bonne UX web
 
@@ -103,6 +104,41 @@ async function callClaude(prompt: string, maxTokens: number): Promise<string> {
 }
 
 
+async function callCerebras(prompt: string, maxTokens: number): Promise<string> {
+  const client = getCerebrasClient()
+  if (!client) throw new Error('Cerebras not configured')
+
+  const promptTokensEstimate = Math.ceil(prompt.length / 4)
+  const isLargePrompt = promptTokensEstimate + maxTokens > 4000
+  const model = isLargePrompt ? CEREBRAS_MODEL : CEREBRAS_MODEL_FAST
+
+  console.log(`[LLM] Calling Cerebras ${model} with ${maxTokens} max tokens...`)
+
+  try {
+    const res = await withTimeout(
+      client.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      }),
+      CALL_TIMEOUT_MS,
+      `Cerebras ${model}`
+    )
+    const text = res.choices[0]?.message?.content?.trim()
+    if (!text) throw new Error('Cerebras empty response')
+    console.log(`[LLM] Cerebras ${model} success - ${text.length} chars`)
+    return text
+  } catch (err: any) {
+    if (err.status === 429 || err.message?.includes('rate_limit')) {
+      console.warn('[LLM] Cerebras rate limited')
+      throw new Error('Cerebras rate limit')
+    }
+    console.error(`[LLM] Cerebras ${model} failed:`, err.message)
+    throw err
+  }
+}
+
 async function callGeminiFlash(prompt: string, maxTokens: number): Promise<string> {
   const client = getGeminiClient()
   if (!client) throw new Error('Gemini not configured')
@@ -138,31 +174,36 @@ async function callGeminiFlash(prompt: string, maxTokens: number): Promise<strin
 /**
  * Stratégie de routing LLM
  *
- * Principal : Groq (Llama 4 Scout pour gros prompts, Llama 3.3 70B pour petits)
- * Fallback : Gemini Flash-Lite (250k TPM, excellent instruction following)
+ * Principal  : Cerebras (Llama 3.1 70B/8B — ~2000 tokens/sec, ultra rapide)
+ * Fallback 1 : Groq (Llama 4 Scout / Llama 3.3 70B)
+ * Fallback 2 : Gemini Flash-Lite (250k TPM)
  */
 export async function callLLM(prompt: string, maxTokens = 1024): Promise<string> {
+  const cerebrasClient = getCerebrasClient()
   const groqClient = getGroqClient()
   const geminiClient = getGeminiClient()
 
-  console.log(`[LLM] callLLM invoked - maxTokens: ${maxTokens}, groq: ${!!groqClient}, gemini: ${!!geminiClient}`)
+  console.log(`[LLM] callLLM invoked - maxTokens: ${maxTokens}, cerebras: ${!!cerebrasClient}, groq: ${!!groqClient}, gemini: ${!!geminiClient}`)
 
-  if (!groqClient && !geminiClient) {
-    throw new Error('No LLM configured — check GROQ_API_KEY or GEMINI_API_KEY')
+  if (!cerebrasClient && !groqClient && !geminiClient) {
+    throw new Error('No LLM configured — check CEREBRAS_API_KEY, GROQ_API_KEY or GEMINI_API_KEY')
   }
 
-  if (maxTokens <= 1200) {
-    console.log('[LLM] Fast mode — Groq')
-  } else {
-    console.log('[LLM] Slow mode — Groq (fallback Gemini si rate limit)')
+  // Essayer Cerebras en premier (le plus rapide)
+  if (cerebrasClient) {
+    try {
+      return await callCerebras(prompt, maxTokens)
+    } catch (err: any) {
+      console.warn(`[LLM] Cerebras failed (${err.message}), falling back to Groq...`)
+      // Continue to Groq fallback
+    }
   }
 
-  // Essayer Groq en premier
+  // Fallback : Groq
   if (groqClient) {
     try {
       return await callGroq(prompt, maxTokens)
     } catch (err: any) {
-      // Si Groq rate-limite, essayer Gemini
       if (err.message?.includes('rate_limit') || err.status === 429) {
         console.warn('[LLM] Groq rate limited, falling back to Gemini Flash-Lite...')
         if (geminiClient) {
@@ -173,7 +214,7 @@ export async function callLLM(prompt: string, maxTokens = 1024): Promise<string>
     }
   }
 
-  // Si Groq indisponible, utiliser Gemini directement
+  // Dernier recours : Gemini
   if (geminiClient) {
     return await callGeminiFlash(prompt, maxTokens)
   }

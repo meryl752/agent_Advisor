@@ -34,22 +34,24 @@ export default async function StacksPage() {
   const stackIds = stacks.map(s => s.id).filter(Boolean)
   let stackSessionMap: Record<string, string> = {}
   if (stackIds.length > 0) {
-    // Get the user's database ID
-    const { getUserByClerkId } = await import('@/lib/supabase/queries')
-    const dbUser = await getUserByClerkId(user.id)
-    if (dbUser) {
-      const userId = (dbUser as any).id
-      const { data: convData } = await (supabaseService as any)
-        .from('conversations')
-        .select('stack_id, session_id')
-        .eq('user_id', userId)
-        .in('stack_id', stackIds)
-      if (convData) {
-        stackSessionMap = Object.fromEntries(
-          convData.map((c: any) => [c.stack_id, c.session_id])
-        )
-        console.log('[stack/page] stackSessionMap:', stackSessionMap)
+    try {
+      const { getInternalUserIdForRoute } = await import('@/lib/supabase/queries')
+      const internalUserId = await getInternalUserIdForRoute(user.id)
+      if (internalUserId) {
+        const { data: convData } = await (supabaseService as any)
+          .from('conversations')
+          .select('stack_id, session_id')
+          .eq('user_id', internalUserId)
+          .not('stack_id', 'is', null)
+          .in('stack_id', stackIds)
+        if (convData && convData.length > 0) {
+          stackSessionMap = Object.fromEntries(
+            convData.map((c: any) => [c.stack_id, c.session_id])
+          )
+        }
       }
+    } catch (err) {
+      console.error('[stack/page] Failed to fetch stackSessionMap:', err)
     }
   }
 
