@@ -15,14 +15,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id: stackId } = await params
 
   // Validate UUID
   const idValidation = uuidSchema.safeParse(stackId)
   if (!idValidation.success) {
-    return NextResponse.json({ error: 'ID invalide' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
   }
 
   const internalId = await getInternalUserId(userId)
@@ -45,24 +45,24 @@ export async function POST(
 ) {
   try {
     const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { id: stackId } = await params
 
     // Validate UUID
     const idValidation = uuidSchema.safeParse(stackId)
     if (!idValidation.success) {
-      return NextResponse.json({ error: 'ID invalide' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
     }
 
     const body = await req.json().catch(() => null)
-    if (!body) return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
+    if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 
     // Validate feedback data with Zod
     const validation = feedbackSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json({
-        error: 'Données invalides',
+        error: 'Invalid data',
         details: validation.error.errors,
       }, { status: 400 })
     }
@@ -85,12 +85,12 @@ export async function POST(
 
     if (error) {
       console.error('Feedback upsert error:', error.message)
-      return NextResponse.json({ error: 'Sauvegarde échouée' }, { status: 500 })
+      return NextResponse.json({ error: 'Save failed' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, feedback: data })
   } catch (err) {
     console.error('POST /api/stacks/[id]/feedback:', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

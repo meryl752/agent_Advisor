@@ -4,6 +4,7 @@ import { analyzeQuery } from './queryAnalyzer'
 import { matchAgents } from './matcher'
 import { buildStack } from './stackBuilder'
 import { getReferenceStack, getVectorMatchedAgents, getAgentsByCategories } from '@/lib/supabase/queries'
+import { filterCatalogAgents } from '@/lib/catalog/icpFilter'
 import { BUDGET_MAP } from '@/lib/constants'
 import type { FinalStack } from './types'
 import { embeddingService } from '@/lib/embeddings/service'
@@ -21,7 +22,7 @@ export interface OrchestratorResult {
   }
 }
 
-// ─── Embedding via Jina AI v4 ────────────────────────────────────────────────
+// ─── Embedding via Jina AI (v3 API, 1024 dims) ─────────────────────────────
 
 async function generateEmbedding(text: string): Promise<number[]> {
   const result = await embeddingService.generate(text)
@@ -101,7 +102,10 @@ export async function runOrchestrator(
         )
 
         if (rawVectorAgents && rawVectorAgents.length > 0) {
-          vectorAgents = rawVectorAgents as VectorAgent[]
+          vectorAgents = filterCatalogAgents(rawVectorAgents as VectorAgent[]) as VectorAgent[]
+          if (vectorAgents.length === 0) {
+            throw new Error('Tous les agents retournés par la recherche vectorielle sont exclus par data/catalog-filter.json')
+          }
           retrievalMode = 'vector'
           console.log(`[Orchestrator] ✅ Mode vectoriel — ${vectorAgents.length} agents`)
         } else {
@@ -111,8 +115,12 @@ export async function runOrchestrator(
         // ── Fallback : recherche classique par catégories ───────────────────
         console.warn(`[Orchestrator] ⚠️ Fallback mode — raison: ${vectorErr instanceof Error ? vectorErr.message : String(vectorErr)}`)
         const dbAgents = await getAgentsByCategories(analyzedQuery.required_categories)
-        vectorAgents = adaptToVectorAgents(dbAgents)
+        vectorAgents = filterCatalogAgents(adaptToVectorAgents(dbAgents)) as VectorAgent[]
         retrievalMode = 'fallback'
+        if (vectorAgents.length === 0) {
+          console.error('❌ [Orchestrator] Aucun agent après filtre catalogue (fallback)')
+          return null
+        }
         console.log(`[Orchestrator] ✅ Mode fallback — ${vectorAgents.length} agents depuis DB`)
       }
 
@@ -145,7 +153,7 @@ export async function runOrchestrator(
 
       console.log(`[Orchestrator] ✅ "${stack.stack_name}" — ${stack.agents.length} agents, ${stack.total_cost}€/mois`)
 
-      // Inject website domains, URLs, and logos
+      // Inject website domains, URLs, logos, and ensure DB prices are authoritative
       stack.agents = stack.agents.map(agent => {
         const source = vectorAgents.find(a => String(a.id) === String(agent.id))
         return {
@@ -153,6 +161,9 @@ export async function runOrchestrator(
           website_domain: source?.website_domain || agent.website_domain,
           logo_url: (source as any)?.logo_url || agent.logo_url,
           url: (source as any)?.website_url || agent.url,
+          price_from: source?.price_from ?? agent.price_from,
+          setup_difficulty: source?.setup_difficulty || agent.setup_difficulty,
+          time_to_value: source?.time_to_value || agent.time_to_value,
         }
       })
 

@@ -11,20 +11,20 @@ const DEFAULT_ALERTS: AlertItem[] = [
   {
     type: 'success',
     title: 'GPT-4o',
-    message: 'vient de baisser ses prix de 50%. Ton stack peut être optimisé.',
-    time: 'Il y a 2 minutes',
+    message: 'just dropped its prices by 50%. Your stack can be optimized.',
+    time: '2 minutes ago',
   },
   {
     type: 'warning',
     title: 'Jasper AI',
-    message: "est remplacé avantageusement par Claude Sonnet pour ton cas d'usage.",
-    time: 'Il y a 1 heure',
+    message: "is being outperformed by Claude Sonnet for your use case.",
+    time: '1 hour ago',
   },
   {
     type: 'info',
-    title: 'Nouvelle recommendation',
-    message: '— Perplexity Pages correspond à ton objectif SEO.',
-    time: "Aujourd'hui 09:14",
+    title: 'New recommendation',
+    message: '— Perplexity Pages matches your SEO goal.',
+    time: "Today 09:14",
   },
 ]
 

@@ -31,24 +31,24 @@ export default function Hero() {
           className="font-dm-mono text-[0.72rem] uppercase
                      text-accent mb-7 flex items-center gap-[10px]">
           <span className="inline-block w-6 h-px bg-accent" />
-          La plateforme IA qui maximise ton ROI
+          The AI platform that maximizes your ROI
         </motion.div>
 
         <motion.h1 {...fadeUp(0.2)} className="hero-title text-cream">
-          Construis le<br />
+          Build the<br />
           <em className="not-italic text-accent relative after:content-[''] after:absolute
                           after:bottom-[2px] after:left-0 after:right-0 after:h-[2px]
                           after:bg-accent after:opacity-35">
-            stack parfait.
+            perfect stack.
           </em>
           <br />
-          Gagne plus.
+          Earn more.
         </motion.h1>
 
         <motion.p {...fadeUp(0.3)}
           className="mt-7 text-[1.05rem] text-muted-2 max-w-[480px] leading-[1.75] font-light">
-          Tu décris ton objectif. Raspquery analyse 200+ agents IA et t&apos;assemble
-          le combo exact — avec les coûts, le ROI estimé et le workflow clé en main.
+          You describe your goal. Raspquery analyzes 200+ AI agents and assembles
+          the exact combo — with costs, estimated ROI and a ready-to-use workflow.
         </motion.p>
 
         <motion.div {...fadeUp(0.4)}>
@@ -65,14 +65,14 @@ export default function Hero() {
             className="border border-border-2 text-cream font-syne font-bold
                        text-[0.88rem] px-[30px] py-[15px]
                        hover:border-accent hover:-translate-y-[2px] transition-all duration-150">
-            Voir la démo ↓
+            See the demo ↓
           </a>
           </div>
         </motion.div>
 
         <motion.div {...fadeUp(0.5)}>
           <div className="flex gap-7 mt-10">
-            {['200+ outils indexés', 'Mis à jour chaque semaine', '0€ pour commencer'].map((t) => (
+            {['200+ tools indexed', 'Updated every week', 'Free to start'].map((t) => (
               <div key={t} className="font-dm-mono text-[0.68rem] text-muted
                                       flex items-center gap-[6px]">
                 <div className="w-[5px] h-[5px] rounded-full bg-accent flex-shrink-0" />

@@ -20,9 +20,9 @@ interface AgentCardProps {
 }
 
 const DIFFICULTY_CONFIG = {
-  easy: { label: 'Facile', color: 'text-accent border-accent/20' },
-  medium: { label: 'Moyen', color: 'text-accent-2 border-accent-2/20' },
-  hard: { label: 'Avancé', color: 'text-red-400 border-red-400/20' },
+  easy: { label: 'Easy', color: 'text-accent border-accent/20' },
+  medium: { label: 'Medium', color: 'text-accent-2 border-accent-2/20' },
+  hard: { label: 'Advanced', color: 'text-red-400 border-red-400/20' },
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -165,7 +165,7 @@ export default function AgentCard({
             <div className="px-5 pb-5 pt-0 ml-[84px] flex flex-col gap-3 border-t border-white/5 mt-2 relative z-10">
               <div className="pt-3">
                 <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-2">
-                  Pourquoi cet outil pour ton projet
+                  Why this tool for your project
                 </p>
                 <p className="font-dm-sans text-sm text-muted-2 font-light leading-relaxed">
                   {reason}
@@ -192,7 +192,7 @@ export default function AgentCard({
                   className="inline-flex items-center gap-2 font-dm-mono text-[0.65rem]
                              text-accent/60 hover:text-accent transition-colors w-fit mt-1"
                 >
-                  Visiter {website_domain} ↗
+                  Visit {website_domain} ↗
                 </a>
               )}
             </div>

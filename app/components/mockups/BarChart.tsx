@@ -27,9 +27,9 @@ export default function BarChart({ bars }: { bars?: Bar[] }) {
   }, [isInView])
 
   return (
-    <div ref={ref} className="bg-bg-3 border border-border p-4">
+    <div ref={ref} className="bg-bg-3 p-4">
       <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-3">
-        Économies générées — 6 derniers mois
+        Savings generated — last 6 months
       </p>
       <div className="flex items-end gap-[6px] h-[60px]">
         {data.map((bar, i) => (

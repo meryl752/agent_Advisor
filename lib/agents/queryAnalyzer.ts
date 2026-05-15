@@ -115,7 +115,7 @@ Règle: autant de sous-tâches que nécessaire pour couvrir TOUT l'objectif.`
   let implicit_constraints: string[] = []
 
   try {
-    const pass1Text = await callLLM(pass1Prompt, 800)
+    const pass1Text = await callLLM(pass1Prompt, 800, ctx.preferred_model)
     const cleaned1 = pass1Text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
     const parsed1 = JSON.parse(cleaned1)
 
@@ -164,7 +164,7 @@ Retourne UNIQUEMENT ce JSON (sans markdown, sans balises think) :
 }`
 
     try {
-      const pass2Text = await callLLM(pass2Prompt, 600)
+      const pass2Text = await callLLM(pass2Prompt, 600, ctx.preferred_model)
       // Strip thinking tags and markdown fences
       const cleaned2 = pass2Text
         .replace(/<think>[\s\S]*?<\/think>/g, '')

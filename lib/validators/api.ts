@@ -28,6 +28,7 @@ export const recommendSchema = z.object({
   timeline: z.enum(['asap', 'weeks', 'months']).default('weeks'),
   current_tools: z.array(z.string().max(100)).max(20).optional().default([]),
   session_id: z.string().uuid().optional(),
+  preferred_model: z.enum(['qwen-235b', 'gpt-120b', 'qwen-32b', 'llama-70b', 'gemini-flash']).optional(),
 })
 
 export type RecommendInput = z.infer<typeof recommendSchema>
@@ -48,7 +49,10 @@ export type WaitlistInput = z.infer<typeof waitlistSchema>
 // ─── Stack PATCH ──────────────────────────────────────────────────────────────
 
 export const stackPatchSchema = z.object({
-  name: z.string().min(1).max(200).trim(),
+  name: z.string().min(1).max(200).trim().optional(),
+  agent_ids: z.array(uuidSchema).max(20).optional(),
+  /** Un seul stack suivi par utilisateur : l’API désactive les autres si true. */
+  digest_enabled: z.boolean().optional(),
 })
 
 export type StackPatchInput = z.infer<typeof stackPatchSchema>

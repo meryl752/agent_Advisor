@@ -15,10 +15,10 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   const user = await currentUser()
-  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json().catch(() => null)
-  if (!body) return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
+  if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 
   const validation = schema.safeParse(body)
   if (!validation.success) {
@@ -46,6 +46,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[memory/update] Error:', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

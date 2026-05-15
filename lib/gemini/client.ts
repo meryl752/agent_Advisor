@@ -1,16 +1,19 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai'
 
-// Lazy initialization - create client only when needed
-let geminiInstance: GenerativeModel | null = null
+// Gemini 2.5 Flash-Lite — 250k TPM, 1000 RPD, excellent instruction following
+export const GEMINI_MODEL = 'gemini-2.5-flash-lite-preview-06-17'
+
+// Gemma 4 27B — best open-source for conversation, human-like tone, great in French
+export const GEMMA_MODEL = 'gemma-4-27b-it'
+
+export function getGeminiModel(modelName: string = GEMINI_MODEL): GenerativeModel | null {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return null
+  
+  const genAI = new GoogleGenerativeAI(apiKey)
+  return genAI.getGenerativeModel({ model: modelName })
+}
 
 export function getGeminiClient(): GenerativeModel | null {
-  if (!process.env.GEMINI_API_KEY) {
-    return null
-  }
-  if (!geminiInstance) {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    // Gemini 2.5 Flash-Lite — 250k TPM, 1000 RPD, excellent instruction following
-    geminiInstance = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite-preview-06-17' })
-  }
-  return geminiInstance
+  return getGeminiModel(GEMINI_MODEL)
 }

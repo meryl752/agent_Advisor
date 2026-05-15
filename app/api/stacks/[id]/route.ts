@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { supabaseService } from '@/lib/supabase/server'
 import { uuidSchema, stackPatchSchema } from '@/lib/validators/api'
 import { getLogoUrl } from '@/lib/utils/logo'
+import { getNextDigestDate } from '@/lib/utils/next-digest'
 import { getInternalUserIdForRoute } from '@/lib/supabase/queries'
 
 // ─── GET /api/stacks/[id] ─────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ export async function GET(
       // Query only columns that exist in the agents table
       const { data: agentData, error: agentError } = await (supabaseService as any)
         .from('agents')
-        .select('id, name, description, category, score, logo_url, website_domain, website_url, url')
+        .select('id, name, description, category, score, price_from, logo_url, website_domain, website_url, url')
         .in('id', agentIds)
       console.log('[GET /api/stacks] agents query result:', { count: agentData?.length ?? 0, error: agentError })
       if (agentError) {
@@ -80,8 +81,7 @@ export async function GET(
           role: a.description ?? '',
           category: a.category ?? 'automation',
           url: a.url || a.website_url || (a.website_domain ? `https://${a.website_domain}` : ''),
-          pricing: 'freemium', // Default value since column doesn't exist
-          price_from: 0, // Default value since column doesn't exist
+          price_from: a.price_from ?? 0,
           score: a.score ?? 0,
           rank: index + 1,
           logo_url: logoUrl,
@@ -95,7 +95,20 @@ export async function GET(
 
     console.log('[GET /api/stacks] Returning stack with', finalStack.agents.length, 'agents')
 
-    return NextResponse.json({ stack: finalStack, stackId: stack.id, objective: stack.objective })
+    const digestEnabled = Boolean((stack as { digest_enabled?: boolean }).digest_enabled)
+    const digestEnabledAt = (stack as { digest_enabled_at?: string | null }).digest_enabled_at ?? null
+    const nextDigest = digestEnabled ? getNextDigestDate(digestEnabledAt) : null
+
+    return NextResponse.json({
+      stack: finalStack,
+      stackId: stack.id,
+      objective: stack.objective,
+      digest: {
+        enabled: digestEnabled,
+        enabledAt: digestEnabledAt,
+        nextAt: nextDigest?.toISOString() ?? null,
+      },
+    })
   } catch (err) {
     console.error('GET /api/stacks/[id]:', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
@@ -171,17 +184,59 @@ export async function PATCH(
     const internalId = await getInternalUserIdForRoute(userId)
     if (!internalId) return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
 
+    // Build update payload — only include fields that were provided
+    const updatePayload: Record<string, unknown> = {}
+    if (validation.data.name) updatePayload.name = validation.data.name
+    if (validation.data.agent_ids) updatePayload.agent_ids = validation.data.agent_ids
+
+    if (validation.data.digest_enabled === true) {
+      const { error: clearErr } = await (supabaseService as any)
+        .from('stacks')
+        .update({ digest_enabled: false, digest_enabled_at: null })
+        .eq('user_id', internalId)
+      if (clearErr) {
+        console.error('PATCH stack digest clear others:', clearErr.message)
+        return NextResponse.json({ error: 'UPDATE_FAILED' }, { status: 500 })
+      }
+    }
+
+    if (validation.data.digest_enabled !== undefined) {
+      updatePayload.digest_enabled = validation.data.digest_enabled
+      updatePayload.digest_enabled_at = validation.data.digest_enabled
+        ? new Date().toISOString()
+        : null
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return NextResponse.json({ error: 'NOTHING_TO_UPDATE' }, { status: 400 })
+    }
+
     const { data, error } = await (supabaseService as any)
       .from('stacks')
-      .update({ name: validation.data.name })
+      .update(updatePayload)
       .eq('id', id)
-      .eq('user_id', internalId) // security: only update own stacks
+      .eq('user_id', internalId) // security: only update own stacks — agents table is NEVER touched
       .select()
       .single()
 
     if (error) {
       console.error('Update stack error:', error.message)
       return NextResponse.json({ error: 'UPDATE_FAILED' }, { status: 500 })
+    }
+
+    if (data && validation.data.digest_enabled === true) {
+      try {
+        await (supabaseService as any).from('stack_update_events').insert({
+          stack_id: id,
+          type: 'digest',
+          title: 'Suivi activé',
+          body:
+            'Ce stack est maintenant suivi pour les futurs digests (coûts, alternatives aux outils, recommandations…). Les prochaines alertes apparaîtront ici.',
+          meta: { source: 'system', kind: 'digest_welcome' },
+        })
+      } catch (e) {
+        console.warn('stack_update_events welcome insert:', e)
+      }
     }
 
     return NextResponse.json({ success: true, stack: data })

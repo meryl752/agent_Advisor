@@ -1,8 +1,15 @@
 import { supabaseServer, createSupabaseClient, supabaseService } from './server'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
-import type { Agent, Stack } from './types'
+import type { Agent, Stack, StackUpdateEvent } from './types'
 import { anonymizeEmail, anonymizeId } from '@/lib/utils/logger'
+import {
+  getSupabaseHostnameForLogs,
+  isPlaceholderSupabaseUrl,
+  isTransientSupabaseNetworkError,
+  logSupabaseNetworkFailure,
+} from '@/lib/supabase/network'
+import { normalizeStackDigestRow } from '@/lib/utils/next-digest'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 // Note: no in-memory cache here — serverless functions (Vercel) don't share
@@ -31,37 +38,42 @@ export async function getInternalUserIdForRoute(clerkId: string): Promise<string
 }
 
 async function ensureUserExists(clerkId: string, email?: string): Promise<string | null> {
-  const userId = await getInternalUserId(clerkId)
+  let internalId = await getInternalUserId(clerkId)
+  if (internalId) return internalId
 
-  if (userId) return userId
-
-  // User not found — auto-create
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('❌ SUPABASE_SERVICE_ROLE_KEY is missing - cannot auto-create users')
     return null
   }
 
-  const userData: any = { clerk_id: clerkId, plan: 'free' }
-  if (email) {
-    userData.email = email
-    console.log(`[ensureUserExists] Creating user with email: ${anonymizeEmail(email)}`)
-  } else {
-    console.warn(`[ensureUserExists] Creating user WITHOUT email for: ${anonymizeId(clerkId)}`)
-  }
+  // Certaines bases exigent email NOT NULL ; OAuth sans email primaire arrive en dev.
+  const resolvedEmail =
+    email?.trim() || `${clerkId.replace(/[^a-zA-Z0-9_-]/g, '_')}@users.noreply.internal`
 
   const { data, error } = await (supabaseService as any)
     .from('users')
-    .insert(userData)
+    .upsert(
+      {
+        clerk_id: clerkId,
+        email: resolvedEmail,
+        plan: 'free',
+      },
+      { onConflict: 'clerk_id' }
+    )
     .select('id')
     .single()
 
-  if (!error && data) {
-    console.log(`✅ Auto-created user for Clerk ID: ${anonymizeId(clerkId)}`)
+  if (!error && data?.id) {
+    console.log(`✅ Ensured user for Clerk ID: ${anonymizeId(clerkId)}`)
     return data.id
   }
 
+  // Course entre requêtes : l’autre insert a gagné
+  internalId = await getInternalUserId(clerkId)
+  if (internalId) return internalId
+
   console.error(`❌ Failed to create user for Clerk ID: ${anonymizeId(clerkId)}`)
-  console.error('   Supabase error:', JSON.stringify(error, null, 2))
+  console.error('   Supabase error:', error?.message ?? error, error?.code, error?.details)
   return null
 }
 
@@ -120,25 +132,131 @@ export const getTopAgents = unstable_cache(
 
 // ─── Stacks ──────────────────────────────────────────────────────────────────
 
-export async function getUserStacks(userId: string, clerkToken: string, email?: string): Promise<Stack[]> {
-  const internalId = await ensureUserExists(userId, email)
-  
-  if (!internalId) {
-    return []
+export type UserStacksFetchResult = {
+  stacks: Stack[]
+  /** True si Supabase est injoignable après les tentatives (réseau, DNS, pare-feu, projet en pause…). */
+  connectionFailed: boolean
+}
+
+function stacksResult(stacks: Stack[], connectionFailed: boolean): UserStacksFetchResult {
+  return { stacks, connectionFailed }
+}
+
+export async function getUserStacks(
+  userId: string,
+  clerkToken: string,
+  email?: string
+): Promise<UserStacksFetchResult> {
+  if (isPlaceholderSupabaseUrl()) {
+    console.error(
+      '[getUserStacks] NEXT_PUBLIC_SUPABASE_URL est absent ou encore "placeholder" — renseigne l’URL du projet dans .env.local.'
+    )
+    return stacksResult([], false)
   }
 
-  // Use service role to bypass JWT issues
-  const { data, error } = await (supabaseService as any)
+  let internalId: string | null = null
+  try {
+    internalId = await ensureUserExists(userId, email)
+  } catch (e) {
+    logSupabaseNetworkFailure('getUserStacks/ensureUserExists', e)
+    return stacksResult([], true)
+  }
+
+  if (!internalId) {
+    return stacksResult([], false)
+  }
+
+  const delays = [0, 300, 800, 2000]
+  const lastIndex = delays.length - 1
+
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt] > 0) {
+      await new Promise((r) => setTimeout(r, delays[attempt]))
+    }
+    try {
+      const { data, error } = await (supabaseService as any)
+        .from('stacks')
+        .select('*')
+        .eq('user_id', internalId)
+        .order('created_at', { ascending: false })
+
+      if (!error) {
+        const rows = (data ?? []) as Stack[]
+        return stacksResult(rows.map(normalizeStackDigestRow), false)
+      }
+
+      const msg = error.message ?? ''
+      const transient = isTransientSupabaseNetworkError(msg)
+      const canRetry = attempt < lastIndex
+
+      if (transient && canRetry) {
+        console.warn(
+          `[getUserStacks] tentative ${attempt + 1}/${delays.length} échouée (${getSupabaseHostnameForLogs()}), nouvel essai…`
+        )
+        continue
+      }
+
+      if (transient) {
+        logSupabaseNetworkFailure('getUserStacks', error)
+        return stacksResult([], true)
+      }
+      console.error(`getUserStacks error (${error.code ?? 'n/a'}): ${msg}`, error.details ?? '')
+      return stacksResult([], false)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      const transient = isTransientSupabaseNetworkError(msg)
+      const canRetry = attempt < lastIndex
+      if (transient && canRetry) {
+        console.warn(
+          `[getUserStacks] exception réseau tentative ${attempt + 1}/${delays.length} (${getSupabaseHostnameForLogs()}), nouvel essai…`
+        )
+        continue
+      }
+      if (transient) {
+        logSupabaseNetworkFailure('getUserStacks', e instanceof Error ? e : { message: msg })
+        return stacksResult([], true)
+      }
+      console.error('getUserStacks exception (non réseau):', e)
+      return stacksResult([], false)
+    }
+  }
+
+  return stacksResult([], true)
+}
+
+/** Événements « Updates » pour un stack (vérifie que le stack appartient à l’utilisateur). */
+export async function getStackUpdateEvents(
+  stackId: string,
+  clerkUserId: string,
+  email?: string,
+  limit = 30
+): Promise<StackUpdateEvent[]> {
+  if (isPlaceholderSupabaseUrl()) return []
+
+  const internalId = await ensureUserExists(clerkUserId, email)
+  if (!internalId) return []
+
+  const { data: owned, error: ownErr } = await (supabaseService as any)
     .from('stacks')
-    .select('*')
+    .select('id')
+    .eq('id', stackId)
     .eq('user_id', internalId)
+    .maybeSingle()
+
+  if (ownErr || !owned) return []
+
+  const { data, error } = await (supabaseService as any)
+    .from('stack_update_events')
+    .select('id, stack_id, type, title, body, meta, read_at, created_at')
+    .eq('stack_id', stackId)
     .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(limit, 1), 100))
 
   if (error) {
-    console.error(`getUserStacks error (${error.code}): ${error.message}`)
+    console.error('getStackUpdateEvents:', error.message)
     return []
   }
-  return data ?? []
+  return (data ?? []) as StackUpdateEvent[]
 }
 
 export async function saveStack(stack: {

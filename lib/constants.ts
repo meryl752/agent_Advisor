@@ -51,44 +51,44 @@ export const PRICING_TIERS = [
   {
     name: 'Free',
     price: 0,
-    description: "Pour découvrir StackAI et valider la valeur avant de t'engager.",
+    description: "To discover Raspquery and validate the value before committing.",
     features: [
-      '1 recommandation de stack / mois',
-      'Accès à 50 agents indexés',
-      'Stack Score basique',
-      'Dashboard lecture seule',
+      '1 stack recommendation / month',
+      'Access to 50 indexed agents',
+      'Basic Stack Score',
+      'Read-only dashboard',
     ],
-    cta: 'Commencer gratuitement',
+    cta: 'Start for free',
     featured: false,
   },
   {
     name: 'Pro',
     price: 19,
-    description: "Pour les freelances et entrepreneurs qui veulent maximiser leur ROI IA.",
+    description: "For freelancers and entrepreneurs who want to maximize their AI ROI.",
     features: [
-      'Stacks illimités',
-      '200+ agents indexés',
-      'ROI Tracker temps réel',
-      'Stack Alerts instantanées',
-      'Stack Score complet',
+      'Unlimited stacks',
+      '200+ indexed agents',
+      'Real-time ROI Tracker',
+      'Instant Stack Alerts',
+      'Full Stack Score',
       'Workflow Visualizer',
     ],
-    cta: 'Essai 14 jours gratuit →',
+    cta: '14-day free trial →',
     featured: true,
   },
   {
     name: 'Agency',
     price: 79,
-    description: "Pour les agences qui gèrent les stacks IA de leurs clients.",
+    description: "For agencies managing their clients' AI stacks.",
     features: [
-      'Tout le plan Pro',
-      'Gestion multi-clients',
-      'Exports PDF marque blanche',
-      'Stack vs Stack illimité',
+      'Everything in Pro',
+      'Multi-client management',
+      'White-label PDF exports',
+      'Unlimited Stack vs Stack',
       'API access',
-      'Support prioritaire',
+      'Priority support',
     ],
-    cta: "Contacter l'équipe",
+    cta: "Contact us",
     featured: false,
   },
 ] as const
@@ -96,12 +96,12 @@ export const PRICING_TIERS = [
 // ─── Marquee Items ─────────────────────────────────────────────────────────────
 
 export const MARQUEE_ITEMS = [
-  '200+ agents indexés',
-  'ROI tracker temps réel',
-  'Stack alerts instantanées',
+  '200+ agents indexed',
+  'Real-time ROI tracker',
+  'Instant stack alerts',
   'Workflow visualizer',
-  'Stack Score gamifié',
-  'Accès early bird gratuit',
+  'Gamified Stack Score',
+  'Free early bird access',
 ]
 
 // ─── Nav Links ────────────────────────────────────────────────────────────────
@@ -111,3 +111,16 @@ export const NAV_LINKS = [
   { label: 'Pricing', href: '#pricing' },
   { label: 'À propos', href: '#about' },
 ]
+
+// ─── Reasoning Models ──────────────────────────────────────────────────────────
+// Shared between backend router and frontend selector
+
+export const SUPPORTED_REASONING_MODELS = [
+  { id: 'qwen-235b', name: 'Qwen 3 235B', provider: 'Cerebras', speed: 'Ultra-fast', domain: 'alibaba.com' },
+  { id: 'gpt-120b', name: 'GPT-OSS 120B', provider: 'Cerebras', speed: 'Stable', domain: 'openai.com' },
+  { id: 'qwen-32b', name: 'Qwen 3 32B', provider: 'Groq', speed: 'Accurate', domain: 'alibaba.com' },
+  { id: 'llama-70b', name: 'Llama 3.3 70B', provider: 'Groq', speed: 'Versatile', domain: 'meta.com' },
+  { id: 'gemini-flash', name: 'Gemini 2.5 Flash', provider: 'Google', speed: 'Reliable', domain: 'google.com' },
+] as const
+
+export type ReasoningModelId = typeof SUPPORTED_REASONING_MODELS[number]['id']

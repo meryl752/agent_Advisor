@@ -7,24 +7,24 @@ interface StackData {
 
 const STACKS: StackData[] = [
   {
-    label: 'Ton stack',
+    label: 'Your stack',
     name: 'Stack A',
     winner: true,
     metrics: [
       { key: 'Score', value: '84/100', good: true },
-      { key: 'Coût/mois', value: '112€', good: true },
-      { key: 'Automatisation', value: '87%', good: true },
-      { key: 'ROI estimé', value: '+304%', good: true },
+      { key: 'Cost/mo', value: '112€', good: true },
+      { key: 'Automation', value: '87%', good: true },
+      { key: 'Est. ROI', value: '+304%', good: true },
     ],
   },
   {
-    label: 'Concurrent',
+    label: 'Competitor',
     name: 'Stack B',
     metrics: [
       { key: 'Score', value: '61/100', good: false },
-      { key: 'Coût/mois', value: '198€', good: false },
-      { key: 'Automatisation', value: '44%', good: false },
-      { key: 'ROI estimé', value: '+89%', good: false },
+      { key: 'Cost/mo', value: '198€', good: false },
+      { key: 'Automation', value: '44%', good: false },
+      { key: 'Est. ROI', value: '+89%', good: false },
     ],
   },
 ]

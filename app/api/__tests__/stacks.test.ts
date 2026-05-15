@@ -21,6 +21,10 @@ vi.mock('@/lib/supabase/server', () => ({
   supabaseService: {
     from: () => mockSupabaseChain,
   },
+  // getInternalUserIdForRoute (queries.ts) reads users via supabaseServer
+  supabaseServer: {
+    from: () => mockSupabaseChain,
+  },
 }))
 
 // ─── Import routes after mocks ────────────────────────────────────────────────

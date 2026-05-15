@@ -1,0 +1,7 @@
+{
+  "_comment": "Modèle : copier les clés utiles dans data/catalog-filter.json. Noms = comparaison sans casse. contains = sous-chaîne sur le nom.",
+  "excluded_agent_ids": [],
+  "excluded_names_exact": ["Exemple Outil À Exclure"],
+  "excluded_name_contains": ["casino", "therapist"],
+  "notes": {}
+}

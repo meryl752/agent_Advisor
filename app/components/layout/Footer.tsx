@@ -26,7 +26,7 @@ export default function Footer() {
       </div>
 
       <p className="font-dm-mono text-[0.62rem] text-muted">
-        © 2025 Raspquery — Tous droits réservés
+        © 2025 Raspquery — All rights reserved
       </p>
     </footer>
   )

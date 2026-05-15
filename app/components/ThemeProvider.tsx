@@ -3,16 +3,9 @@
 import * as React from 'react'
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
 
-// Suppress the React 19 script tag warning from next-themes
-// This is a known issue: next-themes injects a script to prevent theme flash
-// It's intentional behavior and does NOT affect users — purely a dev warning
-const OriginalConsoleError = console.error
-if (typeof window !== 'undefined') {
-  console.error = (...args: unknown[]) => {
-    if (typeof args[0] === 'string' && args[0].includes('script tag while rendering')) return
-    OriginalConsoleError(...args)
-  }
-}
+// Ne pas remplacer console.error globalement : cela fausse les stack traces
+// (ex. erreurs Clerk) et masque des signaux utiles en prod. Le layout racine
+// utilise déjà suppressHydrationWarning sur <html> pour next-themes.
 
 export function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
   return (

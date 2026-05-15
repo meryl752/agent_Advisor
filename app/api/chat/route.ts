@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
-import { callLLM } from '@/lib/llm/router'
+import { callGemma } from '@/lib/llm/router'
 import { getUserMemory, formatMemoryForPrompt } from '@/lib/supabase/memory'
 import { z } from 'zod'
 
@@ -20,10 +20,10 @@ const chatSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const user = await currentUser()
-  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json().catch(() => null)
-  if (!body) return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
+  if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 
   const validation = chatSchema.safeParse(body)
   if (!validation.success) {
@@ -90,7 +90,7 @@ Retourne ce JSON:
 }`
 
   try {
-    const raw = await callLLM(prompt, 600)
+    const raw = await callGemma(prompt, 600)
     const jsonMatch = raw.replace(/<think>[\s\S]*?<\/think>/g, '').match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       try {
@@ -104,6 +104,6 @@ Retourne ce JSON:
     }
     return NextResponse.json({ response: raw, objective: null })
   } catch {
-    return NextResponse.json({ error: 'Erreur LLM — réessaie.' }, { status: 500 })
+    return NextResponse.json({ error: 'LLM error — please retry.' }, { status: 500 })
   }
 }

@@ -143,52 +143,48 @@ export default function Hero() {
         return () => clearInterval(interval)
     }, [])
 
-    // Demo card animation - SIMPLIFIED
+    // Demo card animation — tous les timeouts sont enregistrés pour un cleanup fiable
     useEffect(() => {
         const currentScenario = DEMO_SCENARIOS[scenarioIdx]
         const fullText = currentScenario.query
-        
-        // Reset state
+        const timeouts: ReturnType<typeof setTimeout>[] = []
+        const schedule = (fn: () => void, ms: number) => {
+            timeouts.push(setTimeout(fn, ms))
+        }
+
         setTypedText('')
         setVisibleTools([])
         setIsTyping(true)
         setIsGenerating(false)
-        
+
         let charIndex = 0
-        let typingTimer: NodeJS.Timeout
-        let toolTimer: NodeJS.Timeout
-        
         const typeNextChar = () => {
             if (charIndex < fullText.length) {
                 setTypedText(fullText.slice(0, charIndex + 1))
                 charIndex++
-                typingTimer = setTimeout(typeNextChar, 50)
+                schedule(typeNextChar, 50)
             } else {
-                // Typing done → show green button
                 setIsTyping(false)
-                // After 600ms → simulate click: start generating
-                setTimeout(() => {
+                schedule(() => {
                     setIsGenerating(true)
-                    // After 1.2s generating → show tools one by one
-                    setTimeout(() => {
+                    schedule(() => {
                         setIsGenerating(false)
                         setVisibleTools([0])
-                        setTimeout(() => setVisibleTools([0, 1]), 400)
-                        setTimeout(() => setVisibleTools([0, 1, 2]), 800)
-                        setTimeout(() => setVisibleTools([0, 1, 2, 3]), 1200)
-                        toolTimer = setTimeout(() => {
+                        schedule(() => setVisibleTools([0, 1]), 400)
+                        schedule(() => setVisibleTools([0, 1, 2]), 800)
+                        schedule(() => setVisibleTools([0, 1, 2, 3]), 1200)
+                        schedule(() => {
                             setScenarioIdx((prev) => (prev + 1) % DEMO_SCENARIOS.length)
                         }, 4200)
                     }, 1200)
                 }, 600)
             }
         }
-        
+
         typeNextChar()
-        
+
         return () => {
-            clearTimeout(typingTimer)
-            clearTimeout(toolTimer)
+            timeouts.forEach((t) => clearTimeout(t))
         }
     }, [scenarioIdx])
 
@@ -263,7 +259,7 @@ export default function Hero() {
             <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
 
                 {/* Headline */}
-                <h1 className="font-black text-zinc-900 leading-[1.1] tracking-tight mb-6 animate-fadeUp"
+                <h1 className="font-light text-zinc-900 leading-[1.12] tracking-[-0.02em] mb-6 animate-fadeUp"
                     style={{ fontSize: 'clamp(3rem, 7vw, 6rem)', animationDelay: '0.1s' }}>
                     {HEADLINES[headlineIdx].prefix}{' '}
                     <br />
@@ -276,7 +272,7 @@ export default function Hero() {
                             }}
                         />
                         {/* Rotating word */}
-                        <span className="relative z-10 text-zinc-900 font-black">
+                        <span className="relative z-10 text-zinc-900 font-light">
                             <span className={cn(
                                 'inline-block transition-all duration-300',
                                 visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
@@ -331,15 +327,15 @@ export default function Hero() {
                 {/* Demo card + bubbles outside */}
                 <div id="demo" className="relative max-w-3xl mx-auto animate-fadeUp" style={{ animationDelay: '0.4s' }}>
                     
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-zinc-200 overflow-hidden relative">
+                    <div className="bg-white rounded-2xl overflow-hidden relative">
                         {/* Browser bar */}
-                        <div className="relative flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-gradient-to-r from-zinc-50 to-white rounded-t-2xl">
+                        <div className="relative flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-zinc-50 to-white rounded-t-2xl">
                             <div className="flex gap-1.5">
                                 <div className="w-3 h-3 rounded-full bg-red-400" />
                                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
                                 <div className="w-3 h-3 rounded-full bg-green-400" />
                             </div>
-                            <div suppressHydrationWarning className="flex-1 bg-white border border-zinc-200 rounded-md py-1 px-3 text-xs text-zinc-400 font-mono text-center">
+                            <div suppressHydrationWarning className="flex-1 bg-zinc-100/90 rounded-md py-1 px-3 text-xs text-zinc-400 font-mono text-center shadow-inner">
                                 app.stackai.co — Construis ton stack
                             </div>
                         </div>
@@ -347,8 +343,8 @@ export default function Hero() {
                         {/* Demo content */}
                         <div className="relative p-6 bg-gradient-to-br from-white to-zinc-50/50">
                             {/* Input */}
-                            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 mb-5 text-left flex items-center gap-3 min-h-[64px]">
-                                <p className="text-zinc-700 font-medium flex-1 text-sm">
+                            <div className="bg-zinc-50 rounded-xl p-4 mb-5 text-left flex items-center gap-3 min-h-[64px]">
+                                <p className="text-zinc-700 font-medium flex-1 text-sm min-w-0">
                                     {typedText}
                                     {isTyping && <span className="inline-block w-0.5 h-4 bg-zinc-900 ml-0.5 animate-pulse align-middle" />}
                                 </p>
@@ -371,7 +367,7 @@ export default function Hero() {
                             <div className="grid grid-cols-4 gap-3 mb-4">
                                 {DEMO_SCENARIOS[scenarioIdx].tools.map((tool, i) => (
                                     visibleTools.includes(i) ? (
-                                        <div key={`card-${scenarioIdx}-${i}`} className="bg-white border border-zinc-200 rounded-xl p-3 text-center animate-fadeUp">
+                                        <div key={`card-${scenarioIdx}-${i}`} className="bg-zinc-50/80 rounded-xl p-3 text-center animate-fadeUp">
                                             <ToolLogo domain={tool.domain} color={tool.color} name={tool.name} />
                                             <p className="text-xs font-bold text-zinc-900 leading-tight mt-2 mb-1">{tool.name}</p>
                                             <p className="text-[10px] text-zinc-400 mb-1.5">{tool.role}</p>
@@ -384,7 +380,7 @@ export default function Hero() {
                             </div>
 
                             {/* Metrics row - always visible, values change per scenario */}
-                            <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
+                            <div className="flex items-center justify-between pt-6 mt-1">
                                 <div className="text-center">
                                     <p className="text-xs text-zinc-400 mb-0.5">Total cost</p>
                                     <p className="font-black text-zinc-900 text-sm transition-all duration-500">
@@ -438,7 +434,7 @@ export default function Hero() {
 function ToolLogo({ domain, color, name }: { domain: string; color: string; name: string }) {
     const [imgErr, setImgErr] = useState(false)
     return (
-        <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-zinc-100 flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto">
             {!imgErr ? (
                 <img src={getLogoUrl(domain)} alt={name} className="w-8 h-8 object-contain" onError={() => setImgErr(true)} />
             ) : (
@@ -453,10 +449,9 @@ function ToolLogo({ domain, color, name }: { domain: string; color: string; name
 function DemoCard({ tool, delay }: { tool: { name: string; role: string; price: string; color: string; domain: string }, delay: number }) {
     const [imgErr, setImgErr] = useState(false)
     return (
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 text-center animate-fadeUp relative"
+        <div className="bg-white rounded-xl p-4 text-center animate-fadeUp relative"
              style={{ animationDelay: `${delay}ms` }}>
-            <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-zinc-100
-                      flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-3">
                 {!imgErr ? (
                     <img
                         src={getLogoUrl(tool.domain)}

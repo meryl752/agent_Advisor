@@ -13,7 +13,7 @@ export default async function ScorePage() {
 
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
   const userEmail = user.emailAddresses[0]?.emailAddress
-  const stacks = await getUserStacks(user.id, clerkToken, userEmail)
+  const { stacks } = await getUserStacks(user.id, clerkToken, userEmail)
 
   const avgScore = stacks.length > 0
     ? Math.round(stacks.reduce((sum, s) => sum + s.score, 0) / stacks.length)

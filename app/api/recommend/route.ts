@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { currentUser, auth } from '@clerk/nextjs/server'
 import { saveStack } from '@/lib/supabase/queries'
-import { updateStacksSummary, saveConversation } from '@/lib/supabase/memory'
+import { updateStacksSummary } from '@/lib/supabase/memory'
 import { runOrchestrator } from '@/lib/agents/orchestrator'
 import { recommendSchema } from '@/lib/validators/api'
 import { captureError, setSentryUser } from '@/lib/monitoring/sentry'
 import { assertEnv } from '@/lib/utils/env'
+import { enforceLlmAbuseLimit } from '@/lib/rate-limit/enforceLlmAbuse'
 
 // Fail fast if critical env vars are missing
 assertEnv(['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'])
@@ -17,10 +18,13 @@ async function recommendHandler(req: NextRequest) {
     const token = await getToken({ template: 'supabase' })
 
     if (!user || !token) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     setSentryUser(user.id)
+
+    const abuseResponse = await enforceLlmAbuseLimit(user.id, 'recommend')
+    if (abuseResponse) return abuseResponse
 
     const body = await req.json()
     const validation = recommendSchema.safeParse(body)
@@ -32,10 +36,10 @@ async function recommendHandler(req: NextRequest) {
       }))
       console.error('[recommend] Validation failed:', JSON.stringify(errors))
       console.error('[recommend] Body received:', JSON.stringify(body))
-      return NextResponse.json({ error: 'Validation échouée', details: errors }, { status: 400 })
+      return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
 
-    const { objective, sector, budget, tech_level, team_size, timeline, current_tools, session_id: sessionId } = validation.data
+    const { objective, sector, budget, tech_level, team_size, timeline, current_tools, session_id: sessionId, preferred_model } = validation.data
 
     const userContext = {
       objective,
@@ -45,6 +49,7 @@ async function recommendHandler(req: NextRequest) {
       tech_level,
       timeline,
       current_tools: current_tools ?? [],
+      preferred_model,
     }
 
     let result
@@ -54,15 +59,21 @@ async function recommendHandler(req: NextRequest) {
       // Orchestrator failed
       captureError(orchestratorErr, { endpoint: '/api/recommend', action: 'orchestrator_failure' })
       console.error('Orchestrator error:', orchestratorErr)
-      return NextResponse.json({ error: 'Recommandation impossible' }, { status: 500 })
+      return NextResponse.json({ error: 'Recommendation failed' }, { status: 500 })
     }
 
     if (!result) {
       // No result
-      return NextResponse.json({ error: 'Recommandation impossible' }, { status: 500 })
+      return NextResponse.json({ error: 'Recommendation failed' }, { status: 500 })
     }
 
     const userEmail = user.emailAddresses[0]?.emailAddress
+
+    // Recalculate total_cost from real agent price_from values — never trust the LLM's estimate
+    // Free tools (price_from === 0) are counted as 0, paid tools summed exactly
+    const realTotalCost = result.stack.agents.reduce((sum, a) => sum + (a.price_from ?? 0), 0)
+    result.stack.total_cost = realTotalCost
+
     const savedStack = await saveStack({
       user_id: user.id,
       name: result.stack.stack_name,
@@ -103,10 +114,10 @@ async function recommendHandler(req: NextRequest) {
   } catch (err) {
     captureError(err, { endpoint: '/api/recommend', action: 'generate_recommendation' })
     console.error('Recommend API error:', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
 
-// Rate limiting: DISABLED
-// All users can create unlimited stacks during early access
+// Rate limit « stacks » par plan : non appliqué ici (early access).
+// Plafond anti-abus LLM séparé et généreux : enforceLlmAbuseLimit + Redis (voir .env.example).
 export const POST = recommendHandler

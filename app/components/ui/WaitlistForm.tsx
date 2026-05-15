@@ -32,7 +32,7 @@ export default function WaitlistForm({ id, centered = false }: WaitlistFormProps
           value={email}
           onChange={(e) => { setEmail(e.target.value); setStatus('idle') }}
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-          placeholder="ton@email.com"
+          placeholder="your@email.com"
           autoComplete="email"
           className={cn(
             'flex-1 bg-bg-2 border border-border-2 border-r-0 text-cream px-5 py-4',
@@ -46,7 +46,7 @@ export default function WaitlistForm({ id, centered = false }: WaitlistFormProps
           className="bg-accent text-bg font-syne font-bold text-sm px-7 py-4
                      whitespace-nowrap transition-opacity duration-150 hover:opacity-85"
         >
-          Rejoindre →
+          Join →
         </button>
       </div>
 
@@ -55,7 +55,7 @@ export default function WaitlistForm({ id, centered = false }: WaitlistFormProps
           'font-dm-mono text-xs text-accent mt-3 flex items-center gap-2',
           centered && 'justify-center'
         )}>
-          <span className="text-base">✓</span> Tu es sur la liste. À très vite.
+          <span className="text-base">✓</span> You're on the list. See you soon.
         </p>
       ) : (
         <p className={cn(

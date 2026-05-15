@@ -5,7 +5,7 @@ import { supabaseService } from '@/lib/supabase/server'
 
 export async function GET(req: NextRequest) {
   const user = await currentUser()
-  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const dbUser = await getUserByClerkId(user.id)
   if (!dbUser) return NextResponse.json({ conversations: [] })

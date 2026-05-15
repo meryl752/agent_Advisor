@@ -22,21 +22,21 @@ export interface ConversationItem {
 }
 
 export const REASONING_STEPS = [
-  'Analyse de ton objectif...',
-  'Scan de 200+ agents IA...',
-  'Optimisation du budget...',
-  'Assemblage du stack final...',
-  'Recherche de documentation...',
-  "Génération des guides d'implémentation...",
+  'Analyzing your goal...',
+  'Scanning 200+ AI agents...',
+  'Optimizing for your budget...',
+  'Assembling the final stack...',
+  'Searching for documentation...',
+  'Generating implementation guides...',
 ]
 
 export const SUGGESTIONS = [
-  { label: 'Automatiser mon service client Shopify', prompt: "J'aimerais automatiser le service client au niveau de ma plateforme Shopify" },
-  { label: 'Augmenter ma prospection B2B', prompt: "J'aimerais augmenter la rapidité à laquelle j'atteins mes clients dans mon business B2B" },
-  { label: 'Créer du contenu Instagram en masse', prompt: "Je veux créer du contenu Instagram de qualité en grande quantité avec l'IA" },
-  { label: "Automatiser ma gestion d'inventaire", prompt: "Mettre en place un système intelligent pour automatiser ma gestion d'inventaire" },
-  { label: 'Analyser mes données clients', prompt: "J'aimerais analyser mes données clients pour prédire les futures tendantes" },
-  { label: 'Optimiser mes processus de vente', prompt: "Je souhaite optimiser mes processus de vente avec l'IA pour gagner du temps" },
+  { label: 'Automate my Shopify customer service', prompt: "I want to automate customer service on my Shopify store" },
+  { label: 'Scale my B2B prospecting', prompt: "I want to increase the speed at which I reach clients in my B2B business" },
+  { label: 'Create Instagram content at scale', prompt: "I want to create high-quality Instagram content in large volumes with AI" },
+  { label: 'Automate my inventory management', prompt: "Set up an intelligent system to automate my inventory management" },
+  { label: 'Analyze my customer data', prompt: "I want to analyze my customer data to predict future trends" },
+  { label: 'Optimize my sales process', prompt: "I want to optimize my sales process with AI to save time" },
 ]
 
 export function extractContext(text: string) {

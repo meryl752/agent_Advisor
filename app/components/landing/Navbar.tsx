@@ -12,7 +12,8 @@ export default function Navbar() {
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', fn)
+    fn()
+    window.addEventListener('scroll', fn, { passive: true })
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
@@ -37,15 +38,20 @@ export default function Navbar() {
     return () => observer.disconnect()
   }, [])
 
+  const glass = scrolled
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 pt-3">
       <div className={cn(
-        'max-w-7xl mx-auto rounded-2xl transition-all duration-500 ease-out border',
-        isDark
-          ? 'bg-zinc-900/80 backdrop-blur-xl border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.3)]'
-          : scrolled
-            ? 'bg-white/60 backdrop-blur-xl border-white/30 shadow-[0_4px_24px_rgba(139,92,246,0.12)]'
-            : 'bg-white/20 backdrop-blur-md border-white/30 shadow-[0_2px_16px_rgba(139,92,246,0.08)]'
+        'max-w-7xl mx-auto transition-all duration-500 ease-out border',
+        glass
+          ? 'rounded-2xl'
+          : 'rounded-none border-transparent bg-transparent shadow-none backdrop-blur-none',
+        glass && (
+          isDark
+            ? 'bg-zinc-900/80 backdrop-blur-xl border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.3)]'
+            : 'bg-white/60 backdrop-blur-xl border-white/30 shadow-[0_4px_24px_rgba(139,92,246,0.12)]'
+        )
       )}>
         <div className="px-6 py-3 flex items-center justify-between">
 

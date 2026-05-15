@@ -1,22 +1,16 @@
 /**
- * Script de migration des embeddings vers Jina AI v4
- * 
- * Ce script régénère tous les embeddings existants en utilisant Jina AI v4
- * au lieu de HuggingFace, et les stocke dans la nouvelle colonne embedding_jina.
- * 
+ * Script de migration des embeddings vers Jina AI (1024D, colonne embedding_jina).
+ *
  * Usage:
- *   npx tsx scripts/migrate-embeddings.ts                    # Migration complète
- *   npx tsx scripts/migrate-embeddings.ts --dry-run          # Simulation sans modifications
- *   npx tsx scripts/migrate-embeddings.ts --limit 10         # Migrer seulement 10 agents
- *   npx tsx scripts/migrate-embeddings.ts --priority         # Migrer les top agents d'abord
+ *   npx tsx scripts/migrate-embeddings.ts [--dry-run] [--limit N] [--priority] [--only-missing] [--delay-ms 250]
  */
 
 import { createClient } from '@supabase/supabase-js'
 import { embeddingService } from '../lib/embeddings/service'
+import { buildAgentDocumentText } from '../lib/embeddings/buildAgentDocumentText'
 import { config } from 'dotenv'
 import { resolve } from 'path'
 
-// Charger les variables d'environnement
 config({ path: resolve(__dirname, '../.env.local') })
 
 interface MigrationOptions {
@@ -24,35 +18,47 @@ interface MigrationOptions {
   limit?: number
   priority: boolean
   batchSize: number
+  onlyMissing: boolean
+  delayMs: number
 }
 
 interface Agent {
   id: string
   name: string
-  description: string
-  use_cases: string[]
+  category: string | null
+  description: string | null
+  use_cases: string[] | null
+  best_for: string[] | null
+  not_for: string[] | null
   score: number
 }
 
+function parseArgInt(flag: string, fallback: number): number {
+  const i = process.argv.indexOf(flag)
+  if (i === -1 || !process.argv[i + 1]) return fallback
+  const n = parseInt(process.argv[i + 1], 10)
+  return Number.isFinite(n) ? n : fallback
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(r => setTimeout(r, ms))
+}
+
 async function migrateEmbeddings(options: MigrationOptions) {
-  const { dryRun, limit, priority, batchSize } = options
+  const { dryRun, limit, priority, batchSize, onlyMissing, delayMs } = options
 
-  console.log('🚀 Migration des embeddings vers Jina AI v4\n')
-  
-  if (dryRun) {
-    console.log('⚠️  Mode DRY-RUN - Aucune modification ne sera effectuée\n')
-  }
+  console.log('🚀 Migration des embeddings Jina (embedding_jina)\n')
+  if (onlyMissing) console.log('   Filtre: uniquement les agents sans embedding_jina\n')
+  if (dryRun) console.log('⚠️  Mode DRY-RUN — aucune écriture en base\n')
 
-  // Vérifier les variables d'environnement
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const jinaKey = process.env.JINA_API_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('❌ Variables d\'environnement Supabase manquantes')
+    console.error('❌ NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquant')
     process.exit(1)
   }
-
   if (!jinaKey) {
     console.error('❌ JINA_API_KEY manquant dans .env.local')
     process.exit(1)
@@ -61,20 +67,17 @@ async function migrateEmbeddings(options: MigrationOptions) {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   try {
-    // ── Étape 1 : Récupérer les agents à migrer ──────────────────────────────
-    console.log('📋 Étape 1: Récupération des agents...')
-    
+    console.log('📋 Étape 1: lecture des agents...')
+
     let query = supabase
       .from('agents')
-      .select('id, name, description, use_cases, score')
+      .select('id, name, category, description, use_cases, best_for, not_for, score')
 
-    // Trier par score si mode prioritaire
+    if (onlyMissing) query = query.is('embedding_jina', null)
     if (priority) {
       query = query.order('score', { ascending: false })
-      console.log('   Mode prioritaire: migration des top agents d\'abord')
+      console.log('   Tri: score décroissant (--priority)')
     }
-
-    // Limiter le nombre d'agents si spécifié
     if (limit) {
       query = query.limit(limit)
       console.log(`   Limite: ${limit} agents`)
@@ -83,14 +86,11 @@ async function migrateEmbeddings(options: MigrationOptions) {
     const { data: agents, error } = await query
 
     if (error || !agents) {
-      console.error('❌ Erreur lors de la récupération des agents:', error)
+      console.error('❌ Erreur lecture agents:', error)
       process.exit(1)
     }
 
-    console.log(`✅ ${agents.length} agents à migrer\n`)
-
-    // ── Étape 2 : Migrer les embeddings par batch ────────────────────────────
-    console.log('📋 Étape 2: Migration des embeddings...\n')
+    console.log(`✅ ${agents.length} agent(s) à traiter\n`)
 
     let migrated = 0
     let failed = 0
@@ -98,131 +98,108 @@ async function migrateEmbeddings(options: MigrationOptions) {
     const errors: Array<{ agent: string; error: string }> = []
     const startTime = Date.now()
 
-    for (let i = 0; i < agents.length; i += batchSize) {
-      const batch = agents.slice(i, i + batchSize)
-      
-      console.log(`\n🔄 Batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(agents.length / batchSize)} (${batch.length} agents)`)
+    const list = agents as Agent[]
 
-      for (const agent of batch) {
-        try {
-          // Construire le texte pour l'embedding
-          const text = [
-            agent.name,
-            agent.description || '',
-            ...(agent.use_cases || []),
-          ].filter(Boolean).join(' ')
+    for (let gi = 0; gi < list.length; gi++) {
+      const agent = list[gi]
+      if (gi === 0 || gi % batchSize === 0) {
+        console.log(`\n🔄 Progression ${gi + 1}/${list.length} — ${agent.name}`)
+      }
 
-          if (!text.trim()) {
-            console.log(`   ⏭️  ${agent.name} - Pas de texte, ignoré`)
-            skipped++
-            continue
-          }
-
-          // Générer le nouvel embedding avec Jina AI
-          const result = await embeddingService.generate(text)
-
-          if (!dryRun) {
-            // Mettre à jour la base de données
-            const { error: updateError } = await supabase
-              .from('agents')
-              .update({
-                embedding_jina: result.vector,
-                embedding_provider: 'jina',
-                embedding_updated_at: new Date().toISOString(),
-              })
-              .eq('id', agent.id)
-
-            if (updateError) {
-              throw new Error(`DB update failed: ${updateError.message}`)
-            }
-          }
-
-          migrated++
-          console.log(`   ✅ ${agent.name} - ${result.dimensions}D en ${result.latency_ms}ms`)
-
-        } catch (err) {
-          failed++
-          const errorMsg = err instanceof Error ? err.message : String(err)
-          errors.push({ agent: agent.name, error: errorMsg })
-          console.log(`   ❌ ${agent.name} - ${errorMsg}`)
+      try {
+        const text = buildAgentDocumentText(agent)
+        if (!text.trim()) {
+          console.log(`   ⏭️  ${agent.name} — texte vide, ignoré`)
+          skipped++
+          continue
         }
+
+        const result = await embeddingService.generate(text)
+
+        if (!dryRun) {
+          const { error: updateError } = await supabase
+            .from('agents')
+            .update({
+              embedding_jina: result.vector,
+              embedding_provider: 'jina',
+              embedding_updated_at: new Date().toISOString(),
+            })
+            .eq('id', agent.id)
+
+          if (updateError) throw new Error(`DB: ${updateError.message}`)
+        }
+
+        migrated++
+        if ((gi + 1) % 20 === 0 || gi === list.length - 1) {
+          console.log(`   … ${gi + 1}/${list.length} traités (dernier: ${agent.name}, ${result.latency_ms}ms)`)
+        }
+
+        if (delayMs > 0 && gi < list.length - 1) await sleep(delayMs)
+      } catch (err) {
+        failed++
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        errors.push({ agent: agent.name, error: errorMsg })
+        console.log(`   ❌ ${agent.name} — ${errorMsg}`)
+        if (delayMs > 0 && gi < list.length - 1) await sleep(delayMs)
       }
 
-      // Pause entre les batches pour éviter les rate limits
-      if (i + batchSize < agents.length) {
-        console.log('   ⏸️  Pause 2s...')
-        await new Promise(resolve => setTimeout(resolve, 2000))
+      if ((gi + 1) % batchSize === 0 && gi < list.length - 1) {
+        console.log('   ⏸️  Pause 2s entre lots…')
+        await sleep(2000)
       }
     }
 
-    // ── Étape 3 : Rapport final ──────────────────────────────────────────────
     const totalTime = Date.now() - startTime
-    const avgTime = migrated > 0 ? Math.round(totalTime / migrated) : 0
-
-    console.log('\n\n' + '='.repeat(60))
-    console.log('✅ Migration terminée!\n')
-    console.log('📊 Rapport:')
-    console.log(`   - Agents migrés: ${migrated}`)
-    console.log(`   - Échecs: ${failed}`)
-    console.log(`   - Ignorés: ${skipped}`)
-    console.log(`   - Temps total: ${(totalTime / 1000).toFixed(1)}s`)
-    console.log(`   - Temps moyen par agent: ${avgTime}ms`)
-    console.log(`   - Fallback HuggingFace: ${embeddingService.getStats().errors}`)
-
-    if (errors.length > 0) {
-      console.log(`\n❌ Erreurs (${errors.length}):`)
-      errors.slice(0, 10).forEach(e => {
-        console.log(`   - ${e.agent}: ${e.error}`)
-      })
-      if (errors.length > 10) {
-        console.log(`   ... et ${errors.length - 10} autres erreurs`)
-      }
+    console.log('\n' + '='.repeat(60))
+    console.log('Terminé\n')
+    console.log(`   Migrés / simulés: ${migrated}`)
+    console.log(`   Échecs: ${failed}`)
+    console.log(`   Ignorés: ${skipped}`)
+    console.log(`   Durée: ${(totalTime / 1000).toFixed(1)}s`)
+    if (errors.length) {
+      console.log(`\n   Premières erreurs:`)
+      errors.slice(0, 8).forEach(e => console.log(`   - ${e.agent}: ${e.error}`))
+      if (errors.length > 8) console.log(`   … +${errors.length - 8}`)
     }
-
-    console.log('\n📋 Prochaines étapes:')
-    if (dryRun) {
-      console.log('   1. Relancer sans --dry-run pour appliquer la migration')
-    } else {
-      console.log('   1. Vérifier que les embeddings sont bien créés')
-      console.log('   2. Tester la recherche vectorielle')
-      console.log('   3. Mesurer les performances (P95 < 200ms)')
+    if (!dryRun && migrated > 0) {
+      console.log('\n   Ensuite: npx tsx scripts/analyze-agent-catalog.ts')
     }
     console.log('='.repeat(60) + '\n')
-
   } catch (err) {
     console.error('\n❌ Erreur fatale:', err instanceof Error ? err.message : String(err))
     process.exit(1)
   }
 }
 
-// ── CLI ───────────────────────────────────────────────────────────────────────
-
 const args = process.argv.slice(2)
 
 const options: MigrationOptions = {
   dryRun: args.includes('--dry-run'),
-  limit: args.includes('--limit') ? parseInt(args[args.indexOf('--limit') + 1]) : undefined,
+  limit: args.includes('--limit') ? parseInt(args[args.indexOf('--limit') + 1], 10) : undefined,
   priority: args.includes('--priority'),
-  batchSize: 10, // 10 agents par batch pour éviter les rate limits
+  batchSize: parseArgInt('--batch-size', 10),
+  onlyMissing: args.includes('--only-missing'),
+  delayMs: parseArgInt('--delay-ms', 200),
 }
 
-// Afficher l'aide si demandé
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`
 Usage: npx tsx scripts/migrate-embeddings.ts [options]
 
 Options:
-  --dry-run          Simulation sans modifications
-  --limit <number>   Migrer seulement N agents
-  --priority         Migrer les top agents d'abord (par score)
-  --help, -h         Afficher cette aide
+  --dry-run           Simulation (appels Jina réels, pas d’update DB)
+  --limit <n>         Traiter au plus n agents
+  --priority          Trier par score décroissant
+  --only-missing      Uniquement embedding_jina IS NULL (recommandé après une import partielle)
+  --delay-ms <n>      Pause entre chaque agent (ms), défaut 200 ; 0 pour max vitesse
+  --batch-size <n>    Taille de lot pour les pauses entre lots, défaut 10
+  --help, -h          Aide
 
 Exemples:
-  npx tsx scripts/migrate-embeddings.ts
-  npx tsx scripts/migrate-embeddings.ts --dry-run
-  npx tsx scripts/migrate-embeddings.ts --limit 10
-  npx tsx scripts/migrate-embeddings.ts --priority --limit 50
-  `)
+  npx tsx scripts/migrate-embeddings.ts --only-missing --delay-ms 250
+  npx tsx scripts/migrate-embeddings.ts --dry-run --limit 5
+  npx tsx scripts/migrate-embeddings.ts --priority --limit 100
+`)
   process.exit(0)
 }
 

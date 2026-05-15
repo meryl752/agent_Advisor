@@ -12,7 +12,7 @@ export async function POST(req: Request) {
         field: e.path.join('.'),
         message: e.message,
       }))
-      return NextResponse.json({ error: 'Validation échouée', details: errors }, { status: 400 })
+      return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
 
     const { email } = validation.data

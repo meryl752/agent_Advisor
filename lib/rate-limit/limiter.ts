@@ -38,6 +38,80 @@ export class RateLimiter {
     }
   }
 
+  /**
+   * Plafond fixe par fenêtre (anti-abus), indépendant du plan utilisateur et de RATE_LIMIT_ENABLED.
+   * À utiliser pour des routes coûteuses (LLM) avec des quotas généreux.
+   */
+  async checkAbuseBurstLimit(
+    userId: string,
+    endpoint: string,
+    maxRequests: number,
+    windowSeconds: number
+  ): Promise<RateLimitResult> {
+    try {
+      const now = Math.floor(Date.now() / 1000)
+      const windowStart = this.calculateWindowStart(now, windowSeconds)
+      const windowEnd = windowStart + windowSeconds
+      const key = this.getRedisKey(userId, endpoint, windowStart)
+
+      const result = await this.redis.increment(key, windowSeconds)
+
+      if (result === null) {
+        this.consecutiveFailures++
+        if (this.consecutiveFailures >= CONSECUTIVE_FAILURE_THRESHOLD) {
+          console.error(`[RateLimiter] ALERT: ${this.consecutiveFailures} consecutive Redis failures (abuse check)`)
+        }
+        if (FAIL_OPEN) {
+          console.warn('[RateLimiter] Redis failure during abuse check, allowing request (fail-open)')
+          return {
+            allowed: true,
+            limit: maxRequests,
+            remaining: maxRequests,
+            reset: windowEnd,
+          }
+        }
+        return {
+          allowed: false,
+          limit: maxRequests,
+          remaining: 0,
+          reset: windowEnd,
+          retryAfter: windowEnd - now,
+        }
+      }
+
+      if (this.consecutiveFailures > 0) this.consecutiveFailures = 0
+
+      const count = result.count
+      const allowed = count <= maxRequests
+      const remaining = Math.max(0, maxRequests - count)
+
+      if (!allowed) {
+        console.log(
+          `[RateLimiter] Abuse burst limit exceeded for user ${userId.substring(0, 8)}*** (${endpoint}): ${count}/${maxRequests} in ${windowSeconds}s`
+        )
+      }
+
+      return {
+        allowed,
+        limit: maxRequests,
+        remaining,
+        reset: windowEnd,
+        retryAfter: allowed ? undefined : windowEnd - now,
+      }
+    } catch (error) {
+      console.error('[RateLimiter] checkAbuseBurstLimit error:', error instanceof Error ? error.message : 'Unknown')
+      if (FAIL_OPEN) {
+        return {
+          allowed: true,
+          limit: maxRequests,
+          remaining: maxRequests,
+          reset: Math.floor(Date.now() / 1000) + windowSeconds,
+        }
+      }
+      throw error
+    }
+  }
+
   async checkLimit(userId: string, endpoint: string): Promise<RateLimitResult> {
     // Bypass if disabled
     if (!this.enabled) {

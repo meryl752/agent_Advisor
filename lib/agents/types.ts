@@ -8,6 +8,7 @@ export interface UserContext {
   tech_level: 'beginner' | 'intermediate' | 'advanced'
   timeline: 'asap' | 'weeks' | 'months'
   current_tools: string[]
+  preferred_model?: string
 }
 
 // Nouvelle structure avec domaines et sous-tâches atomiques
@@ -104,7 +105,7 @@ export interface StackAgent {
   role: string
   reason: string
   concrete_result: string
-  prompt_to_use: string
+  prompt_to_use?: string
   website_domain?: string
   logo_url?: string
   url?: string

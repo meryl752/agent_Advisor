@@ -13,12 +13,12 @@ export default function StackList({ items }: { items?: StackItem[] }) {
   const data = items ?? DEFAULT_ITEMS
 
   return (
-    <div className="bg-bg-3 border border-border px-4 py-[14px]">
+    <div className="bg-bg-3 px-4 py-[14px]">
       <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-[10px]">
         Ton stack actuel
       </p>
       {data.map((item, i) => (
-        <div key={i} className="flex items-center gap-[10px] py-[7px] border-b border-[#161616] last:border-b-0">
+        <div key={i} className="flex items-center gap-[10px] py-[8px]">
           <span className="font-dm-mono text-[0.68rem] text-[#999]">{item.name}</span>
           <div className="flex-1 h-[3px] bg-border-2">
             <div className="h-full bg-accent opacity-60" style={{ width: `${item.score}%` }} />

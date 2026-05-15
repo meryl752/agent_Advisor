@@ -10,13 +10,13 @@ export async function GET(
   const user = await currentUser()
   if (!user) {
     console.error('[conversations/sessionId] No user')
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const dbUser = await getUserByClerkId(user.id)
   if (!dbUser) {
     console.error('[conversations/sessionId] User not found in DB:', user.id)
-    return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   const userId = (dbUser as any).id
@@ -51,12 +51,12 @@ export async function GET(
       console.error('[conversations/sessionId] Conversation does not exist:', sessionId)
     }
     
-    return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 })
+    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
   }
 
   if (!conversation) {
     console.error('[conversations/sessionId] No conversation data')
-    return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 })
+    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
   }
 
   console.log('[conversations/sessionId] Found conversation:', {
@@ -108,12 +108,12 @@ export async function PATCH(
 ) {
   const user = await currentUser()
   if (!user) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const dbUser = await getUserByClerkId(user.id)
   if (!dbUser) {
-    return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   const userId = (dbUser as any).id
@@ -121,7 +121,7 @@ export async function PATCH(
 
   const body = await req.json().catch(() => null)
   if (!body || !body.title) {
-    return NextResponse.json({ error: 'Titre manquant' }, { status: 400 })
+    return NextResponse.json({ error: 'Title missing' }, { status: 400 })
   }
 
   console.log('[conversations/sessionId] Updating conversation title:', { sessionId, userId, title: body.title })
@@ -138,7 +138,7 @@ export async function PATCH(
 
   if (error) {
     console.error('[conversations/sessionId] Update error:', error)
-    return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
@@ -150,12 +150,12 @@ export async function DELETE(
 ) {
   const user = await currentUser()
   if (!user) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const dbUser = await getUserByClerkId(user.id)
   if (!dbUser) {
-    return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   const userId = (dbUser as any).id
@@ -172,7 +172,7 @@ export async function DELETE(
 
   if (error) {
     console.error('[conversations/sessionId] Delete error:', error)
-    return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 })
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
