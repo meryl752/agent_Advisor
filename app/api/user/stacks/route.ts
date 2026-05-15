@@ -13,9 +13,9 @@ export async function GET() {
 
     const clerkToken = await getToken({ template: 'supabase' }) ?? ''
     const userEmail = user.emailAddresses[0]?.emailAddress
-    const stacks = await getUserStacks(user.id, clerkToken, userEmail)
+    const { stacks, connectionFailed } = await getUserStacks(user.id, clerkToken, userEmail)
 
-    return NextResponse.json({ stacks })
+    return NextResponse.json({ stacks, connectionFailed })
   } catch {
     return NextResponse.json({ stacks: [] })
   }

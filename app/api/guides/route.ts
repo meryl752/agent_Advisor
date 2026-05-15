@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { buildGuides } from '@/lib/agents/guideBuilder'
+import { enforceLlmAbuseLimit } from '@/lib/rate-limit/enforceLlmAbuse'
 import type { StackAgent, UserContext } from '@/lib/agents/types'
 
 /**
@@ -13,6 +14,9 @@ import type { StackAgent, UserContext } from '@/lib/agents/types'
 export async function POST(req: NextRequest) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+
+  const abuseResponse = await enforceLlmAbuseLimit(userId, 'guides')
+  if (abuseResponse) return abuseResponse
 
   const body = await req.json().catch(() => null)
   if (!body?.agents || !body?.ctx) {
@@ -27,13 +31,18 @@ export async function POST(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        // Process agents in parallel but emit results as they arrive
-        const promises = agents.map(async (agent, idx) => {
-          const enriched = await buildGuides([agent], ctx as UserContext)
-          const line = JSON.stringify({ idx, agent: enriched[0] }) + '\n'
-          controller.enqueue(encoder.encode(line))
-        })
-        await Promise.allSettled(promises)
+        // Ne pas lancer un LLM par agent en parallèle (saturation Groq/Cerebras → 429 / timeouts).
+        // buildGuides limite déjà à 2 appels LLM en parallèle : on traite par paquets et on stream chaque lot.
+        const BATCH = 2
+        for (let i = 0; i < agents.length; i += BATCH) {
+          const slice = agents.slice(i, i + BATCH)
+          const enriched = await buildGuides(slice, ctx as UserContext)
+          for (let j = 0; j < enriched.length; j++) {
+            const idx = i + j
+            const line = JSON.stringify({ idx, agent: enriched[j] }) + '\n'
+            controller.enqueue(encoder.encode(line))
+          }
+        }
       } catch (err) {
         console.error('[/api/guides] Error:', err)
       } finally {

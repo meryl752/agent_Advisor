@@ -5,10 +5,19 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { getLogoUrl } from '@/lib/utils/logo'
+import { getNextDigestDate, formatDigestDate, normalizeStackDigestRow } from '@/lib/utils/next-digest'
 import type { Stack } from '@/lib/supabase/types'
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog'
 
 const COLORS = ['#FF6B35', '#6B4FFF', '#20B8CD', '#CAFF32', '#FF7A59', '#10A37F', '#5E6AD2', '#FFE01B']
+
+function normalizeStack(s: Stack): Stack {
+  return normalizeStackDigestRow({
+    ...s,
+    digest_enabled: s.digest_enabled ?? false,
+    digest_enabled_at: s.digest_enabled_at ?? null,
+  })
+}
 
 function getDomain(url: string): string {
   try {
@@ -96,6 +105,8 @@ function StackCard({
   saving,
   editName,
   setEditName,
+  digestSaving,
+  onToggleDigest,
 }: {
   stack: Stack
   agentsMap: Record<string, { name: string; url: string }>
@@ -115,6 +126,8 @@ function StackCard({
   saving: boolean
   editName: string
   setEditName: (name: string) => void
+  digestSaving: boolean
+  onToggleDigest: (enabled: boolean) => void
 }) {
   const [hovered, setHovered] = useState(false)
   const date = new Date(stack.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -176,7 +189,14 @@ function StackCard({
               </button>
             </div>
           ) : (
-            <h3 className="font-semibold text-zinc-900 dark:text-white text-base truncate">{stack.name}</h3>
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="font-semibold text-zinc-900 dark:text-white text-base truncate">{stack.name}</h3>
+              {stack.digest_enabled && (
+                <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#CAFF32]/25 text-zinc-900 dark:text-[#CAFF32]">
+                  Suivi
+                </span>
+              )}
+            </div>
           )}
           <p className="text-sm text-zinc-500 mt-1 line-clamp-2">{stack.objective}</p>
         </div>
@@ -243,6 +263,29 @@ function StackCard({
         </div>
       </div>
 
+      <div
+        className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        onClick={e => e.stopPropagation()}
+      >
+        <p className="text-xs text-zinc-500 leading-snug max-w-md">
+          {stack.digest_enabled
+            ? 'Ce stack est celui suivi pour les futurs digests (coûts, alternatives, changements recommandés).'
+            : 'Marquez un stack comme « suivi » pour préparer les mises à jour régulières — un seul à la fois.'}
+        </p>
+        <button
+          type="button"
+          disabled={digestSaving}
+          onClick={() => onToggleDigest(!stack.digest_enabled)}
+          className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-lg transition-colors ${
+            stack.digest_enabled
+              ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+              : 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50]'
+          } disabled:opacity-50`}
+        >
+          {digestSaving ? '…' : stack.digest_enabled ? 'Ne plus suivre' : 'Suivre ce stack'}
+        </button>
+      </div>
+
       {/* ROI Tracker button — removed until feature is ready */}
     </motion.div>
   )
@@ -258,13 +301,14 @@ export default function StacksClient({
   stackSessionMap: Record<string, string>
 }) {
   const router = useRouter()
-  const [stacks, setStacks] = useState<Stack[]>(initialStacks)
+  const [stacks, setStacks] = useState<Stack[]>(() => initialStacks.map(normalizeStack))
   const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [digestSavingId, setDigestSavingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
@@ -292,6 +336,44 @@ export default function StacksClient({
       setSelectedIds(new Set())
     } else {
       setSelectedIds(new Set(filteredStacks.map(s => s.id)))
+    }
+  }
+
+  const trackedStack = stacks.find(s => s.digest_enabled)
+  const nextDigestDate = trackedStack ? getNextDigestDate(trackedStack.digest_enabled_at ?? null) : null
+
+  async function handleDigestToggle(stackId: string, enabled: boolean) {
+    setDigestSavingId(stackId)
+    setError(null)
+    try {
+      const res = await fetch(`/api/stacks/${stackId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ digest_enabled: enabled }),
+      })
+      if (!res.ok) throw new Error('DIGEST_UPDATE_FAILED')
+      const body = await res.json().catch(() => ({}))
+      const updated = body.stack as Stack | undefined
+      setStacks(prev =>
+        prev.map(s => {
+          if (s.id === stackId) {
+            return normalizeStack({
+              ...s,
+              digest_enabled: Boolean(updated?.digest_enabled ?? enabled),
+              digest_enabled_at: updated?.digest_enabled_at ?? (enabled ? new Date().toISOString() : null),
+            })
+          }
+          if (enabled) {
+            return { ...s, digest_enabled: false, digest_enabled_at: null }
+          }
+          return s
+        })
+      )
+      router.refresh()
+    } catch {
+      setError('Impossible de mettre à jour le suivi.')
+    } finally {
+      setDigestSavingId(null)
     }
   }
 
@@ -363,6 +445,25 @@ export default function StacksClient({
 
   return (
     <div className="flex flex-col gap-4">
+      {trackedStack && (
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+              Stack suivi : <span className="text-zinc-600 dark:text-zinc-300 font-medium">{trackedStack.name}</span>
+            </p>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Les digests automatiques (coûts, alternatives…) cibleront ce stack. Contenu à venir.
+            </p>
+          </div>
+          {nextDigestDate && (
+            <div className="text-right shrink-0">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400">Prochain digest (estimé)</p>
+              <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 capitalize">{formatDigestDate(nextDigestDate)}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Search input + bulk actions */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
@@ -465,6 +566,8 @@ export default function StacksClient({
             saving={saving}
             editName={editName}
             setEditName={setEditName}
+            digestSaving={digestSavingId === stack.id}
+            onToggleDigest={(enabled) => handleDigestToggle(stack.id, enabled)}
           />
         ))}
       </AnimatePresence>

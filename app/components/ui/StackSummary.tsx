@@ -15,7 +15,7 @@ export default function StackSummary({
     <div className="relative mb-6 border-2 border-[#CAFF32] bg-zinc-950 shadow-[0_0_30px_rgba(202,255,50,0.15)] overflow-hidden">
       <div className="relative p-6">
         <p className="font-dm-mono text-[0.7rem] text-[#CAFF32] font-black uppercase mb-2 tracking-[0.2em]">
-          ✦ Stack recommandé
+          ✦ Recommended stack
         </p>
         <h2 className="font-syne font-black text-3xl tracking-[-0.03em] text-white mb-3">
           {stackName}
@@ -28,16 +28,16 @@ export default function StackSummary({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[1px] bg-zinc-800">
           <div className="bg-zinc-900 px-5 py-4">
             <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
-              Coût total
+              Total cost
             </p>
             <p className="font-syne font-black text-2xl text-white">
               {total_cost}€
-              <span className="font-dm-sans text-xs font-normal text-zinc-500 ml-1">/m</span>
+              <span className="font-dm-sans text-xs font-normal text-zinc-500 ml-1">/mo</span>
             </p>
           </div>
           <div className="bg-zinc-900 px-5 py-4">
             <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
-              ROI estimé
+              Est. ROI
             </p>
             <p className="font-syne font-black text-2xl text-[#CAFF32]">
               +{roi_estimate}%
@@ -46,17 +46,17 @@ export default function StackSummary({
           {time_saved_per_week && (
             <div className="bg-zinc-900 px-5 py-4">
               <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
-                Temps gagné
+                Time saved
               </p>
               <p className="font-syne font-black text-2xl text-[#38bdf8]">
                 {time_saved_per_week}h
-                <span className="font-dm-sans text-xs font-normal text-zinc-500 ml-1">/s</span>
+                <span className="font-dm-sans text-xs font-normal text-zinc-500 ml-1">/wk</span>
               </p>
             </div>
           )}
           <div className="bg-zinc-900 px-5 py-4">
             <p className="font-dm-mono text-[0.6rem] text-zinc-500 font-bold uppercase mb-1 tracking-wider">
-              Outils
+              Tools
             </p>
             <p className="font-syne font-black text-2xl text-white">
               {agentCount}

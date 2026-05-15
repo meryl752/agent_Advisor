@@ -65,7 +65,7 @@ function SearchVisual({ accent }: { accent: string }) {
         <div className="relative h-full min-h-[160px] flex items-center justify-center p-6 overflow-hidden">
             <Spotlight fill={accent} />
             <div className="w-full max-w-xs relative z-10">
-                <div className="bg-white/90 shadow-sm border border-zinc-100 rounded-xl p-3 mb-3 flex items-center gap-2">
+                <div className="bg-white/90 shadow-sm rounded-xl p-3 mb-3 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full animate-pulse flex-shrink-0" style={{ background: accent }} />
                     <p className="text-xs text-zinc-600 font-medium">Je veux lancer une boutique Shopify...</p>
                 </div>
@@ -80,9 +80,9 @@ function SearchVisual({ accent }: { accent: string }) {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 + i * 0.15, type: 'spring', bounce: 0.4 }}
-                            className="bg-white border border-zinc-200 rounded-lg p-2 text-center shadow-sm"
+                            className="bg-white rounded-lg p-2 text-center shadow-sm"
                         >
-                            <div className="w-7 h-7 rounded-md mx-auto mb-1 flex items-center justify-center bg-zinc-50 border border-zinc-100">
+                            <div className="w-7 h-7 rounded-md mx-auto mb-1 flex items-center justify-center bg-zinc-50">
                                 <img src={getLogoUrl(t.domain)} alt={t.name} className="w-5 h-5 object-contain"
                                     onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                             </div>
@@ -300,9 +300,7 @@ function FeatureRow({ card, index }: { card: typeof CARDS[0], index: number }) {
 
             {/* Right — visual card */}
             <div className="flex items-center justify-center pl-0 md:pl-16">
-                <div className="group relative bg-white rounded-3xl border border-zinc-200
-                                hover:border-zinc-300 hover:shadow-xl transition-all duration-300
-                                overflow-hidden w-full max-w-sm">
+                <div className="group relative bg-white rounded-3xl overflow-hidden w-full max-w-sm transition-colors duration-300">
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
                         <Spotlight fill={card.accent} />
                     </div>
@@ -348,15 +346,6 @@ export default function Features() {
 
                 {/* Header */}
                 <div className="text-center mb-20">
-                    <motion.span
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={inView ? { opacity: 1, y: 0 } : {}}
-                        transition={{ duration: 0.5 }}
-                        className="inline-flex items-center gap-2 bg-zinc-900 text-[#CAFF32] text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-6"
-                    >
-                        Features
-                    </motion.span>
-
                     <TextGenerateEffect
                         words="No more guesswork. Go expert mode."
                         className="font-black text-zinc-900 leading-tight tracking-tight mb-4"

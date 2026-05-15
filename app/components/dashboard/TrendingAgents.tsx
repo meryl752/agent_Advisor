@@ -14,13 +14,13 @@ interface TrendingAgentsProps {
 }
 
 const CATEGORIES = [
-  { id: 'all', label: 'Tous' },
-  { id: 'copywriting', label: 'Rédaction' },
+  { id: 'all', label: 'All' },
+  { id: 'copywriting', label: 'Copywriting' },
   { id: 'automation', label: 'Automation' },
   { id: 'analytics', label: 'Analytics' },
   { id: 'image', label: 'Image' },
-  { id: 'research', label: 'Recherche' },
-  { id: 'prospecting', label: 'Prospection' },
+  { id: 'research', label: 'Research' },
+  { id: 'prospecting', label: 'Prospecting' },
 ]
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -69,10 +69,10 @@ export function TrendingAgents({ agents }: TrendingAgentsProps) {
       <div className="flex items-center justify-between mb-5">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 mb-1">
-            Tendances
+            Trends
           </p>
           <p className="text-sm font-medium text-zinc-900 dark:text-white">
-            Meilleurs outils du moment
+            Best tools right now
           </p>
         </div>
         <Link href="/dashboard/score" className="text-[10px] text-zinc-500 hover:text-[#CAFF32] transition-colors">

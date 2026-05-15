@@ -17,6 +17,20 @@ export const SidebarContext = createContext<{
 
 export function useSidebar() { return useContext(SidebarContext) }
 
+// ─── Static nav config — defined outside component to avoid hydration mismatch ─
+const NAV = [
+  { href: '/dashboard',            label: 'Overview',    icon: '/assets/icons svg/dashboard-browsing-stroke-rounded.svg' },
+  { href: '/dashboard/recommend',  label: 'Recommend',   icon: '/assets/icons svg/ai-cloud-02-stroke-rounded.svg', accent: true },
+  { href: '/dashboard/blueprint',  label: 'Blueprint',   icon: '/assets/icons svg/briefcase-08-stroke-rounded.svg' },
+  { href: '/dashboard/stack',      label: 'Stacks',      icon: '/assets/icons svg/bookmark-add-02-stroke-rounded.svg' },
+  { href: '/dashboard/roi',        label: 'ROI',         icon: '/assets/icons svg/add-money-circle-stroke-rounded.svg' },
+  { href: '/dashboard/alerts',     label: 'Alerts',      icon: '/assets/icons svg/bell-dot-stroke-rounded.svg' },
+  { href: '/dashboard/score',      label: 'Score',       icon: '/assets/icons svg/checkmark-circle-03-stroke-rounded.svg' },
+  { href: '/dashboard/settings',   label: 'Settings',    icon: '/assets/icons svg/setting-07-stroke-rounded.svg' },
+  { href: '/dashboard/billing',    label: 'Billing',     icon: '/assets/icons svg/invoice-01-stroke-rounded.svg' },
+  { href: '/dashboard/account',    label: 'Account',     icon: '/assets/icons svg/user-stroke-rounded.svg' },
+]
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -28,19 +42,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [langMenuOpen, setLangMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
-
-  const NAV = [
-    { href: '/dashboard',            label: 'Dashboard',   icon: '/assets/icons svg/dashboard-browsing-stroke-rounded.svg' },
-    { href: '/dashboard/recommend',  label: 'Recommend',   icon: '/assets/icons svg/ai-cloud-02-stroke-rounded.svg', accent: true },
-    { href: '/dashboard/blueprint',  label: 'Blueprint',   icon: '/assets/icons svg/briefcase-08-stroke-rounded.svg' },
-    { href: '/dashboard/stack',      label: 'Stacks',      icon: '/assets/icons svg/bookmark-add-02-stroke-rounded.svg' },
-    { href: '/dashboard/roi',        label: 'ROI',         icon: '/assets/icons svg/add-money-circle-stroke-rounded.svg' },
-    { href: '/dashboard/alerts',     label: 'Alerts',      icon: '/assets/icons svg/bell-dot-stroke-rounded.svg' },
-    { href: '/dashboard/score',      label: 'Score',       icon: '/assets/icons svg/checkmark-circle-03-stroke-rounded.svg' },
-    { href: '/dashboard/settings',   label: 'Settings',    icon: '/assets/icons svg/setting-07-stroke-rounded.svg' },
-    { href: '/dashboard/billing',    label: 'Billing',     icon: '/assets/icons svg/invoice-01-stroke-rounded.svg' },
-    { href: '/dashboard/account',    label: 'Account',     icon: '/assets/icons svg/user-stroke-rounded.svg' },
-  ]
 
   useEffect(() => {
     fetch('/api/onboarding/state')
@@ -71,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className={cn(
         'flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800/60 flex flex-col bg-[#FBFCF5] dark:bg-[#18181b] relative transition-all duration-300 ease-in-out overflow-hidden',
-        collapsed ? 'w-[60px]' : 'w-[240px]'
+        collapsed ? 'w-[60px]' : 'w-[220px]'
       )}>
         <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
           style={{ background: 'linear-gradient(to bottom, rgba(202,255,50,0.04), transparent)' }} />

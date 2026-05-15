@@ -61,7 +61,7 @@ export default function CoverageRing({ covered, total, score }: CoverageRingProp
             transition={{ delay: 1 }}
             className="font-dm-mono text-[9px] text-zinc-500 uppercase tracking-widest mt-0.5"
           >
-            couverture
+            coverage
           </motion.span>
         </div>
       </div>
@@ -75,7 +75,7 @@ export default function CoverageRing({ covered, total, score }: CoverageRingProp
       >
         <span className="text-zinc-900 dark:text-white font-bold">{covered}</span>
         <span className="text-zinc-400 dark:text-zinc-600">/{total}</span>
-        {' '}tâches couvertes
+        {' '}tasks covered
       </motion.p>
     </div>
   )

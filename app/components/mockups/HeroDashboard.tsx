@@ -7,9 +7,9 @@ import StackList from './StackList'
 import { motion } from 'framer-motion'
 
 const METRICS = [
-  { label: 'ROI ce mois', value: '+340€', sub: '↑ 23% vs mois dernier', variant: 'green' as const },
-  { label: 'Outils actifs', value: '7', sub: 'sur 12 recommandés', variant: 'default' as const },
-  { label: 'Stack Score', value: '84/100', sub: '↑ +6 cette semaine', variant: 'orange' as const },
+  { label: 'ROI this month', value: '+340€', sub: '↑ 23% vs last month', variant: 'green' as const },
+  { label: 'Active tools', value: '7', sub: 'out of 12 recommended', variant: 'default' as const },
+  { label: 'Stack Score', value: '84/100', sub: '↑ +6 this week', variant: 'orange' as const },
 ]
 
 const BARS = [
@@ -39,12 +39,7 @@ export default function HeroDashboard() {
           </div>
 
           {/* Bar chart */}
-          <div className="bg-bg-3 border border-border p-4">
-            <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-3">
-              Économies générées — 6 derniers mois
-            </p>
-            <BarChart bars={BARS} />
-          </div>
+          <BarChart bars={BARS} />
 
           {/* Stack list */}
           <StackList items={STACK_ITEMS} />

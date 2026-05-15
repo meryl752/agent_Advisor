@@ -37,8 +37,16 @@ export interface Database {
           score: number
           created_at: string
           updated_at: string
+          digest_enabled: boolean
+          digest_enabled_at: string | null
         }
-        Insert: Omit<Database['public']['Tables']['stacks']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Insert: Omit<
+          Database['public']['Tables']['stacks']['Row'],
+          'id' | 'created_at' | 'updated_at' | 'digest_enabled' | 'digest_enabled_at'
+        > & {
+          digest_enabled?: boolean
+          digest_enabled_at?: string | null
+        }
         Update: Partial<Database['public']['Tables']['stacks']['Insert']>
       }
       waitlist: {
@@ -70,6 +78,23 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at' | 'stacks_count'>
         Update: Partial<Database['public']['Tables']['users']['Insert']>
       }
+      stack_update_events: {
+        Row: {
+          id: string
+          stack_id: string
+          type: string
+          title: string
+          body: string
+          meta: Json
+          read_at: string | null
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['stack_update_events']['Row'], 'id' | 'created_at'> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['stack_update_events']['Insert']>
+      }
     }
   }
 }
@@ -78,3 +103,4 @@ export interface Database {
 export type Agent = Database['public']['Tables']['agents']['Row']
 export type Stack = Database['public']['Tables']['stacks']['Row']
 export type User = Database['public']['Tables']['users']['Row']
+export type StackUpdateEvent = Database['public']['Tables']['stack_update_events']['Row']

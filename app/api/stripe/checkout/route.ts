@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const { userId } = authObj
 
     if (!userId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const user = await currentUser()

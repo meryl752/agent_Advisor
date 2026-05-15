@@ -31,7 +31,7 @@ export default async function SettingsPage() {
   }
 
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
-  const stacks = await getUserStacks(user.id, clerkToken, email)
+  const { stacks } = await getUserStacks(user.id, clerkToken, email)
   const stackCount = stacks.length
 
   const planConfig = RATE_LIMIT_CONFIGS.find(c => c.plan === plan) ?? RATE_LIMIT_CONFIGS[0]

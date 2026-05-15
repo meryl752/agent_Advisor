@@ -27,8 +27,10 @@ export function AgentLog({ messages, reasoningStep, isTyping, phase, error, onRe
       {messages.map((msg, i) => (
         <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           {msg.role === 'user' ? (
-            <div className="bg-white text-zinc-900 rounded-2xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed font-medium shadow-sm self-end max-w-[90%] ml-auto">
-              {msg.text}
+            <div className="flex w-full min-w-0 justify-end">
+              <div className="bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 rounded-2xl rounded-tr-sm px-4 py-3 text-left text-[14px] leading-relaxed font-medium shadow-sm w-fit max-w-[90%] break-words">
+                {msg.text}
+              </div>
             </div>
           ) : msg.role === 'reasoning' ? (
             phase === 'error' ? null : (

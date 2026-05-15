@@ -1,5 +1,5 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { getUserStacks } from '@/lib/supabase/queries'
+import { getUserStacks, getStackUpdateEvents } from '@/lib/supabase/queries'
 import { Link } from '@/lib/i18n/navigation'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -7,6 +7,7 @@ import { supabaseService } from '@/lib/supabase/server'
 import OnboardingBanner from '@/app/components/dashboard/OnboardingBanner'
 import { MetricCard } from '@/app/components/dashboard/MetricCard'
 import { StackUpdatesFeed } from '@/app/components/dashboard/StackUpdatesFeed'
+import { getNextDigestDate, formatDigestDate } from '@/lib/utils/next-digest'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +34,7 @@ export default async function DashboardPage() {
   const firstName = user.firstName ?? 'toi'
   const userEmail = user.emailAddresses[0]?.emailAddress
 
-  const [stacks] = await Promise.all([
+  const [{ stacks, connectionFailed }] = await Promise.all([
     getUserStacks(user.id, clerkToken, userEmail),
   ])
 
@@ -57,6 +58,33 @@ export default async function DashboardPage() {
     : null
 
   const latestStack = stacks[0] ?? null
+  const trackedStack = stacks.find((s) => s.digest_enabled) ?? null
+
+  const anchorStackRaw = trackedStack ?? latestStack
+  const anchorStackMinimal =
+    anchorStackRaw?.id
+      ? { id: anchorStackRaw.id, name: anchorStackRaw.name?.trim() || 'Stack' }
+      : null
+
+  const trackedStackSummary = trackedStack
+    ? {
+        id: trackedStack.id,
+        name: trackedStack.name?.trim() || 'Stack',
+        digest_enabled_at:
+          (trackedStack as { digest_enabled_at?: string | null }).digest_enabled_at ?? null,
+      }
+    : null
+  const nextDigestAt = trackedStackSummary
+    ? getNextDigestDate(
+        trackedStackSummary.digest_enabled_at ?? null
+      )
+    : null
+  const nextDigestLabel = nextDigestAt ? formatDigestDate(nextDigestAt) : null
+
+  let trackedUpdates: Awaited<ReturnType<typeof getStackUpdateEvents>> = []
+  if (trackedStackSummary) {
+    trackedUpdates = await getStackUpdateEvents(trackedStackSummary.id, user.id, userEmail, 30)
+  }
 
   // Fetch session_id for each stack to enable navigation to conversations
   const stackIds = stacks.map(s => s.id).filter(Boolean)
@@ -75,6 +103,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
+
+      {connectionFailed && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+          <p className="font-semibold mb-1">Impossible de joindre Supabase</p>
+          <p className="text-xs opacity-90 leading-relaxed">
+            Les stacks ne peuvent pas être chargés (réseau, DNS, pare-feu, VPN ou projet Supabase en pause). Vérifie{' '}
+            <code className="rounded bg-black/10 px-1">NEXT_PUBLIC_SUPABASE_URL</code>,{' '}
+            <code className="rounded bg-black/10 px-1">SUPABASE_SERVICE_ROLE_KEY</code> dans{' '}
+            <code className="rounded bg-black/10 px-1">.env.local</code>, puis recharge la page.
+          </p>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className="flex items-end justify-between">
@@ -168,8 +208,14 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          {/* Stack Updates Feed */}
-          <StackUpdatesFeed stack={latestStack} />
+          {/* Stack Updates — aligné sur le stack « suivi » (digest), pas seulement le dernier créé */}
+          <StackUpdatesFeed
+            stackCount={stackCount}
+            anchorStack={anchorStackMinimal}
+            trackedStack={trackedStackSummary}
+            nextDigestLabel={nextDigestLabel}
+            initialUpdates={trackedUpdates}
+          />
         </div>
       )}
 

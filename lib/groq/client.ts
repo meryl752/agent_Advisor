@@ -13,8 +13,8 @@ export function getGroqClient(): Groq | null {
   return groqInstance
 }
 
-// Llama 4 Scout 17B — 30 000 TPM sur le plan gratuit (vs 12 000 pour Llama 3.3 70B)
-// Meilleur pour les gros prompts comme le buildStack
-export const GROQ_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
-// Llama 3.3 70B — fallback, excellent pour les petits prompts
+// Qwen 3 32B — priorité « familles chinoises » (Alibaba) : JSON / instructions ; Groq l’héberge
+export const GROQ_MODEL = 'qwen/qwen3-32b'
+
+// Llama 3.3 70B — secours stable si quotas / timeouts Qwen (TPM Groq, etc.)
 export const GROQ_MODEL_FALLBACK = 'llama-3.3-70b-versatile'

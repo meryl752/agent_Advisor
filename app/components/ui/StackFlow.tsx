@@ -31,7 +31,7 @@ export default function StackFlow({ agents, stackName }: StackFlowProps) {
   return (
     <div className="border border-border bg-bg-2 p-5">
       <p className="font-dm-mono text-[0.65rem] text-muted uppercase mb-4">
-        Flux d'exécution — {stackName}
+        Execution flow — {stackName}
       </p>
 
       <div className="flex items-center gap-0 overflow-x-auto pb-2">
@@ -91,7 +91,7 @@ export default function StackFlow({ agents, stackName }: StackFlowProps) {
       </div>
 
       <p className="font-dm-mono text-[0.6rem] text-muted mt-3">
-        ↑ Passe la souris sur un agent pour voir son rôle
+        ↑ Hover over an agent to see its role
       </p>
     </div>
   )

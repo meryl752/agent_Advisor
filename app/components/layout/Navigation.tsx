@@ -42,7 +42,7 @@ export default function Navigation() {
             <Link href="/dashboard"
               className="font-dm-mono text-[0.72rem] uppercase
                          text-muted-2 hover:text-accent transition-colors">
-              Dashboard
+              Overview
             </Link>
             <UserButton
               appearance={{
@@ -60,12 +60,12 @@ export default function Navigation() {
             <Link href="/sign-in"
               className="font-dm-mono text-[0.72rem] uppercase
                          text-muted-2 hover:text-accent transition-colors">
-              Connexion
+              Sign in
             </Link>
             <Link href="/sign-up"
               className="bg-accent text-bg font-syne font-bold text-[0.8rem]
                          px-[22px] py-[10px] hover:opacity-85 hover:-translate-y-px transition-all duration-150">
-              Commencer →
+              Get started →
             </Link>
           </>
         )}

@@ -17,7 +17,10 @@ export function getCerebrasClient(): OpenAI | null {
   return cerebrasInstance
 }
 
-// Llama 3.1 70B — ~2000 tokens/sec, excellent for structured JSON output
-export const CEREBRAS_MODEL = 'llama3.1-70b'
-// Llama 3.1 8B — faster, for small prompts
-export const CEREBRAS_MODEL_FAST = 'llama3.1-8b'
+// Qwen 3 235B (MoE — 22B active params) — meilleur raisonnement structuré
+// Excellent pour les prompts complexes (enrichissement narratif, analyse)
+// ⚠️ Preview — déprécié le 27 mai 2026, basculer sur GPT-OSS 120B après
+export const CEREBRAS_MODEL = 'qwen-3-235b-a22b-instruct-2507'
+
+// GPT-OSS 120B — production stable, fallback fiable
+export const CEREBRAS_MODEL_FALLBACK = 'gpt-oss-120b'

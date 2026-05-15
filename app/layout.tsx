@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, DM_Mono, DM_Sans } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 import { ThemeProvider } from '@/app/components/ThemeProvider'
+import { getClerkPreconnectOrigin } from '@/lib/clerk/preconnect-origin'
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -63,8 +64,14 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const clerkOrigin = getClerkPreconnectOrigin()
+
   return (
     <ClerkProvider
+      dynamic
+      {...(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        ? { publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }
+        : {})}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
@@ -84,6 +91,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${plusJakarta.variable} ${dmMono.variable} ${dmSans.variable}`}
         suppressHydrationWarning
       >
+        <head>
+          {clerkOrigin ? (
+            <>
+              <link rel="preconnect" href={clerkOrigin} crossOrigin="anonymous" />
+              <link rel="dns-prefetch" href={clerkOrigin} />
+            </>
+          ) : null}
+        </head>
         <body className="antialiased">
           <ThemeProvider
             attribute="class"

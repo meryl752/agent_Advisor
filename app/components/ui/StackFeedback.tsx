@@ -99,7 +99,7 @@ export default function StackFeedback({ stackId, agents }: Props) {
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-900/40 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-zinc-300">Évaluer cette recommandation</span>
+          <span className="text-sm font-medium text-zinc-300">Rate this recommendation</span>
           {stackRating > 0 && (
             <span className="text-xs text-[#CAFF32]">{'★'.repeat(stackRating)}</span>
           )}
@@ -120,12 +120,12 @@ export default function StackFeedback({ stackId, agents }: Props) {
 
               {/* Global stack rating */}
               <div className="pt-4">
-                <p className="text-xs text-zinc-400 mb-2">Note globale de la recommandation</p>
+                <p className="text-xs text-zinc-400 mb-2">Overall stack rating</p>
                 <StarRating value={stackRating} onChange={setStackRating} />
                 <textarea
                   value={stackComment}
                   onChange={e => setStackComment(e.target.value)}
-                  placeholder="Un commentaire sur la pertinence de ce stack ? (optionnel)"
+                  placeholder="Any comment on the relevance of this stack? (optional)"
                   rows={2}
                   className="mt-3 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none resize-none focus:border-zinc-600 transition-colors"
                 />
@@ -133,7 +133,7 @@ export default function StackFeedback({ stackId, agents }: Props) {
 
               {/* Per-agent ratings */}
               <div>
-                <p className="text-xs text-zinc-400 mb-3">Note par outil</p>
+                <p className="text-xs text-zinc-400 mb-3">Rate per tool</p>
                 <div className="flex flex-col gap-4">
                   {agents.map((agent, i) => (
                     <div key={agent.id} className="flex flex-col gap-1.5">
@@ -148,7 +148,7 @@ export default function StackFeedback({ stackId, agents }: Props) {
                         type="text"
                         value={agentRatings[i]?.comment ?? ''}
                         onChange={e => updateAgentRating(i, 'comment', e.target.value)}
-                        placeholder={`Commentaire sur ${agent.name}… (optionnel)`}
+                        placeholder={`Comment on ${agent.name}… (optional)`}
                         className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-zinc-600 transition-colors"
                       />
                     </div>
@@ -163,7 +163,7 @@ export default function StackFeedback({ stackId, agents }: Props) {
                 className="self-start px-5 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: saved ? '#34D399' : '#CAFF32', color: '#0a0a0a' }}
               >
-                {saving ? 'Sauvegarde…' : saved ? '✓ Sauvegardé' : 'Envoyer l\'évaluation'}
+                {saving ? 'Saving…' : saved ? '✓ Saved' : 'Submit rating'}
               </button>
             </div>
           </motion.div>

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   try {
     const { userId } = await auth()
     if (!userId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get stripe_customer_id from Supabase

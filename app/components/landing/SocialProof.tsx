@@ -2,29 +2,29 @@ import { InfiniteMovingCards } from "../ui/infinite-moving-cards";
 
 const stats = [
   {
-    quote: "127 stacks générés cette semaine",
-    name: "Performances Plateforme",
-    title: "Data Interne",
+    quote: "127 stacks generated this week",
+    name: "Platform Performance",
+    title: "Internal Data",
   },
   {
-    quote: "Secteur le plus actif : E-commerce",
-    name: "Tendances B2B",
-    title: "Insight Marché",
+    quote: "Most active sector: E-commerce",
+    name: "B2B Trends",
+    title: "Market Insight",
   },
   {
-    quote: "ROI moyen estimé par nos stacks : +340%",
-    name: "Moyenne Utilisateurs",
-    title: "Statistique Clé",
+    quote: "Average estimated ROI from our stacks: +340%",
+    name: "User Average",
+    title: "Key Stat",
   },
   {
-    quote: "Gain de temps moyen : 12h/semaine par collaborateur",
-    name: "Enquête Utilisateurs",
-    title: "Impact Direct",
+    quote: "Average time saved: 12h/week per team member",
+    name: "User Survey",
+    title: "Direct Impact",
   },
   {
-    quote: "Plus de 10.000 tâches automatisées chaque jour",
-    name: "Volume d'Exécution",
-    title: "Dashboard Monde",
+    quote: "Over 10,000 tasks automated every day",
+    name: "Execution Volume",
+    title: "Global Dashboard",
   },
 ];
 
@@ -34,10 +34,10 @@ export default function SocialProof() {
       <div className="max-w-7xl mx-auto px-6 mb-16 text-center">
         <h2 className="font-black text-zinc-900 leading-tight mb-4"
             style={{ fontSize: 'clamp(2rem, 3vw, 3rem)' }}>
-          La preuve en chiffres
+          Proof in numbers
         </h2>
         <p className="text-zinc-500 text-lg max-w-2xl mx-auto font-medium">
-          L'impact réel de l'automatisation sur nos beta-testeurs cette semaine.
+          The real impact of automation on our beta testers this week.
         </p>
       </div>
       

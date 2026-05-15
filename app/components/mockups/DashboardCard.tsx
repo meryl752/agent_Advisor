@@ -9,7 +9,7 @@ interface DashboardMetric {
 
 export default function DashboardCard({ label, value, sub, variant = 'default' }: DashboardMetric) {
   return (
-    <div className="bg-bg-3 border border-border px-4 py-[14px]">
+    <div className="bg-bg-3 px-4 py-[14px]">
       <p className="font-dm-mono text-[0.6rem] text-muted uppercase mb-[6px]">
         {label}
       </p>

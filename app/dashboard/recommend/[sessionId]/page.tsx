@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
@@ -11,6 +12,8 @@ import { ThemeToggle } from '@/app/components/ThemeToggle'
 import { AgentLog } from '../_components/AgentLog'
 import { ConversationSidebar } from '../_components/ConversationSidebar'
 import { type Phase, type Message, type ApiError, REASONING_STEPS, extractContext } from '../_components/types'
+import { SUPPORTED_REASONING_MODELS, type ReasoningModelId } from '@/lib/constants'
+import { useTheme } from 'next-themes'
 
 const StackRoadmap = dynamic(() => import('@/app/components/ui/StackRoadmap'), { ssr: false })
 const StackArtifact = dynamic(() => import('@/app/components/ui/StackArtifact'), { ssr: false })
@@ -156,6 +159,118 @@ function StackDirectory({ currentSessionId, onSelectStack }: { currentSessionId:
   )
 }
 
+// ─── Chat Model Selector ──────────────────────────────────────────────────────
+
+function ChatModelSelector() {
+  const [model, setModel] = useState<ReasoningModelId>('qwen-235b')
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const [mounted, setMounted] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const { resolvedTheme } = useTheme()
+  const isDark = mounted && resolvedTheme === 'dark'
+
+  useEffect(() => { setMounted(true) }, [])
+
+  const openMenu = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setPos({ top: rect.top - 8, left: rect.left })
+    }
+    setOpen(v => !v)
+  }
+
+  const iconFor = (id: string) =>
+    id.startsWith('qwen') ? 'qwen-stroke-rounded.svg' :
+    id.startsWith('llama') ? 'meta-stroke-rounded.svg' :
+    id.startsWith('gpt') ? 'chat-gpt-stroke-rounded (1).svg' :
+    'google-gemini-stroke-rounded.svg'
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={openMenu}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+      >
+        <img
+          src={`/assets/icons svg/${iconFor(model)}`}
+          alt="icon"
+          className="w-3 h-3 dark:invert opacity-70"
+        />
+        <span className="text-[11px] font-dm-sans text-zinc-600 dark:text-zinc-300 lowercase">
+          {SUPPORTED_REASONING_MODELS.find(m => m.id === model)?.name.toLowerCase()}
+        </span>
+        <svg className={`w-2.5 h-2.5 text-zinc-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {mounted && createPortal(
+        <AnimatePresence>
+          {open && (
+            <>
+              <div className="fixed inset-0" style={{ zIndex: 998 }} onClick={() => setOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                style={{
+                  position: 'fixed',
+                  bottom: `calc(100vh - ${pos.top}px)`,
+                  left: pos.left,
+                  zIndex: 999,
+                  width: '208px',
+                  backgroundColor: isDark ? '#18181b' : '#ffffff',
+                  border: `2px solid ${isDark ? '#27272a' : '#e4e4e7'}`,
+                  borderRadius: '12px',
+                  padding: '6px',
+                  boxShadow: '0 -8px 40px rgba(0,0,0,0.4)',
+                }}
+              >
+                <div style={{ padding: '6px 12px 6px', borderBottom: `1px solid ${isDark ? '#27272a' : '#f0f0f0'}`, marginBottom: 4 }}>
+                  <p style={{ fontSize: 9, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, color: '#71717a', textTransform: 'lowercase' }}>moteur de raisonnement</p>
+                </div>
+                {SUPPORTED_REASONING_MODELS.map(m => {
+                  const active = m.id === model
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => { setModel(m.id); setOpen(false) }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '8px 12px', borderRadius: '8px', textAlign: 'left',
+                        background: active ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)') : 'transparent',
+                        cursor: 'pointer', border: 'none', transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}
+                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                    >
+                      <img
+                        src={`/assets/icons svg/${iconFor(m.id)}`}
+                        alt={m.name}
+                        style={{ width: 14, height: 14, opacity: active ? 1 : 0.4, filter: isDark ? 'invert(1)' : 'none' }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
+                        <span style={{ fontSize: 11, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: isDark ? (active ? '#fff' : '#71717a') : (active ? '#18181b' : '#71717a'), textTransform: 'lowercase' }}>
+                          {m.name.toLowerCase()}
+                        </span>
+                        <span style={{ fontSize: 9, color: '#71717a' }}>{m.provider.toLowerCase()}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
+  )
+}
+
 // ─── Main session page ────────────────────────────────────────────────────────
 
 export default function SessionPage() {
@@ -238,7 +353,8 @@ export default function SessionPage() {
                       agents: stackData.stack.agents, 
                       ctx: { 
                         objective: stackData.objective || stackData.stack.stack_name, 
-                        tech_level: 'intermediate' 
+                        tech_level: 'intermediate',
+                        preferred_model: sessionStorage.getItem(`session_model_${sessionId}`) || undefined
                       } 
                     }),
                   }).then(async res => {
@@ -331,7 +447,14 @@ export default function SessionPage() {
     fetch('/api/guides', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agents: stack.agents, ctx: { objective: stack.stack_name, tech_level: 'intermediate' } }),
+      body: JSON.stringify({ 
+        agents: stack.agents, 
+        ctx: { 
+          objective: stack.stack_name, 
+          tech_level: 'intermediate',
+          preferred_model: sessionStorage.getItem(`session_model_${sessionId}`) || undefined
+        } 
+      }),
     }).then(async res => {
       if (!res.ok || !res.body) return
       const reader = res.body.getReader()
@@ -368,9 +491,20 @@ export default function SessionPage() {
       const hasReasoning = prev.some(m => m.role === 'reasoning')
       return hasReasoning ? prev : [...prev, { role: 'reasoning' }]
     })
+    const preferred_model = sessionStorage.getItem(`session_model_${sessionId}`) || undefined
     fetch('/api/recommend', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ objective: ans.objective, sector: ans.sector ?? 'général', budget: ans.budget ?? 'medium', tech_level: ans.tech_level ?? 'intermediate', team_size: 'solo', timeline: 'weeks', current_tools: [], session_id: sessionId }),
+      body: JSON.stringify({ 
+        objective: ans.objective, 
+        sector: ans.sector ?? 'général', 
+        budget: ans.budget ?? 'medium', 
+        tech_level: ans.tech_level ?? 'intermediate', 
+        team_size: 'solo', 
+        timeline: 'weeks', 
+        current_tools: [], 
+        session_id: sessionId,
+        preferred_model
+      }),
     }).then(async res => {
       const data = await res.json()
       if (!res.ok) {
@@ -618,6 +752,9 @@ export default function SessionPage() {
                 placeholder={phase === 'results' ? 'Ask about your stack or request changes...' : 'Describe what you want to build...'}
                 rows={2} disabled={phase === 'reasoning'}
                 className="w-full bg-transparent text-zinc-800 dark:text-zinc-200 text-sm px-4 pt-3 pb-10 outline-none resize-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 leading-relaxed disabled:opacity-40" />
+              <div className="absolute bottom-2.5 left-3 right-12 flex items-center">
+                <ChatModelSelector />
+              </div>
               <div className="absolute bottom-2.5 right-3">
                 <button onClick={handleSend} disabled={!input.trim() || phase === 'reasoning'}
                   className="w-8 h-8 rounded-lg bg-[#CAFF32] text-zinc-900 font-bold text-sm hover:bg-[#d4ff50] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center">↑</button>

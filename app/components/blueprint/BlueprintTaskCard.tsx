@@ -111,7 +111,7 @@ function AgentChip({ agent, inStack, onAdd, stackFull, plan }: AgentChipProps) {
               ? 'bg-[#CAFF32]/10 text-[#CAFF32] border border-[#CAFF32]/20 cursor-default'
               : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-white'
           )}>
-          {(added || inStack) ? '✓ Ajouté' : '+ Ajouter'}
+          {(added || inStack) ? '✓ Added' : '+ Add'}
         </button>
       </div>
 
@@ -229,7 +229,7 @@ export default function BlueprintTaskCard({
                   ))}
                   {agents.length > 4 && (
                     <p className="font-dm-mono text-[10px] text-zinc-400 dark:text-zinc-600 text-center pt-1">
-                      +{agents.length - 4} autres outils disponibles
+                      +{agents.length - 4} more tools available
                     </p>
                   )}
                 </div>

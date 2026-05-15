@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSector } from '@/lib/blueprint/sectors'
 import { getAgentsByCategories } from '@/lib/supabase/queries'
+import { filterCatalogAgents } from '@/lib/catalog/icpFilter'
 import type { Agent } from '@/lib/supabase/types'
 import type { BlueprintTask, SectorConfig } from '@/lib/blueprint/sectors'
 
@@ -42,7 +43,8 @@ export async function GET(
   try {
     // Collect all unique categories from this sector's tasks
     const categories = [...new Set(sector.tasks.map(t => t.category))]
-    const agents = await getAgentsByCategories(categories)
+    const rawAgents = await getAgentsByCategories(categories)
+    const agents = filterCatalogAgents(rawAgents)
 
     // Map agents to each task
     const tasks: BlueprintTaskWithAgents[] = sector.tasks.map(task => ({

@@ -10,9 +10,9 @@ interface DashboardCard {
 }
 
 const CARDS: DashboardCard[] = [
-  { label: 'ROI ce mois', value: '+340€', sub: '↑ 23% vs mois dernier', valueColor: '#C8F135' },
-  { label: 'Outils actifs', value: '7', sub: 'sur 12 recommandés' },
-  { label: 'Stack Score', value: '84/100', sub: '↑ +6 cette semaine', valueColor: '#ff6b2b' },
+  { label: 'ROI this month', value: '+340€', sub: '↑ 23% vs last month', valueColor: '#C8F135' },
+  { label: 'Active tools', value: '7', sub: 'out of 12 recommended' },
+  { label: 'Stack Score', value: '84/100', sub: '↑ +6 this week', valueColor: '#ff6b2b' },
 ]
 
 const BARS = [
@@ -67,7 +67,7 @@ export default function DashboardMockup() {
       {/* Bar chart */}
       <div className="p-4" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
         <div className="font-dm-mono text-[0.6rem] text-[#444] uppercase mb-3">
-          Économies générées — 6 derniers mois
+          Savings generated — last 6 months
         </div>
         <div className="flex items-end gap-[6px] h-[60px]">
           {BARS.map((bar, i) => (
@@ -89,7 +89,7 @@ export default function DashboardMockup() {
       {/* Stack list */}
       <div className="p-[14px]" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
         <div className="font-dm-mono text-[0.6rem] text-[#444] uppercase mb-[10px]">
-          Ton stack actuel
+          Your current stack
         </div>
         {STACK_ITEMS.map((item) => (
           <div

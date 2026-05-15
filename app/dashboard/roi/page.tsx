@@ -13,7 +13,7 @@ export default async function ROIPage() {
 
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
   const userEmail = user.emailAddresses[0]?.emailAddress
-  const stacks = await getUserStacks(user.id, clerkToken, userEmail)
+  const { stacks } = await getUserStacks(user.id, clerkToken, userEmail)
 
   const totalROI = stacks.reduce((sum, s) => sum + s.roi_estimate, 0)
   const totalCost = stacks.reduce((sum, s) => sum + s.total_cost, 0)

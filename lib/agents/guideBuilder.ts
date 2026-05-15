@@ -1,18 +1,19 @@
 /**
  * guideBuilder — Agent 4
  *
- * For each agent in the stack:
- * 1. Check Supabase cache (avoid burning Tavily credits)
- * 2. If miss: search Tavily for official setup docs (1 credit)
- * 3. LLM synthesizes a structured step-by-step guide from the docs
- * 4. Cache result for 30 days
+ * Pour chaque agent du stack :
+ * 1. Cache Supabase (économise les crédits Tavily)
+ * 2. Si miss : recherche Tavily (1 crédit)
+ * 3. LLM : synthèse structurée des étapes
+ * 4. Mise en cache 30 jours
  *
- * All agents are processed in parallel to minimize latency.
+ * Concurrence maîtrisée : au plus 2 agents traités en parallèle (voir buildGuides).
  */
 
 import { callLLM } from '@/lib/llm/router'
 import { buildSearchQuery, searchTavily } from '@/lib/tavily/client'
 import { getCachedGuide, setCachedGuide } from '@/lib/tavily/cache'
+import { repairTruncatedJSON } from '@/lib/utils/jsonRepair'
 import type { StackAgent, ImplementationStep, UserContext } from './types'
 
 const TECH_LEVEL_FR: Record<string, string> = {
@@ -21,12 +22,41 @@ const TECH_LEVEL_FR: Record<string, string> = {
   advanced:     'développeur — peut coder et configurer des APIs',
 }
 
+function stripLlmNoise(raw: string): string {
+  return raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+}
+
+/**
+ * Extrait et parse le tableau JSON des étapes ; tente une réparation si tronqué.
+ */
+function parseImplementationStepsFromText(text: string): ImplementationStep[] | null {
+  const cleaned = stripLlmNoise(text)
+  const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
+  if (!jsonMatch) return null
+  const slice = jsonMatch[0]
+  try {
+    const steps = JSON.parse(slice) as ImplementationStep[]
+    return Array.isArray(steps) && steps.length > 0 ? steps : null
+  } catch {
+    try {
+      const repaired = repairTruncatedJSON(slice)
+      const steps = JSON.parse(repaired) as ImplementationStep[]
+      return Array.isArray(steps) && steps.length > 0 ? steps : null
+    } catch {
+      return null
+    }
+  }
+}
+
 /**
  * Build a precise task description for Tavily search.
  * Combines the agent's role in the stack with the user's objective.
  */
 function buildTaskDescription(agent: StackAgent, objective: string): string {
-  // Extract the core action from the role — keep it short for search
   const roleKeywords = agent.role
     .replace(/[^a-zA-ZÀ-ÿ\s]/g, ' ')
     .split(' ')
@@ -43,11 +73,11 @@ function buildTaskDescription(agent: StackAgent, objective: string): string {
 async function buildAgentGuide(
   agent: StackAgent,
   objective: string,
-  techLevel: string
+  techLevel: string,
+  preferredModel?: string
 ): Promise<ImplementationStep[]> {
   const task = buildTaskDescription(agent, objective)
 
-  // 1. Check cache first — avoid Tavily credit burn
   const cached = await getCachedGuide(agent.name, task)
   if (cached) {
     try {
@@ -55,12 +85,10 @@ async function buildAgentGuide(
     } catch { /* cache corrupted, proceed */ }
   }
 
-  // 2. Tavily search — 1 credit
   const domain = agent.website_domain ?? ''
   const query = buildSearchQuery(agent.name, domain, task)
   const searchResults = await searchTavily(query)
 
-  // 3. Build context from search results
   const docsContext = searchResults.length > 0
     ? searchResults.map((r, i) =>
         `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content.slice(0, 600)}`
@@ -69,7 +97,6 @@ async function buildAgentGuide(
 
   const sourceUrls = searchResults.map(r => r.url)
 
-  // 4. LLM prompt — surgical and structured
   const prompt = `Tu es un expert en implémentation d'outils SaaS et IA. Tu dois créer un guide d'implémentation COMPLET et PRÉCIS pour configurer ${agent.name} dans le contexte suivant.
 
 <context>
@@ -111,20 +138,28 @@ JSON strict uniquement. Zéro markdown. Zéro texte avant ou après.
 ]
 </output_format>`
 
+  const compactRetryPrompt = `Tu écris un guide d'implémentation pour l'outil "${agent.name}" (rôle dans le projet: "${agent.role}", objectif utilisateur: "${objective}").
+Renvoie UNIQUEMENT un tableau JSON valide, 6 à 10 objets, format exact:
+[{"step":1,"title":"...","action":"...","details":"...","tip":null}, ...]
+Contraintes: français, étapes concrètes et ordonnées, zéro markdown, zéro texte hors du tableau.`
+
   try {
-    const text = await callLLM(prompt, 2000)
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) throw new Error('No JSON array in response')
+    let steps: ImplementationStep[] | null = null
+    for (let attempt = 0; attempt < 2 && !steps; attempt++) {
+      const userPrompt = attempt === 0 ? prompt : compactRetryPrompt
+      const text = await callLLM(userPrompt, 2000, preferredModel)
+      steps = parseImplementationStepsFromText(text)
+    }
 
-    const steps = JSON.parse(jsonMatch[0]) as ImplementationStep[]
+    if (!steps || steps.length === 0) {
+      throw new Error('No JSON array in response after repair and retry')
+    }
 
-    // Inject source URLs into relevant steps
     const enriched = steps.map((s, i) => ({
       ...s,
       source_url: i === 0 && sourceUrls[0] ? sourceUrls[0] : undefined,
     }))
 
-    // 5. Cache for 30 days
     await setCachedGuide(agent.name, task, JSON.stringify(enriched))
 
     return enriched
@@ -147,11 +182,10 @@ export async function buildGuides(
   const enrichedAgents: StackAgent[] = []
   const BATCH_SIZE = 2
 
-  // Process in batches of 2
   for (let i = 0; i < agents.length; i += BATCH_SIZE) {
     const batch = agents.slice(i, i + BATCH_SIZE)
     const results = await Promise.allSettled(
-      batch.map(agent => buildAgentGuide(agent, ctx.objective, ctx.tech_level))
+      batch.map(agent => buildAgentGuide(agent, ctx.objective, ctx.tech_level, ctx.preferred_model))
     )
 
     batch.forEach((agent, idx) => {

@@ -19,13 +19,13 @@ const stackChatSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const user = await currentUser()
-  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   setSentryUser(user.id)
 
   const body = await req.json().catch(() => null)
   if (!body) {
-    return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
   const validation = stackChatSchema.safeParse(body)
 
@@ -65,6 +65,6 @@ Réponds en 2-4 phrases maximum. Sois direct, concret et actionnable.
     return NextResponse.json({ response })
   } catch (err) {
     captureError(err, { endpoint: '/api/stack-chat', action: 'llm_chat' })
-    return NextResponse.json({ error: 'Erreur LLM — réessaie dans un instant.' }, { status: 500 })
+    return NextResponse.json({ error: 'LLM error — please retry in a moment.' }, { status: 500 })
   }
 }

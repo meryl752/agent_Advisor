@@ -5,14 +5,14 @@ export default function ROIMock() {
     <div className="p-5 h-full flex flex-col gap-[10px]">
       <div className="flex gap-[10px]">
         <div className="bg-bg-3 border border-border p-3 flex-1">
-          <p className="font-dm-mono text-[0.58rem] text-muted uppercase">Économies totales</p>
+          <p className="font-dm-mono text-[0.58rem] text-muted uppercase">Total savings</p>
           <p className="font-syne font-extrabold text-[1.6rem] text-accent mt-[2px]">+340€</p>
           <span className="font-dm-mono text-[0.6rem] text-[#3d6e00] bg-accent/8 px-[7px] py-[2px] inline-block mt-1">
-            ↑ +23% ce mois
+            ↑ +23% this month
           </span>
         </div>
         <div className="bg-bg-3 border border-border p-3 flex-1">
-          <p className="font-dm-mono text-[0.58rem] text-muted uppercase">Dépenses outils</p>
+          <p className="font-dm-mono text-[0.58rem] text-muted uppercase">Tool spend</p>
           <p className="font-syne font-extrabold text-[1.6rem] text-cream mt-[2px]">112€</p>
           <span className="font-dm-mono text-[0.6rem] text-muted bg-bg-3 px-[7px] py-[2px] inline-block mt-1">
             ─ Stable
@@ -20,7 +20,7 @@ export default function ROIMock() {
         </div>
       </div>
       <div className="bg-bg-3 border border-border flex-1 p-[10px] px-[14px]">
-        <p className="font-dm-mono text-[0.58rem] text-muted uppercase">Évolution ROI</p>
+        <p className="font-dm-mono text-[0.58rem] text-muted uppercase">ROI trend</p>
         <div className="flex items-end gap-[3px] h-10 mt-1">
           {SPARKS.map((h, i) => (
             <div

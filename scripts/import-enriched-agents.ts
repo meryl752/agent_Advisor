@@ -10,6 +10,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { embeddingService } from '../lib/embeddings/service'
+import { buildAgentDocumentText } from '../lib/embeddings/buildAgentDocumentText'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -59,13 +60,14 @@ async function loadAllBatches(dir: string): Promise<EnrichedAgent[]> {
 }
 
 async function generateEmbedding(agent: EnrichedAgent): Promise<number[]> {
-  const text = [
-    agent.name,
-    agent.description || '',
-    ...agent.use_cases.slice(0, 5),
-    ...agent.best_for.slice(0, 3),
-  ].filter(Boolean).join('. ')
-  
+  const text = buildAgentDocumentText({
+    name: agent.name,
+    category: agent.category,
+    description: agent.description,
+    use_cases: agent.use_cases,
+    best_for: agent.best_for,
+    not_for: agent.not_for,
+  })
   const result = await embeddingService.generate(text)
   return result.vector
 }

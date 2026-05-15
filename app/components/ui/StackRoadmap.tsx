@@ -154,11 +154,13 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
         <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">{agent.role}</p>
 
         {/* Concrete result */}
-        <div className="rounded-xl p-3 mb-4"
-          style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
-          <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color }}>Result</p>
-          <p className="text-sm text-zinc-300 leading-relaxed">{agent.concrete_result}</p>
-        </div>
+        {agent.concrete_result && (
+          <div className="rounded-xl p-3 mb-4"
+            style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
+            <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color }}>Result</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">{agent.concrete_result}</p>
+          </div>
+        )}
 
         {/* Prompt / guide */}
         {agent.prompt_to_use && (
@@ -168,7 +170,7 @@ function AgentCard({ agent, index, total }: { agent: StackAgent; index: number; 
                 {isLLM ? 'Prompt' : 'Quick start'}
               </p>
               <button
-                onClick={() => { navigator.clipboard.writeText(agent.prompt_to_use); setCopied(true); setTimeout(() => setCopied(false), 1800) }}
+                onClick={() => { navigator.clipboard.writeText(agent.prompt_to_use!); setCopied(true); setTimeout(() => setCopied(false), 1800) }}
                 className="text-[10px] px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all">
                 {copied ? '✓' : '⎘ Copy'}
               </button>

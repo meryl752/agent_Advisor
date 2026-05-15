@@ -1,5 +1,22 @@
 const { withSentryConfig } = require('@sentry/nextjs')
 
+/**
+ * @returns {string | null} Valeur pour l'en-tête HTTP Link (preconnect Clerk)
+ */
+function clerkPreconnectLinkHeader() {
+  const raw =
+    process.env.NEXT_PUBLIC_CLERK_PRECONNECT_ORIGIN?.trim() ||
+    process.env.NEXT_PUBLIC_CLERK_DOMAIN?.trim()
+  if (!raw) return null
+  try {
+    const url = raw.startsWith('http') ? raw : `https://${raw.replace(/^https?:\/\//, '').split('/')[0]}`
+    const origin = new URL(url).origin
+    return `<${origin}>; rel=preconnect; crossorigin`
+  } catch {
+    return null
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -10,6 +27,16 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.supabase.co' },
       { protocol: 'https', hostname: 'www.google.com' },
     ],
+  },
+  async headers() {
+    const link = clerkPreconnectLinkHeader()
+    if (!link) return []
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'Link', value: link }],
+      },
+    ]
   },
 }
 

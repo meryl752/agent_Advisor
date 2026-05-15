@@ -1,9 +1,11 @@
 import { getGroqClient, GROQ_MODEL, GROQ_MODEL_FALLBACK } from '@/lib/groq/client'
-import { getAnthropicClient, CLAUDE_MODEL } from '@/lib/anthropic/client'
-import { getGeminiClient } from '@/lib/gemini/client'
-import { getCerebrasClient, CEREBRAS_MODEL, CEREBRAS_MODEL_FAST } from '@/lib/cerebras/client'
+import { getGeminiModel, GEMMA_MODEL, GEMINI_MODEL } from '@/lib/gemini/client'
+import { getCerebrasClient, CEREBRAS_MODEL, CEREBRAS_MODEL_FALLBACK } from '@/lib/cerebras/client'
+import { llmLog, llmWarn } from '@/lib/llm/debug'
+import { withProviderRetries } from '@/lib/llm/retry'
 
-const CALL_TIMEOUT_MS = 10000 // 10s — timeout raisonnable pour une bonne UX web
+const CALL_TIMEOUT_MS = 15000 // prompts courts / chat
+const CALL_TIMEOUT_MS_LONG = 45000 // sorties longues (guides, enrichissement)
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -14,222 +16,155 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ])
 }
 
-async function callGroq(prompt: string, maxTokens: number, retryCount = 0): Promise<string> {
+// ─── Internal Callers ────────────────────────────────────────────────────────
+
+async function callGroqDirect(prompt: string, maxTokens: number, modelId: string): Promise<string> {
   const client = getGroqClient()
-  if (!client) {
-    throw new Error('Groq not configured')
-  }
-  
-  // Toujours utiliser Llama (GROQ_MODEL) en premier
-  // Qwen (GROQ_MODEL_FALLBACK) uniquement en retry sur petits prompts
-  const promptTokensEstimate = Math.ceil(prompt.length / 4)
-  const totalTokensEstimate = promptTokensEstimate + maxTokens
-  const isLargePrompt = totalTokensEstimate > 4000
-
-  // Gros prompt → toujours Llama (Qwen ne peut pas gérer >6000 tokens)
-  // Petit prompt → Llama en premier, Qwen en fallback
-  const model = isLargePrompt ? GROQ_MODEL : (retryCount === 0 ? GROQ_MODEL : GROQ_MODEL_FALLBACK)
-  console.log(`[LLM] Calling Groq ${model} with ${maxTokens} max tokens... (retry: ${retryCount}${isLargePrompt ? ', large prompt→Llama' : ''})`)
-  
-  try {
-    const res = await withTimeout(
-      client.chat.completions.create({
-        model: model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      }),
-      CALL_TIMEOUT_MS,
-      `Groq ${model}`
-    )
-    const text = res.choices[0]?.message?.content?.trim()
-    if (!text) throw new Error('Groq empty response')
-    // Strip thinking tags — handles both closed (<think>...</think>) and unclosed (<think>...)
-    const cleaned = text
-      .replace(/<think>[\s\S]*?<\/think>/g, '')
-      .replace(/<think>[\s\S]*/g, '')
-      .trim()
-    console.log(`[LLM] Groq ${model} success - ${cleaned.length} chars`)
-    return cleaned
-  } catch (err: any) {
-    // 413 — prompt trop grand pour ce modèle → switcher immédiatement à Llama
-    if ((err.status === 413 || err.message?.includes('Request too large')) && retryCount === 0 && model === GROQ_MODEL) {
-      console.warn(`[LLM] Prompt too large for ${model} (413), switching to Llama...`)
-      return callGroq(prompt, maxTokens, 1)
-    }
-
-    // Rate limit - retry after delay
-    if (err.message?.includes('rate_limit_exceeded') && retryCount < 2) {
-      const waitTime = 5000
-      console.warn(`[LLM] Groq rate limit, retrying in ${waitTime}ms...`)
-      await new Promise(resolve => setTimeout(resolve, waitTime))
-      return callGroq(prompt, maxTokens, retryCount + 1)
-    }
-    
-    // Autre erreur Qwen → fallback Llama
-    if (retryCount === 0 && model === GROQ_MODEL) {
-      console.warn(`[LLM] Groq ${model} failed, trying fallback model...`)
-      return callGroq(prompt, maxTokens, 1)
-    }
-    
-    console.error(`[LLM] Groq ${model} failed:`, err.message)
-    throw err
-  }
+  if (!client) throw new Error('Groq not configured')
+  const timeoutMs = maxTokens > 1500 ? CALL_TIMEOUT_MS_LONG : CALL_TIMEOUT_MS
+  const res = await withProviderRetries(
+    `Groq ${modelId}`,
+    () =>
+      withTimeout(
+        client.chat.completions.create({
+          model: modelId,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: maxTokens,
+          temperature: 0.7,
+        }),
+        timeoutMs,
+        `Groq ${modelId}`
+      )
+  )
+  const text = res.choices[0]?.message?.content?.trim() || ''
+  return text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>[\s\S]*/g, '').trim()
 }
 
-async function callClaude(prompt: string, maxTokens: number): Promise<string> {
-  const client = getAnthropicClient()
-  if (!client) throw new Error('Anthropic not configured')
-
-  console.log(`[LLM] Calling Claude ${CLAUDE_MODEL} with ${maxTokens} max tokens...`)
-
-  try {
-    const res = await withTimeout(
-      client.messages.create({
-        model: CLAUDE_MODEL,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      CALL_TIMEOUT_MS,
-      `Claude ${CLAUDE_MODEL}`
-    )
-    const text = res.content[0].type === 'text' ? res.content[0].text.trim() : ''
-    if (!text) throw new Error('Claude empty response')
-    console.log(`[LLM] Claude success - ${text.length} chars`)
-    return text
-  } catch (err: any) {
-    console.error('[LLM] Claude failed:', err.message)
-    throw err
-  }
-}
-
-
-async function callCerebras(prompt: string, maxTokens: number): Promise<string> {
+async function callCerebrasDirect(prompt: string, maxTokens: number, modelId: string): Promise<string> {
   const client = getCerebrasClient()
   if (!client) throw new Error('Cerebras not configured')
-
-  const promptTokensEstimate = Math.ceil(prompt.length / 4)
-  const isLargePrompt = promptTokensEstimate + maxTokens > 4000
-  const model = isLargePrompt ? CEREBRAS_MODEL : CEREBRAS_MODEL_FAST
-
-  console.log(`[LLM] Calling Cerebras ${model} with ${maxTokens} max tokens...`)
-
-  try {
-    const res = await withTimeout(
-      client.chat.completions.create({
-        model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      }),
-      CALL_TIMEOUT_MS,
-      `Cerebras ${model}`
-    )
-    const text = res.choices[0]?.message?.content?.trim()
-    if (!text) throw new Error('Cerebras empty response')
-    console.log(`[LLM] Cerebras ${model} success - ${text.length} chars`)
-    return text
-  } catch (err: any) {
-    if (err.status === 429 || err.message?.includes('rate_limit')) {
-      console.warn('[LLM] Cerebras rate limited')
-      throw new Error('Cerebras rate limit')
-    }
-    console.error(`[LLM] Cerebras ${model} failed:`, err.message)
-    throw err
-  }
-}
-
-async function callGeminiFlash(prompt: string, maxTokens: number): Promise<string> {
-  const client = getGeminiClient()
-  if (!client) throw new Error('Gemini not configured')
-
-  console.log(`[LLM] Calling Gemini Flash with ${maxTokens} max tokens...`)
-  
-  try {
-    const res = await withTimeout(
-      client.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: maxTokens,
+  const timeoutMs = maxTokens > 1500 ? CALL_TIMEOUT_MS_LONG : CALL_TIMEOUT_MS
+  const res = await withProviderRetries(
+    `Cerebras ${modelId}`,
+    () =>
+      withTimeout(
+        client.chat.completions.create({
+          model: modelId,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: maxTokens,
           temperature: 0.7,
-        },
-      }),
-      CALL_TIMEOUT_MS,
-      'Gemini Flash'
-    )
-    const text = res.response.text().trim()
-    if (!text) throw new Error('Gemini empty response')
-    console.log(`[LLM] Gemini Flash success - ${text.length} chars`)
-    return text
-  } catch (err: any) {
-    if (err?.message?.includes('quota') || err?.message?.includes('RESOURCE_EXHAUSTED')) {
-      console.warn('[LLM] Gemini quota exceeded')
-      throw new Error('Gemini quota exceeded')
-    }
-    console.error('[LLM] Gemini Flash failed:', err.message)
-    throw err
-  }
+        }),
+        timeoutMs,
+        `Cerebras ${modelId}`
+      )
+  )
+  const text = res.choices[0]?.message?.content?.trim() || ''
+  return text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>[\s\S]*/g, '').trim()
 }
+
+async function callGeminiDirect(prompt: string, maxTokens: number, modelId: string): Promise<string> {
+  const model = getGeminiModel(modelId)
+  if (!model) throw new Error('Gemini not configured')
+  const timeoutMs = maxTokens > 1500 ? CALL_TIMEOUT_MS_LONG : CALL_TIMEOUT_MS
+  const res = await withProviderRetries(
+    `Gemini ${modelId}`,
+    () =>
+      withTimeout(
+        model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
+        }),
+        timeoutMs,
+        `Gemini ${modelId}`
+      )
+  )
+  return res.response.text().trim()
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Stratégie de routing LLM
- *
- * Principal  : Cerebras (Llama 3.1 70B/8B — ~2000 tokens/sec, ultra rapide)
- * Fallback 1 : Groq (Llama 4 Scout / Llama 3.3 70B)
- * Fallback 2 : Gemini Flash-Lite (250k TPM)
+ * Main LLM router with optional model preference.
+ * If preferredModel fails or is not provided, follows the default high-performance chain.
  */
-export async function callLLM(prompt: string, maxTokens = 1024): Promise<string> {
-  const cerebrasClient = getCerebrasClient()
-  const groqClient = getGroqClient()
-  const geminiClient = getGeminiClient()
+export async function callLLM(prompt: string, maxTokens = 1024, preferredModel?: string): Promise<string> {
+  llmLog(`callLLM - maxTokens: ${maxTokens}, preference: ${preferredModel || 'none'}`)
 
-  console.log(`[LLM] callLLM invoked - maxTokens: ${maxTokens}, cerebras: ${!!cerebrasClient}, groq: ${!!groqClient}, gemini: ${!!geminiClient}`)
-
-  if (!cerebrasClient && !groqClient && !geminiClient) {
-    throw new Error('No LLM configured — check CEREBRAS_API_KEY, GROQ_API_KEY or GEMINI_API_KEY')
-  }
-
-  // Essayer Cerebras en premier (le plus rapide)
-  if (cerebrasClient) {
+  // 1. Try preferred model if specified
+  if (preferredModel) {
     try {
-      return await callCerebras(prompt, maxTokens)
+      if (preferredModel === 'qwen-235b') return await callCerebrasDirect(prompt, maxTokens, CEREBRAS_MODEL)
+      if (preferredModel === 'gpt-120b') return await callCerebrasDirect(prompt, maxTokens, CEREBRAS_MODEL_FALLBACK)
+      if (preferredModel === 'qwen-32b') return await callGroqDirect(prompt, maxTokens, GROQ_MODEL)
+      if (preferredModel === 'llama-70b') return await callGroqDirect(prompt, maxTokens, GROQ_MODEL_FALLBACK)
+      if (preferredModel === 'gemini-flash') return await callGeminiDirect(prompt, maxTokens, GEMINI_MODEL)
     } catch (err: any) {
-      console.warn(`[LLM] Cerebras failed (${err.message}), falling back to Groq...`)
-      // Continue to Groq fallback
+      llmWarn(`Preferred model ${preferredModel} failed: ${err.message}. Falling back to default chain.`)
     }
   }
 
-  // Fallback : Groq
+  const groqClient = getGroqClient()
+
+  // 2. Sorties longues : Groq Qwen puis Llama
+  if (maxTokens > 1200 && groqClient) {
+    try {
+      return await callGroqDirect(prompt, maxTokens, GROQ_MODEL)
+    } catch (err: any) {
+      llmWarn(`Slow-path Groq primary failed: ${err.message}`)
+    }
+    try {
+      return await callGroqDirect(prompt, maxTokens, GROQ_MODEL_FALLBACK)
+    } catch (err: any) {
+      llmWarn(`Slow-path Groq fallback failed: ${err.message}`)
+    }
+  }
+
+  // 3. Default chain: Cerebras → Groq → Gemini
+  const cerebras = getCerebrasClient()
+  if (cerebras) {
+    try {
+      return await callCerebrasDirect(prompt, maxTokens, CEREBRAS_MODEL)
+    } catch (err: any) {
+      llmWarn(`Cerebras primary failed, trying fallback: ${err.message}`)
+      try {
+        return await callCerebrasDirect(prompt, maxTokens, CEREBRAS_MODEL_FALLBACK)
+      } catch { /* next provider */ }
+    }
+  }
+
   if (groqClient) {
     try {
-      return await callGroq(prompt, maxTokens)
+      return await callGroqDirect(prompt, maxTokens, GROQ_MODEL)
     } catch (err: any) {
-      if (err.message?.includes('rate_limit') || err.status === 429) {
-        console.warn('[LLM] Groq rate limited, falling back to Gemini Flash-Lite...')
-        if (geminiClient) {
-          return await callGeminiFlash(prompt, maxTokens)
-        }
-      }
-      throw err
+      llmWarn(`Groq primary failed, trying fallback: ${err.message}`)
+      try {
+        return await callGroqDirect(prompt, maxTokens, GROQ_MODEL_FALLBACK)
+      } catch { /* next provider */ }
     }
   }
 
-  // Dernier recours : Gemini
-  if (geminiClient) {
-    return await callGeminiFlash(prompt, maxTokens)
-  }
-
-  throw new Error('No LLM available')
+  return await callGeminiDirect(prompt, maxTokens, GEMINI_MODEL)
 }
 
 /**
- * Streaming version — returns a ReadableStream of text chunks.
- * Used by /api/chat for real-time token streaming to the client.
+ * Gemma 4 specific caller for conversational chat.
+ */
+export async function callGemma(prompt: string, maxTokens: number): Promise<string> {
+  llmLog('Calling Gemma 4 for conversation...')
+  try {
+    return await callGeminiDirect(prompt, maxTokens, GEMMA_MODEL)
+  } catch (err: any) {
+    console.error(`[LLM] Gemma 4 failed: ${err.message}. Falling back to callLLM.`)
+    return await callLLM(prompt, maxTokens)
+  }
+}
+
+/**
+ * Streaming version — kept for future use if needed.
  */
 export function streamLLM(prompt: string, maxTokens = 600): ReadableStream<Uint8Array> {
   const groqClient = getGroqClient()
-  if (!groqClient) throw new Error('Groq not configured — streaming requires Groq')
-
+  if (!groqClient) throw new Error('Groq not configured for streaming')
   const encoder = new TextEncoder()
 
   return new ReadableStream({
@@ -249,31 +184,20 @@ export function streamLLM(prompt: string, maxTokens = 600): ReadableStream<Uint8
         for await (const chunk of stream) {
           const token = chunk.choices[0]?.delta?.content ?? ''
           if (!token) continue
-
           buffer += token
-
-          // Strip <think>...</think> tags from streaming output
           if (buffer.includes('<think>')) inThinkTag = true
           if (inThinkTag) {
             if (buffer.includes('</think>')) {
               buffer = buffer.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>[\s\S]*/g, '')
               inThinkTag = false
-            } else {
-              continue // still inside think tag, skip
-            }
+            } else continue
           }
-
           if (buffer) {
             controller.enqueue(encoder.encode(buffer))
             buffer = ''
           }
         }
-
-        // Flush any remaining buffer
-        if (buffer && !inThinkTag) {
-          controller.enqueue(encoder.encode(buffer))
-        }
-
+        if (buffer && !inThinkTag) controller.enqueue(encoder.encode(buffer))
         controller.close()
       } catch (err) {
         controller.error(err)

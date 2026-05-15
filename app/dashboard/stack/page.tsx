@@ -15,7 +15,7 @@ export default async function StacksPage() {
 
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
   const userEmail = user.emailAddresses[0]?.emailAddress
-  const stacks = await getUserStacks(user.id, clerkToken, userEmail)
+  const { stacks } = await getUserStacks(user.id, clerkToken, userEmail)
 
   // Fetch agent data for all stacks to get logos
   const allAgentIds = [...new Set(stacks.flatMap(s => s.agent_ids ?? []))]

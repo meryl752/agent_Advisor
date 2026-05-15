@@ -32,7 +32,7 @@ export default function ROIChart({ roiEstimate, totalCost, timeSavedPerWeek = 0 
   return (
     <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
       <p className="font-dm-mono text-[0.6rem] text-zinc-500 uppercase tracking-[0.15em] mb-4">
-        ✦ Projection ROI — 6 mois
+        ✦ ROI Projection — 6 months
       </p>
       <div className="overflow-x-auto">
         <svg
@@ -125,7 +125,7 @@ export default function ROIChart({ roiEstimate, totalCost, timeSavedPerWeek = 0 
         </svg>
       </div>
       <p className="font-dm-mono text-[0.58rem] text-zinc-600 text-center mt-2">
-        Économies cumulées estimées (€)
+        Estimated cumulative savings (€)
       </p>
     </div>
   )

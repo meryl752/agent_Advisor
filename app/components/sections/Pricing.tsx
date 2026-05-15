@@ -9,7 +9,7 @@ export default function Pricing() {
       <RevealWrapper><p className="section-label mb-[18px]">Pricing</p></RevealWrapper>
       <RevealWrapper delay={0.1}>
         <h2 className="section-title text-cream mb-16">
-          Simple.<br />Transparent.<br />ROI positif dès le 1er mois.
+          Simple.<br />Transparent.<br />Positive ROI from day one.
         </h2>
       </RevealWrapper>
 
