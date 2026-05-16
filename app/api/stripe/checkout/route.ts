@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Erreur Stripe Checkout:', error)
     return NextResponse.json(
-      { error: "Impossible d'initialiser le paiement." },
+      { error: 'Could not start checkout.' },
       { status: 500 }
     )
   }

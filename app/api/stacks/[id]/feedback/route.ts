@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseService } from '@/lib/supabase/server'
 import { uuidSchema, feedbackSchema } from '@/lib/validators/api'
+import { trackProductEvent } from '@/lib/telemetry/trackProductEvent'
+import { PRODUCT_EVENTS } from '@/lib/telemetry/events'
 
 async function getInternalUserId(clerkId: string): Promise<string | null> {
   const { data } = await (supabaseService as any)
@@ -87,6 +89,20 @@ export async function POST(
       console.error('Feedback upsert error:', error.message)
       return NextResponse.json({ error: 'Save failed' }, { status: 500 })
     }
+
+    const agentRatings = validation.data.agent_ratings ?? []
+    await trackProductEvent({
+      event_name: PRODUCT_EVENTS.RECOMMENDATION_RATED,
+      user_id: internalId,
+      stack_id: stackId,
+      source: 'api',
+      properties: {
+        stack_rating: validation.data.stack_rating ?? null,
+        has_stack_comment: Boolean(validation.data.stack_comment?.trim()),
+        agent_ratings_count: agentRatings.filter((r) => r.rating > 0).length,
+        agent_comments_count: agentRatings.filter((r) => r.comment?.trim()).length,
+      },
+    })
 
     return NextResponse.json({ success: true, feedback: data })
   } catch (err) {

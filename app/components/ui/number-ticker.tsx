@@ -32,7 +32,7 @@ export function NumberTicker({
     useEffect(() => {
         return springVal.on('change', (latest) => {
             if (ref.current) {
-                ref.current.textContent = Intl.NumberFormat('fr-FR', {
+                ref.current.textContent = Intl.NumberFormat('en-US', {
                     minimumFractionDigits: decimalPlaces,
                     maximumFractionDigits: decimalPlaces,
                 }).format(Number(latest.toFixed(decimalPlaces)))

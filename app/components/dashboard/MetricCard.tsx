@@ -8,13 +8,19 @@ interface MetricCardProps {
   accent?: boolean
   tooltip?: string
   icon?: string
+  /** Borderless polished surface (Overview light mode). */
+  polished?: boolean
 }
 
-export function MetricCard({ label, value, accent, tooltip, icon }: MetricCardProps) {
+export function MetricCard({ label, value, accent, tooltip, icon, polished }: MetricCardProps) {
   const [showTooltip, setShowTooltip] = useState(false)
 
+  const surface = polished
+    ? 'rounded-2xl border-0 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)] dark:border dark:border-zinc-800 dark:shadow-none dark:bg-zinc-900/30 p-5 relative flex flex-col gap-3 transition-shadow hover:shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_28px_rgba(0,0,0,0.06)] dark:hover:border-zinc-700'
+    : 'rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 p-5 relative flex flex-col gap-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors'
+
   return (
-    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 p-5 relative flex flex-col gap-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+    <div className={surface}>
       {/* Top row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
@@ -25,7 +31,7 @@ export function MetricCard({ label, value, accent, tooltip, icon }: MetricCardPr
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
                 className="w-3.5 h-3.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center text-[9px] font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-                aria-label="Plus d'infos"
+                aria-label="More info"
               >
                 ?
               </button>

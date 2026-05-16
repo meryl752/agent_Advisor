@@ -10,6 +10,7 @@
 import { supabaseService } from './server'
 import { getUserByClerkId } from './queries'
 import { callLLM } from '@/lib/llm/router'
+import { resolveSessionLocale, type AppLocale } from '@/lib/i18n/locale'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -151,35 +152,39 @@ export async function saveConversation(
   clerkId: string,
   sessionId: string,
   messages: ConversationMessage[],
-  options?: { stackGenerated?: boolean; stackId?: string }
-): Promise<void> {
+  options?: { stackGenerated?: boolean; stackId?: string; locale?: AppLocale }
+): Promise<AppLocale> {
   const dbUser = await getUserByClerkId(clerkId)
   if (!dbUser) {
     console.warn('[saveConversation] User not found for clerkId:', clerkId)
-    return
+    return 'en'
   }
 
   const userId = (dbUser as any).id
+  const userTexts = messages.filter((m) => m.role === 'user').map((m) => m.content)
 
   // Check if conversation exists
   const { data: existing, error: fetchError } = await (supabaseService as any)
     .from('conversations')
-    .select('id, stack_id, stack_generated')
+    .select('id, stack_id, stack_generated, locale')
     .eq('session_id', sessionId)
     .maybeSingle()
 
   if (fetchError) {
     console.error('[saveConversation] Fetch error:', fetchError.message, fetchError.code)
-    return
+    return options?.locale ?? 'en'
   }
 
+  const locale =
+    options?.locale ??
+    resolveSessionLocale(existing?.locale, userTexts)
+
   if (existing) {
-    // Conversation exists - UPDATE only messages, preserve stack info
     const { error } = await (supabaseService as any)
       .from('conversations')
       .update({
         messages,
-        // Preserve existing stack info unless explicitly provided
+        locale,
         stack_generated: options?.stackGenerated ?? existing.stack_generated,
         stack_id: options?.stackId ?? existing.stack_id,
         updated_at: new Date().toISOString(),
@@ -190,13 +195,13 @@ export async function saveConversation(
       console.error('[saveConversation] Update error:', error.message, error.code)
     }
   } else {
-    // New conversation - INSERT
     const { error } = await (supabaseService as any)
       .from('conversations')
       .insert({
         user_id: userId,
         session_id: sessionId,
         messages,
+        locale,
         stack_generated: options?.stackGenerated ?? false,
         stack_id: options?.stackId ?? null,
         updated_at: new Date().toISOString(),
@@ -206,6 +211,8 @@ export async function saveConversation(
       console.error('[saveConversation] Insert error:', error.message, error.code)
     }
   }
+
+  return locale
 }
 
 /**

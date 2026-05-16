@@ -224,14 +224,26 @@ export async function PATCH(
       return NextResponse.json({ error: 'UPDATE_FAILED' }, { status: 500 })
     }
 
+    if (data && validation.data.digest_enabled !== undefined) {
+      const { trackProductEvent } = await import('@/lib/telemetry/trackProductEvent')
+      const { PRODUCT_EVENTS } = await import('@/lib/telemetry/events')
+      await trackProductEvent({
+        event_name: PRODUCT_EVENTS.STACK_DIGEST_TOGGLED,
+        user_id: internalId,
+        stack_id: id,
+        source: 'api',
+        properties: { digest_enabled: validation.data.digest_enabled },
+      })
+    }
+
     if (data && validation.data.digest_enabled === true) {
       try {
         await (supabaseService as any).from('stack_update_events').insert({
           stack_id: id,
           type: 'digest',
-          title: 'Suivi activé',
+          title: 'Tracking enabled',
           body:
-            'Ce stack est maintenant suivi pour les futurs digests (coûts, alternatives aux outils, recommandations…). Les prochaines alertes apparaîtront ici.',
+            'This stack is now tracked for future digests (costs, tool alternatives, recommendations…). New alerts will appear here.',
           meta: { source: 'system', kind: 'digest_welcome' },
         })
       } catch (e) {

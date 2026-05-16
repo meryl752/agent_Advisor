@@ -193,7 +193,7 @@ function StackCard({
               <h3 className="font-semibold text-zinc-900 dark:text-white text-base truncate">{stack.name}</h3>
               {stack.digest_enabled && (
                 <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#CAFF32]/25 text-zinc-900 dark:text-[#CAFF32]">
-                  Suivi
+                  Tracked
                 </span>
               )}
             </div>
@@ -269,8 +269,8 @@ function StackCard({
       >
         <p className="text-xs text-zinc-500 leading-snug max-w-md">
           {stack.digest_enabled
-            ? 'Ce stack est celui suivi pour les futurs digests (coûts, alternatives, changements recommandés).'
-            : 'Marquez un stack comme « suivi » pour préparer les mises à jour régulières — un seul à la fois.'}
+            ? 'This stack is tracked for future digests (costs, alternatives, recommended changes).'
+            : 'Mark a stack as tracked to receive regular updates — one at a time.'}
         </p>
         <button
           type="button"
@@ -282,7 +282,7 @@ function StackCard({
               : 'bg-[#CAFF32] text-zinc-900 hover:bg-[#d4ff50]'
           } disabled:opacity-50`}
         >
-          {digestSaving ? '…' : stack.digest_enabled ? 'Ne plus suivre' : 'Suivre ce stack'}
+          {digestSaving ? '…' : stack.digest_enabled ? 'Untrack' : 'Track this stack'}
         </button>
       </div>
 
@@ -371,7 +371,7 @@ export default function StacksClient({
       )
       router.refresh()
     } catch {
-      setError('Impossible de mettre à jour le suivi.')
+      setError('Could not update tracking.')
     } finally {
       setDigestSavingId(null)
     }
@@ -449,15 +449,15 @@ export default function StacksClient({
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-              Stack suivi : <span className="text-zinc-600 dark:text-zinc-300 font-medium">{trackedStack.name}</span>
+              Tracked stack: <span className="text-zinc-600 dark:text-zinc-300 font-medium">{trackedStack.name}</span>
             </p>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Les digests automatiques (coûts, alternatives…) cibleront ce stack. Contenu à venir.
+              Automatic digests (costs, alternatives…) will target this stack.
             </p>
           </div>
           {nextDigestDate && (
             <div className="text-right shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-400">Prochain digest (estimé)</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400">Next digest (estimated)</p>
               <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 capitalize">{formatDigestDate(nextDigestDate)}</p>
             </div>
           )}

@@ -39,6 +39,7 @@ export interface Database {
           updated_at: string
           digest_enabled: boolean
           digest_enabled_at: string | null
+          score_breakdown: Json
         }
         Insert: Omit<
           Database['public']['Tables']['stacks']['Row'],
@@ -94,6 +95,41 @@ export interface Database {
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['stack_update_events']['Insert']>
+      }
+      stack_feedback: {
+        Row: {
+          id: string
+          stack_id: string
+          user_id: string
+          stack_rating: number | null
+          stack_comment: string | null
+          agent_ratings: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['stack_feedback']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['stack_feedback']['Insert']>
+      }
+      product_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          session_id: string | null
+          stack_id: string | null
+          event_name: string
+          properties: Json
+          source: string
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['product_events']['Row'], 'id' | 'created_at'> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['product_events']['Insert']>
       }
     }
   }

@@ -67,7 +67,7 @@ export function extractContext(text: string) {
   const isDetailed = text.trim().length > 60
 
   return {
-    sector: sector ?? (isDetailed ? 'général' : null),
+    sector: sector ?? (isDetailed ? 'general' : null),
     budget: budget ?? (isDetailed ? 'medium' : null),
     tech,
     isDetailed,

@@ -187,7 +187,10 @@ JSON UNIQUEMENT (pas de markdown, pas de texte avant/après):
 
   const selectedToolsFormatted = formatSelectedToolsForEnrichment(selectedTools)
 
-  const enrichmentPrompt = `Tu enrichis la présentation d'outils IA sélectionnés pour un utilisateur spécifique.
+  const locale = ctx.locale === 'fr' ? 'fr' : 'en'
+  const enrichmentPrompt =
+    locale === 'fr'
+      ? `Tu enrichis la présentation d'outils IA sélectionnés pour un utilisateur spécifique. Tout le texte utilisateur doit être en français.
 
 UTILISATEUR:
 - Objectif: ${query.original}
@@ -198,28 +201,48 @@ OUTILS SÉLECTIONNÉS (données vérifiées depuis notre base):
 ${selectedToolsFormatted}
 
 Pour chaque outil, génère:
-- "role": rôle spécifique dans CE projet. DOIT s'appuyer sur un des USE_CASES listés, appliqué au contexte du projet et du secteur "${ctx.sector}". Max 15 mots.
-- "reason": pourquoi cet outil pour CE profil précis. Max 25 mots.
-- "concrete_result": résultat concret attendu pour CE projet. INTERDICTION d'inventer des chiffres, heures ou pourcentages. Décris le résultat fonctionnel uniquement.
+- "role": rôle spécifique dans CE projet (max 15 mots)
+- "reason": pourquoi cet outil pour CE profil (max 25 mots)
+- "concrete_result": résultat concret sans chiffres inventés
 
-Pour le stack global, génère:
-- "stack_name": nom court et mémorable (max 4 mots)
-- "justification": 2-3 phrases — problème résolu + articulation des outils
-- "quick_wins": ["Aujourd'hui: action concrète", "Dans 48h: action", "Dans 1 semaine: transformation"]
+Pour le stack global:
+- "stack_name": nom court (max 4 mots)
+- "justification": 2-3 phrases
+- "quick_wins": 3 actions datées
 
-INTERDICTIONS ABSOLUES:
-- NE PAS inventer de chiffres (heures économisées, ROI, pourcentages, nombre de leads)
-- NE PAS inventer de fonctionnalités qu'un outil n'a pas selon ses USE_CASES
-- NE PAS généraliser — chaque phrase parle de CE projet dans le secteur "${ctx.sector}"
-
-JSON UNIQUEMENT (pas de markdown, pas de texte avant/après):
+JSON UNIQUEMENT:
 {
   "stack_name": "...",
   "justification": "...",
   "quick_wins": ["...", "...", "..."],
-  "agents": [
-    {"id": "uuid", "role": "...", "reason": "...", "concrete_result": "..."}
-  ]
+  "agents": [{"id": "uuid", "role": "...", "reason": "...", "concrete_result": "..."}]
+}`
+      : `You enrich AI tool presentations for a specific user. All user-facing text must be in English.
+
+USER:
+- Objective: ${query.original}
+- Sector: ${ctx.sector} | ${query.sector_context}
+- Profile: ${techMap[ctx.tech_level]} | ${teamMap[ctx.team_size]}
+
+SELECTED TOOLS (verified from our database):
+${selectedToolsFormatted}
+
+For each tool:
+- "role": specific role in THIS project (max 15 words)
+- "reason": why this tool for THIS profile (max 25 words)
+- "concrete_result": concrete outcome, no invented numbers
+
+For the stack:
+- "stack_name": short memorable name (max 4 words)
+- "justification": 2-3 sentences
+- "quick_wins": 3 dated actions
+
+JSON ONLY:
+{
+  "stack_name": "...",
+  "justification": "...",
+  "quick_wins": ["...", "...", "..."],
+  "agents": [{"id": "uuid", "role": "...", "reason": "...", "concrete_result": "..."}]
 }`
 
   try {
@@ -313,7 +336,7 @@ JSON UNIQUEMENT (pas de markdown, pas de texte avant/après):
     const uncoveredSubtasks = finalSubtasks.filter(s => s.tool_name === 'N/A')
     if (uncoveredSubtasks.length > 0) {
       uncoveredSubtasks.forEach(s => {
-        const warningText = `Besoin non couvert : "${s.name}". Aucun outil correspondant trouvé.`
+        const warningText = `Uncovered need: "${s.name}". No matching tool found.`
         if (!selectionWarnings.some(w => w.includes(s.name.slice(0, 20)))) {
           selectionWarnings.push(warningText)
         }

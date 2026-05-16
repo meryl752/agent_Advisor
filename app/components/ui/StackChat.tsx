@@ -15,6 +15,7 @@ interface StackChatProps {
     total_cost: number
     agents: Array<{ name: string; role: string }>
   }
+  locale?: 'en' | 'fr'
 }
 
 const QUICK_QUESTIONS = [
@@ -24,7 +25,7 @@ const QUICK_QUESTIONS = [
   'How long to set up?',
 ]
 
-export default function StackChat({ stackContext }: StackChatProps) {
+export default function StackChat({ stackContext, locale = 'en' }: StackChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,7 +49,7 @@ export default function StackChat({ stackContext }: StackChatProps) {
       const res = await fetch('/api/stack-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, stackContext }),
+        body: JSON.stringify({ message: text, stackContext, locale }),
       })
       const data = await res.json()
       setMessages(prev => [...prev, {

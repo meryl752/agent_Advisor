@@ -95,6 +95,7 @@ export async function GET(
       stack_generated: conversation.stack_generated,
       stack_id: conversation.stack_id,
       custom_title: conversation.custom_title,
+      locale: conversation.locale === 'fr' ? 'fr' : 'en',
       created_at: conversation.created_at,
       updated_at: conversation.updated_at,
     },

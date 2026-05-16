@@ -35,7 +35,10 @@ export async function POST(req: NextRequest) {
 
   try {
     // 1. Save the raw conversation
-    await saveConversation(user.id, sessionId, messages, { stackGenerated, stackId })
+    const locale = await saveConversation(user.id, sessionId, messages, {
+      stackGenerated,
+      stackId,
+    })
 
     // 2. Compress unsummarized conversations into user_memory
     // Run async — don't block the response
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
       console.warn('[memory/update] Compression error:', err)
     )
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, locale })
   } catch (err) {
     console.error('[memory/update] Error:', err)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
