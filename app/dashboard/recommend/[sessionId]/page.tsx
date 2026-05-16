@@ -14,6 +14,7 @@ import { ConversationSidebar } from '../_components/ConversationSidebar'
 import { type Phase, type Message, type ApiError, REASONING_STEPS, extractContext } from '../_components/types'
 import { SUPPORTED_REASONING_MODELS, type ReasoningModelId } from '@/lib/constants'
 import { useTheme } from 'next-themes'
+import type { AppLocale } from '@/lib/i18n/locale'
 
 const StackRoadmap = dynamic(() => import('@/app/components/ui/StackRoadmap'), { ssr: false })
 const StackArtifact = dynamic(() => import('@/app/components/ui/StackArtifact'), { ssr: false })
@@ -145,7 +146,7 @@ function StackDirectory({ currentSessionId, onSelectStack }: { currentSessionId:
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-zinc-900 dark:text-white truncate">{stack.title}</p>
                       <p className="text-[10px] text-zinc-500">
-                        {new Date(stack.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                        {new Date(stack.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                       </p>
                     </div>
                   </button>
@@ -289,6 +290,7 @@ export default function SessionPage() {
   const [reasoningStep, setReasoningStep] = useState(0)
   const [streamedCount, setStreamedCount] = useState(0)
   const [initialized, setInitialized] = useState(false)
+  const [sessionLocale, setSessionLocale] = useState<AppLocale>('en')
 
   const resultRef = useRef<FinalStack | null>(null)
   const apiDone = useRef(false)
@@ -309,6 +311,7 @@ export default function SessionPage() {
       })
       .then(async data => {
         console.log('[session] conversation data:', data)
+        if (data.conversation?.locale === 'fr') setSessionLocale('fr')
         if (data.conversation?.messages?.length > 0) {
           const restored: Message[] = data.conversation.messages.map((m: any) => ({
             role: m.role === 'user' ? 'user' as const : 'ai' as const,
@@ -354,6 +357,7 @@ export default function SessionPage() {
                       ctx: { 
                         objective: stackData.objective || stackData.stack.stack_name, 
                         tech_level: 'intermediate',
+                        locale: data.conversation?.locale === 'fr' ? 'fr' : 'en',
                         preferred_model: sessionStorage.getItem(`session_model_${sessionId}`) || undefined
                       } 
                     }),
@@ -436,6 +440,7 @@ export default function SessionPage() {
         return r.json()
       })
       .then(data => { 
+        if (data?.locale === 'fr' || data?.locale === 'en') setSessionLocale(data.locale)
         if (data && !data.ok) console.error('[saveSession] API error:', data) 
       })
       .catch(err => console.error('[saveSession] fetch error:', err))
@@ -452,6 +457,7 @@ export default function SessionPage() {
         ctx: { 
           objective: stack.stack_name, 
           tech_level: 'intermediate',
+          locale: sessionLocale,
           preferred_model: sessionStorage.getItem(`session_model_${sessionId}`) || undefined
         } 
       }),
@@ -480,7 +486,7 @@ export default function SessionPage() {
         }
       }
     }).catch(err => console.warn('[Guides] Stream error:', err))
-  }, [])
+  }, [sessionId, sessionLocale])
 
   const launchReasoning = useCallback((ans: Record<string, string>) => {
     reasoningTimers.current.forEach(t => clearTimeout(t))
@@ -496,7 +502,7 @@ export default function SessionPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         objective: ans.objective, 
-        sector: ans.sector ?? 'général', 
+        sector: ans.sector ?? 'general', 
         budget: ans.budget ?? 'medium', 
         tech_level: ans.tech_level ?? 'intermediate', 
         team_size: 'solo', 
@@ -548,7 +554,7 @@ export default function SessionPage() {
       }, 500 + i * 1000)
       reasoningTimers.current.push(t)
     })
-  }, [revealStack, saveSession])
+  }, [revealStack, saveSession, sessionId])
 
   const handleSendMessage = useCallback((text: string) => {
     if (!text.trim()) return
@@ -570,6 +576,7 @@ export default function SessionPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: text,
+        sessionId,
         history,
         stackContext: result ? {
           stack_name: result.stack_name,
@@ -601,7 +608,7 @@ export default function SessionPage() {
             const ans = {
               ...answers,
               objective,
-              sector: ctx.sector ?? answers.sector ?? 'général',
+              sector: ctx.sector ?? answers.sector ?? 'general',
               budget: ctx.budget ?? answers.budget ?? 'medium',
               tech_level: ctx.tech ?? answers.tech_level ?? 'intermediate',
             }
@@ -614,7 +621,7 @@ export default function SessionPage() {
         setIsTyping(false)
         setMessages(prev => [...prev, { role: 'ai', text: 'Network error occurred' }])
       })
-  }, [messages, answers, result, saveSession, phase, launchReasoning])
+  }, [messages, answers, result, saveSession, phase, launchReasoning, sessionId])
 
   const handleSend = useCallback(() => {
     const text = input.trim()

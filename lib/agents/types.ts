@@ -1,5 +1,7 @@
 // ─── Types partagés entre tous les agents ─────────────────────────────────────
 
+import type { AppLocale } from '@/lib/i18n/locale'
+
 export interface UserContext {
   objective: string
   sector: string
@@ -9,6 +11,8 @@ export interface UserContext {
   timeline: 'asap' | 'weeks' | 'months'
   current_tools: string[]
   preferred_model?: string
+  /** Language for all user-facing LLM outputs in this flow. */
+  locale?: AppLocale
 }
 
 // Nouvelle structure avec domaines et sous-tâches atomiques

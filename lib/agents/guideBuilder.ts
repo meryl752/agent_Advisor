@@ -15,11 +15,12 @@ import { buildSearchQuery, searchTavily } from '@/lib/tavily/client'
 import { getCachedGuide, setCachedGuide } from '@/lib/tavily/cache'
 import { repairTruncatedJSON } from '@/lib/utils/jsonRepair'
 import type { StackAgent, ImplementationStep, UserContext } from './types'
+import { llmLanguageInstruction } from '@/lib/i18n/locale'
 
-const TECH_LEVEL_FR: Record<string, string> = {
-  beginner:     'débutant complet — aucun code, interfaces visuelles uniquement',
-  intermediate: 'niveau intermédiaire — à l\'aise avec le no-code',
-  advanced:     'développeur — peut coder et configurer des APIs',
+const TECH_LEVEL_EN: Record<string, string> = {
+  beginner: 'complete beginner — no code, visual interfaces only',
+  intermediate: 'intermediate — comfortable with no-code',
+  advanced: 'developer — can code and configure APIs',
 }
 
 function stripLlmNoise(raw: string): string {
@@ -74,7 +75,8 @@ async function buildAgentGuide(
   agent: StackAgent,
   objective: string,
   techLevel: string,
-  preferredModel?: string
+  preferredModel?: string,
+  locale: 'en' | 'fr' = 'en'
 ): Promise<ImplementationStep[]> {
   const task = buildTaskDescription(agent, objective)
 
@@ -93,55 +95,63 @@ async function buildAgentGuide(
     ? searchResults.map((r, i) =>
         `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content.slice(0, 600)}`
       ).join('\n\n---\n\n')
-    : `Aucune documentation trouvée — génère les étapes depuis ta connaissance de ${agent.name}.`
+    : `No documentation found — generate steps from your knowledge of ${agent.name}.`
 
   const sourceUrls = searchResults.map(r => r.url)
 
-  const prompt = `Tu es un expert en implémentation d'outils SaaS et IA. Tu dois créer un guide d'implémentation COMPLET et PRÉCIS pour configurer ${agent.name} dans le contexte suivant.
+  const langLine = llmLanguageInstruction(locale)
+
+  const prompt = `You are an expert at implementing SaaS and AI tools. Create a COMPLETE, PRECISE implementation guide to set up ${agent.name} in this context.
+${langLine}
 
 <context>
-OUTIL: ${agent.name}
-RÔLE DANS LE PROJET: ${agent.role}
-OBJECTIF GLOBAL: ${objective}
-NIVEAU TECHNIQUE DE L'UTILISATEUR: ${TECH_LEVEL_FR[techLevel] ?? techLevel}
-DOMAINE: ${domain}
+TOOL: ${agent.name}
+ROLE IN PROJECT: ${agent.role}
+OVERALL OBJECTIVE: ${objective}
+USER TECH LEVEL: ${TECH_LEVEL_EN[techLevel] ?? techLevel}
+DOMAIN: ${domain}
 </context>
 
-<documentation_officielle>
+<official_docs>
 ${docsContext}
-</documentation_officielle>
+</official_docs>
 
 <instructions>
-Génère entre 6 et 10 étapes d'implémentation CONCRÈTES et ORDONNÉES pour que l'utilisateur configure ${agent.name} afin d'accomplir exactement: "${agent.role}".
+Generate 6 to 10 CONCRETE, ORDERED implementation steps so the user configures ${agent.name} to accomplish exactly: "${agent.role}".
 
-RÈGLES ABSOLUES:
-1. Commence par la toute première action (créer un compte si nécessaire, ou se connecter)
-2. Chaque étape = une action précise et unique — pas de regroupement
-3. Utilise des verbes d'action: "Clique sur", "Rends-toi dans", "Copie le", "Colle dans", "Active le"
-4. Adapte au niveau technique: ${TECH_LEVEL_FR[techLevel] ?? techLevel}
-5. Mentionne les menus, boutons, sections EXACTS quand tu les connais
-6. Si une étape nécessite une info externe (token, clé API), explique exactement où la trouver
-7. La dernière étape doit valider que ça fonctionne (test, vérification)
-8. NE PAS inclure d'étapes génériques — chaque étape doit être spécifique à CE projet
+RULES:
+1. Start with the very first action (create account if needed, or sign in)
+2. Each step = one precise action — no bundling
+3. Use action verbs: "Click", "Go to", "Copy", "Paste", "Enable"
+4. Match tech level: ${TECH_LEVEL_EN[techLevel] ?? techLevel}
+5. Name exact menus, buttons, sections when known
+6. For API keys/tokens, explain exactly where to find them
+7. Last step must verify it works (test, check)
+8. No generic steps — each step must be specific to THIS project
+9. Write all step text in English
 </instructions>
 
 <output_format>
-JSON strict uniquement. Zéro markdown. Zéro texte avant ou après.
+Strict JSON only. No markdown. No text before or after.
 [
   {
     "step": 1,
-    "title": "Titre court de l'étape (max 6 mots)",
-    "action": "Instruction courte et directe (max 15 mots)",
-    "details": "Explication complète avec contexte, où cliquer, quoi remplir, pourquoi cette étape est nécessaire. Minimum 2 phrases.",
-    "tip": "Conseil pro ou avertissement optionnel — null si rien à ajouter"
+    "title": "Short step title (max 6 words)",
+    "action": "Short direct instruction (max 15 words)",
+    "details": "Full explanation with context, where to click, what to fill, why this step matters. At least 2 sentences.",
+    "tip": "Optional pro tip or warning — null if none"
   }
 ]
 </output_format>`
 
-  const compactRetryPrompt = `Tu écris un guide d'implémentation pour l'outil "${agent.name}" (rôle dans le projet: "${agent.role}", objectif utilisateur: "${objective}").
-Renvoie UNIQUEMENT un tableau JSON valide, 6 à 10 objets, format exact:
-[{"step":1,"title":"...","action":"...","details":"...","tip":null}, ...]
-Contraintes: français, étapes concrètes et ordonnées, zéro markdown, zéro texte hors du tableau.`
+  const compactRetryPrompt =
+    locale === 'fr'
+      ? `Guide d'implémentation pour "${agent.name}" (rôle: "${agent.role}", objectif: "${objective}").
+Tableau JSON uniquement, 6-10 étapes, format: [{"step":1,"title":"...","action":"...","details":"...","tip":null}]
+${langLine}`
+      : `Implementation guide for "${agent.name}" (role: "${agent.role}", objective: "${objective}").
+JSON array only, 6-10 steps: [{"step":1,"title":"...","action":"...","details":"...","tip":null}]
+${langLine}`
 
   try {
     let steps: ImplementationStep[] | null = null
@@ -185,7 +195,15 @@ export async function buildGuides(
   for (let i = 0; i < agents.length; i += BATCH_SIZE) {
     const batch = agents.slice(i, i + BATCH_SIZE)
     const results = await Promise.allSettled(
-      batch.map(agent => buildAgentGuide(agent, ctx.objective, ctx.tech_level, ctx.preferred_model))
+      batch.map(agent =>
+        buildAgentGuide(
+          agent,
+          ctx.objective,
+          ctx.tech_level,
+          ctx.preferred_model,
+          ctx.locale === 'fr' ? 'fr' : 'en'
+        )
+      )
     )
 
     batch.forEach((agent, idx) => {

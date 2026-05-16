@@ -10,6 +10,7 @@ import {
   logSupabaseNetworkFailure,
 } from '@/lib/supabase/network'
 import { normalizeStackDigestRow } from '@/lib/utils/next-digest'
+import { resolveSessionLocale, type AppLocale } from '@/lib/i18n/locale'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 // Note: no in-memory cache here — serverless functions (Vercel) don't share
@@ -259,6 +260,17 @@ export async function getStackUpdateEvents(
   return (data ?? []) as StackUpdateEvent[]
 }
 
+export async function getConversationLocale(sessionId: string): Promise<AppLocale> {
+  const { data } = await (supabaseService as any)
+    .from('conversations')
+    .select('locale')
+    .eq('session_id', sessionId)
+    .maybeSingle()
+
+  const loc = data?.locale
+  return loc === 'fr' ? 'fr' : 'en'
+}
+
 export async function saveStack(stack: {
   user_id: string
   name: string
@@ -267,6 +279,7 @@ export async function saveStack(stack: {
   total_cost: number
   roi_estimate: number
   score: number
+  score_breakdown?: Record<string, unknown>
 }, clerkToken: string, email?: string): Promise<Stack | null> {
   // Mapping Clerk ID -> Supabase Internal UUID (with auto-creation)
   const internalId = await ensureUserExists(stack.user_id, email)

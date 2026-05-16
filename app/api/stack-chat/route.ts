@@ -3,6 +3,7 @@ import { currentUser } from '@clerk/nextjs/server'
 import { callLLM } from '@/lib/llm/router'
 import { captureError, setSentryUser } from '@/lib/monitoring/sentry'
 import { z } from 'zod'
+import { llmLanguageInstruction } from '@/lib/i18n/locale'
 
 const stackChatSchema = z.object({
   message: z.string().min(1).max(2000).trim(),
@@ -15,6 +16,7 @@ const stackChatSchema = z.object({
       role: z.string().min(1),
     })).min(1).max(20),
   }),
+  locale: z.enum(['en', 'fr']).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -31,33 +33,34 @@ export async function POST(req: NextRequest) {
 
   if (!validation.success) {
     return NextResponse.json(
-      { error: 'Payload invalide', details: validation.error.flatten().fieldErrors },
+      { error: 'Invalid payload', details: validation.error.flatten().fieldErrors },
       { status: 400 }
     )
   }
 
-  const { message, stackContext } = validation.data
+  const { message, stackContext, locale: bodyLocale } = validation.data
+  const locale = bodyLocale === 'fr' ? 'fr' : 'en'
+  const langRule = llmLanguageInstruction(locale)
 
   const prompt = `
 <role>
-Tu es un expert StackAI — un consultant IA qui connaît parfaitement
-le stack recommandé ci-dessous et répond aux questions de l'utilisateur.
-Tes réponses sont courtes, précises, actionnables. Jamais de blabla.
-Parle toujours en français.
+You are a StackAI expert — an AI consultant who knows the recommended stack below and answers the user's questions.
+Keep answers short, precise, and actionable. No fluff.
+${langRule}
 </role>
 
 <stack_context>
 Stack: ${stackContext.stack_name}
 Agents: ${stackContext.agents.map((a) => `${a.name} (${a.role})`).join(', ')}
-Objectif: ${stackContext.objective}
-Coût: ${stackContext.total_cost}€/mois
+Objective: ${stackContext.objective}
+Cost: ${stackContext.total_cost}€/month
 </stack_context>
 
 <user_question>
 ${message}
 </user_question>
 
-Réponds en 2-4 phrases maximum. Sois direct, concret et actionnable.
+Reply in 2-4 sentences max. Be direct, concrete, and actionable.
 `
 
   try {

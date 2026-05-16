@@ -134,7 +134,7 @@ function AgentDetails({ agent }: { agent: StackAgent }) {
       {/* Concrete result */}
       {agent.concrete_result && (
         <div className="flex flex-col gap-2">
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Résultat attendu</p>
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Expected outcome</p>
           <div className="text-sm text-zinc-900 dark:text-zinc-100 font-medium p-4 rounded-xl bg-[#CAFF32]/5 border border-[#CAFF32]/20">
             {agent.concrete_result}
           </div>
@@ -145,7 +145,7 @@ function AgentDetails({ agent }: { agent: StackAgent }) {
       {agent.prompt_to_use && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Prompt recommandé</p>
+            <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Recommended prompt</p>
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(agent.prompt_to_use!)
@@ -155,7 +155,7 @@ function AgentDetails({ agent }: { agent: StackAgent }) {
               className="flex items-center gap-1.5 text-[10px] font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-all"
             >
               {promptCopied ? <IconCheck size={12} /> : <IconCopy size={12} />}
-              {promptCopied ? 'Copié !' : 'Copier le prompt'}
+              {promptCopied ? 'Copied!' : 'Copy prompt'}
             </button>
           </div>
           <div className="text-xs text-zinc-600 dark:text-zinc-400 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 font-mono leading-relaxed whitespace-pre-wrap italic">
@@ -167,7 +167,7 @@ function AgentDetails({ agent }: { agent: StackAgent }) {
       {/* Implementation guide */}
       {steps.length > 0 && (
         <div>
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mb-3">Guide d'implémentation · {steps.length} étapes</p>
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mb-3">Implementation guide · {steps.length} steps</p>
           <div className="flex flex-col gap-2">
             {steps.map((step, i) => (
               <StepRow key={i} step={step} index={i} color={color} />
@@ -183,7 +183,7 @@ function AgentDetails({ agent }: { agent: StackAgent }) {
             transition={{ duration: 1.2, repeat: Infinity }}
             style={{ width: 6, height: 6, borderRadius: '50%', background: '#CAFF32', flexShrink: 0 }}
           />
-          <p className="text-xs text-zinc-500 italic">Génération du guide en cours...</p>
+          <p className="text-xs text-zinc-500 italic">Generating guide…</p>
         </div>
       )}
     </>
@@ -632,7 +632,7 @@ export default function StackArtifact({
                   </div>
                 ) : searchQuery.length >= 2 && (
                   <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <p className="text-[10px] text-zinc-500 italic">Aucun résultat</p>
+                    <p className="text-[10px] text-zinc-500 italic">No results</p>
                   </div>
                 )}
               </div>
@@ -675,7 +675,7 @@ export default function StackArtifact({
                 transition={{ duration: 0.8, repeat: Infinity }}
                 style={{ width: 6, height: 6, borderRadius: '50%', background: '#CAFF32', flexShrink: 0 }}
               />
-              <p className="text-[10px] text-zinc-500">Chargement...</p>
+              <p className="text-[10px] text-zinc-500">Loading…</p>
             </div>
           )}
         </div>

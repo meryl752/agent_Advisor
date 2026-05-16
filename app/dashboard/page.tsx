@@ -7,7 +7,12 @@ import { supabaseService } from '@/lib/supabase/server'
 import OnboardingBanner from '@/app/components/dashboard/OnboardingBanner'
 import { MetricCard } from '@/app/components/dashboard/MetricCard'
 import { StackUpdatesFeed } from '@/app/components/dashboard/StackUpdatesFeed'
+import { StackHealthPanel } from '@/app/components/dashboard/StackHealthPanel'
 import { getNextDigestDate, formatDigestDate } from '@/lib/utils/next-digest'
+import { overviewCardClass, overviewCardHoverClass } from '@/lib/ui/overview-card'
+import { enrichStackWithLiveMetrics } from '@/lib/stacks/stackMetrics'
+import { computeStackScore, parseScoreBreakdown, type StackScoreResult } from '@/lib/stacks/stackScore'
+import type { AppLocale } from '@/lib/i18n/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +36,6 @@ export default async function DashboardPage() {
   if (!user) redirect('/sign-in')
 
   const clerkToken = await getToken({ template: 'supabase' }) ?? ''
-  const firstName = user.firstName ?? 'toi'
   const userEmail = user.emailAddresses[0]?.emailAddress
 
   const [{ stacks, connectionFailed }] = await Promise.all([
@@ -49,16 +53,54 @@ export default async function DashboardPage() {
   } catch { /* fail open */ }
 
   const stackCount = stacks.length
-  const totalMonthlyCost = stacks.reduce((sum, s) => sum + (s.total_cost ?? 0), 0)
-  const avgRoi = stackCount > 0
-    ? Math.round(stacks.reduce((sum, s) => sum + (s.roi_estimate ?? 0), 0) / stackCount)
-    : null
-  const avgScore = stackCount > 0
-    ? Math.round(stacks.reduce((sum, s) => sum + (s.score ?? 0), 0) / stackCount)
-    : null
+  const totalAllStacksCost = stacks.reduce((sum, s) => sum + (s.total_cost ?? 0), 0)
 
   const latestStack = stacks[0] ?? null
   const trackedStack = stacks.find((s) => s.digest_enabled) ?? null
+  const focusStack = trackedStack ?? latestStack
+
+  const stackIds = stacks.map((s) => s.id).filter(Boolean)
+  let stackSessionMap: Record<string, string> = {}
+  let stackLocaleMap: Record<string, AppLocale> = {}
+  if (stackIds.length > 0) {
+    const { data: convData } = await (supabaseService as any)
+      .from('conversations')
+      .select('stack_id, session_id, locale')
+      .in('stack_id', stackIds)
+    if (convData) {
+      stackSessionMap = Object.fromEntries(
+        convData.map((c: { stack_id: string; session_id: string }) => [c.stack_id, c.session_id])
+      )
+      stackLocaleMap = Object.fromEntries(
+        convData.map((c: { stack_id: string; locale?: string }) => [
+          c.stack_id,
+          c.locale === 'fr' ? 'fr' : 'en',
+        ])
+      )
+    }
+  }
+
+  let focusLocale: AppLocale =
+    focusStack?.id && stackLocaleMap[focusStack.id] ? stackLocaleMap[focusStack.id] : 'en'
+  let focusCost = 0
+  let focusRoi: number | null = null
+  let focusScoreResult: StackScoreResult | null = null
+
+  if (focusStack) {
+    const enriched = await enrichStackWithLiveMetrics(focusStack)
+    focusCost = enriched.total_cost
+    focusRoi = enriched.roi_estimate
+    const storedBreakdown = parseScoreBreakdown(focusStack.score_breakdown)
+    focusScoreResult =
+      storedBreakdown ??
+      computeStackScore(
+        { ...focusStack, total_cost: enriched.total_cost, roi_estimate: enriched.roi_estimate },
+        enriched.agents,
+        focusLocale
+      )
+  }
+
+  const focusLabel = trackedStack ? 'Tracked stack' : 'Latest stack'
 
   const anchorStackRaw = trackedStack ?? latestStack
   const anchorStackMinimal =
@@ -86,32 +128,17 @@ export default async function DashboardPage() {
     trackedUpdates = await getStackUpdateEvents(trackedStackSummary.id, user.id, userEmail, 30)
   }
 
-  // Fetch session_id for each stack to enable navigation to conversations
-  const stackIds = stacks.map(s => s.id).filter(Boolean)
-  let stackSessionMap: Record<string, string> = {}
-  if (stackIds.length > 0) {
-    const { data: convData } = await (supabaseService as any)
-      .from('conversations')
-      .select('stack_id, session_id')
-      .in('stack_id', stackIds)
-    if (convData) {
-      stackSessionMap = Object.fromEntries(
-        convData.map((c: any) => [c.stack_id, c.session_id])
-      )
-    }
-  }
-
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
 
       {connectionFailed && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
-          <p className="font-semibold mb-1">Impossible de joindre Supabase</p>
+          <p className="font-semibold mb-1">Cannot reach Supabase</p>
           <p className="text-xs opacity-90 leading-relaxed">
-            Les stacks ne peuvent pas être chargés (réseau, DNS, pare-feu, VPN ou projet Supabase en pause). Vérifie{' '}
-            <code className="rounded bg-black/10 px-1">NEXT_PUBLIC_SUPABASE_URL</code>,{' '}
-            <code className="rounded bg-black/10 px-1">SUPABASE_SERVICE_ROLE_KEY</code> dans{' '}
-            <code className="rounded bg-black/10 px-1">.env.local</code>, puis recharge la page.
+            Stacks could not be loaded (network, DNS, firewall, VPN, or paused Supabase project). Check{' '}
+            <code className="rounded bg-black/10 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+            <code className="rounded bg-black/10 px-1">SUPABASE_SERVICE_ROLE_KEY</code> in{' '}
+            <code className="rounded bg-black/10 px-1">.env.local</code>, then reload the page.
           </p>
         </div>
       )}
@@ -133,7 +160,7 @@ export default async function DashboardPage() {
 
       {/* ── Empty state ── */}
       {stackCount === 0 && (
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <div className={`${overviewCardClass} overflow-hidden`}>
           <div className="h-1 w-full bg-gradient-to-r from-[#CAFF32]/0 via-[#CAFF32] to-[#CAFF32]/0" />
           <div className="px-6 py-4 flex items-center justify-between gap-6 flex-wrap">
             <div>
@@ -152,29 +179,51 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── Metrics ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricCard label={`Active Stacks (${stackCount})`} value={String(stackCount)} />
-        <MetricCard label="Monthly Cost" value={`${totalMonthlyCost}€`} />
-        <MetricCard
-          label="Avg. ROI"
-          value={avgRoi !== null ? `+${avgRoi}%` : '—'}
-          accent
-          tooltip="Average return on investment across all stacks"
+      {/* ── Metrics (focus stack) ── */}
+      {stackCount > 0 && focusStack && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <MetricCard polished label={`Stacks (${stackCount})`} value={String(stackCount)} />
+          <MetricCard
+            polished
+            label={`Cost · ${focusLabel}`}
+            value={`${focusCost}€`}
+            tooltip={
+              stackCount > 1
+                ? `Live catalog estimate for your ${focusLabel.toLowerCase()}. All stacks combined: ${totalAllStacksCost}€/mo`
+                : 'Monthly estimate from current tool prices in our catalog'
+            }
+          />
+          <MetricCard
+            polished
+            label={`ROI · ${focusLabel}`}
+            value={focusRoi !== null ? `+${focusRoi}%` : '—'}
+            accent
+            tooltip="Average ROI score of tools in this stack (catalog data)"
+          />
+          <MetricCard
+            polished
+            label="Health score"
+            value={focusScoreResult ? `${focusScoreResult.overall}/100` : '—'}
+            tooltip="Stack effectiveness: fit, coverage, synergy, and budget"
+          />
+        </div>
+      )}
+
+      {stackCount > 0 && focusStack && focusScoreResult && (
+        <StackHealthPanel
+          stackName={focusStack.name?.trim() || 'Stack'}
+          score={focusScoreResult}
+          locale={focusLocale}
+          tracked={Boolean(trackedStack)}
         />
-        <MetricCard
-          label="Avg. Score"
-          value={avgScore !== null ? `${avgScore}/100` : '—'}
-          tooltip="Average quality score across all stacks"
-        />
-      </div>
+      )}
 
       {/* ── Latest stack + Updates ── */}
       {stackCount > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
           {/* Latest stack */}
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 p-6 flex flex-col gap-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+          <div className={`${overviewCardClass} ${overviewCardHoverClass} p-6 flex flex-col gap-5`}>
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Latest Stack</p>
               {latestStack && (
@@ -190,11 +239,11 @@ export default async function DashboardPage() {
                   {latestStack.name}
                 </p>
                 <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed">{latestStack.objective}</p>
-                <div className="grid grid-cols-3 gap-3 mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="grid grid-cols-3 gap-3 mt-auto pt-4 border-t border-zinc-100/60 dark:border-zinc-800">
                   {[
-                    { label: 'Cost', value: `${latestStack.total_cost}€/mo`, color: 'text-zinc-900 dark:text-white' },
-                    { label: 'ROI', value: `+${latestStack.roi_estimate}%`, color: 'text-[#CAFF32]' },
-                    { label: 'Score', value: `${latestStack.score}/100`, color: 'text-zinc-900 dark:text-white' },
+                    { label: 'Cost', value: `${focusCost}€/mo`, color: 'text-zinc-900 dark:text-white' },
+                    { label: 'ROI', value: focusRoi !== null ? `+${focusRoi}%` : '—', color: 'text-[#CAFF32]' },
+                    { label: 'Score', value: focusScoreResult ? `${focusScoreResult.overall}/100` : `${latestStack.score}/100`, color: 'text-zinc-900 dark:text-white' },
                   ].map((m, i) => (
                     <div key={i}>
                       <p className="text-[9px] text-zinc-400 uppercase tracking-widest mb-0.5">{m.label}</p>
@@ -210,6 +259,7 @@ export default async function DashboardPage() {
 
           {/* Stack Updates — aligné sur le stack « suivi » (digest), pas seulement le dernier créé */}
           <StackUpdatesFeed
+            polished
             stackCount={stackCount}
             anchorStack={anchorStackMinimal}
             trackedStack={trackedStackSummary}
@@ -219,38 +269,6 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── All stacks ── */}
-      {stackCount > 1 && (
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">All Stacks</p>
-            <Link href="/dashboard/stack" className="text-[10px] text-zinc-400 hover:text-[#CAFF32] transition-colors">
-              Manage
-            </Link>
-          </div>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {stacks.map((s, i) => (
-              <Link key={i} href={stackSessionMap[s.id] ? `/dashboard/recommend/${stackSessionMap[s.id]}` : '/dashboard/stack'}
-                className="flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors group">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#CAFF32]/10 border border-[#CAFF32]/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#CAFF32] text-xs font-bold">{String(i + 1).padStart(2, '0')}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-[#CAFF32] transition-colors truncate">{s.name}</p>
-                    <p className="text-xs text-zinc-500 line-clamp-1">{s.objective}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-5 text-xs flex-shrink-0 ml-4">
-                  <span className="text-zinc-400">{s.total_cost}€<span className="text-zinc-600">/mo</span></span>
-                  <span className="text-[#CAFF32] font-semibold">+{s.roi_estimate}%</span>
-                  <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors">→</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── Trending Agents ── */}
     </div>

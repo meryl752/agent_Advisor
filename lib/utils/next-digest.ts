@@ -41,7 +41,7 @@ export function getNextDigestDate(enabledAtIso: string | null): Date | null {
   return new Date(t)
 }
 
-export function formatDigestDate(d: Date, locale = 'fr-FR') {
+export function formatDigestDate(d: Date, locale = 'en-US') {
   return d.toLocaleString(locale, {
     weekday: 'long',
     day: 'numeric',

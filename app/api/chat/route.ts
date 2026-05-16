@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { callGemma } from '@/lib/llm/router'
 import { getUserMemory, formatMemoryForPrompt } from '@/lib/supabase/memory'
+import { resolveSessionLocale, llmLanguageInstruction, type AppLocale } from '@/lib/i18n/locale'
 import { z } from 'zod'
 
 const chatSchema = z.object({
   message: z.string().min(1).max(2000).trim(),
+  sessionId: z.string().uuid().optional(),
   history: z.array(z.object({
     role: z.enum(['user', 'assistant']),
     content: z.string().max(2000),
@@ -27,66 +29,77 @@ export async function POST(req: NextRequest) {
 
   const validation = chatSchema.safeParse(body)
   if (!validation.success) {
-    return NextResponse.json({ error: 'Payload invalide' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
-  const { message, history, stackContext } = validation.data
+  const { message, history, stackContext, sessionId } = validation.data
 
-  // Load user memory
+  let storedLocale: AppLocale | undefined
+  if (sessionId) {
+    const { getConversationLocale } = await import('@/lib/supabase/queries')
+    storedLocale = await getConversationLocale(sessionId)
+  }
+
+  const userTexts = [
+    ...history.filter((m) => m.role === 'user').map((m) => m.content),
+    message,
+  ]
+  const locale = resolveSessionLocale(storedLocale, userTexts)
+
   const memory = await getUserMemory(user.id).catch(() => null)
   const memoryText = memory ? formatMemoryForPrompt(memory) : ''
 
   const historyText = history.length > 0
-    ? `\n<conversation_history>\n${history.map(m => `${m.role === 'user' ? 'Utilisateur' : 'Assistant'}: ${m.content}`).join('\n')}\n</conversation_history>\n`
+    ? `\n<conversation_history>\n${history.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')}\n</conversation_history>\n`
     : ''
 
   const stackText = stackContext
-    ? `\n<stack_actuel>\nStack: ${stackContext.stack_name}\nOutils: ${stackContext.agents.map(a => `${a.name} (${a.role})`).join(', ')}\nObjectif: ${stackContext.objective}\nCoût: ${stackContext.total_cost}€/mois\n</stack_actuel>\n`
+    ? `\n<current_stack>\nStack: ${stackContext.stack_name}\nTools: ${stackContext.agents.map(a => `${a.name} (${a.role})`).join(', ')}\nObjective: ${stackContext.objective}\nCost: ${stackContext.total_cost}€/month\n</current_stack>\n`
     : ''
 
-  const prompt = `Tu es l'assistant IA de Raspquery — une plateforme qui recommande des stacks d'outils IA personnalisés pour les entrepreneurs et créateurs.
+  const langRule = llmLanguageInstruction(locale)
 
-TON RÔLE:
-- Converser naturellement avec l'utilisateur pour comprendre son contexte et ses besoins
-- Répondre à ses questions sur les outils IA, l'automatisation, la productivité
-- Décider automatiquement quand générer un stack — comme Claude génère un artifact
+  const prompt = `You are Raspquery's AI assistant — a platform that recommends personalized AI tool stacks for founders and creators.
 
-RÈGLES DE GÉNÉRATION DE STACK:
-Tu dois mettre "generate_stack": true si L'UNE de ces conditions est remplie :
-1. L'utilisateur demande explicitement de générer ("génère", "crée", "fais-le", "go", "let's go", "vas-y", "maintenant", "bordel", "putain", "allez")
-2. L'objectif business est clair ET tu as posé au moins 1 question de clarification
-3. L'utilisateur confirme après ta question de clarification ("oui", "ok", "d'accord", "exactement")
+YOUR ROLE:
+- Chat naturally to understand the user's context and needs
+- Answer questions about AI tools, automation, and productivity
+- Decide when to generate a stack — like Claude generating an artifact
 
-IMPORTANT - MOTS DÉCLENCHEURS ABSOLUS:
-Si l'utilisateur dit l'un de ces mots, tu DOIS générer IMMÉDIATEMENT sans exception:
-- "génère", "génère-la", "génère la", "génère le"
-- "vas-y", "vas y", "allez", "go"
-- "fais-le", "fais le", "crée-le", "crée le"
-- "bordel", "putain" (frustration = il veut que tu génères)
-- "maintenant", "tout de suite"
+LANGUAGE:
+${langRule}
 
-Tu dois mettre "generate_stack": false UNIQUEMENT si :
-- Le message est une salutation initiale (hello, bonjour, ça va)
-- L'utilisateur pose une question générale sans contexte business
-- L'objectif est complètement vague et tu n'as AUCUNE info (premier message flou)
+STACK GENERATION RULES:
+Set "generate_stack": true if ANY of these apply:
+1. The user explicitly asks to generate (e.g. generate, create, build, go, do it, now — or French: génère, crée, vas-y, allez)
+2. The business objective is clear AND you asked at least one clarifying question
+3. The user confirms after your clarifying question (yes, ok, sure, oui, d'accord)
 
-COMPORTEMENT:
-- Si l'utilisateur dit "go", "génère", "fais-le" → génère IMMÉDIATEMENT même si tu as des doutes
-- Si le besoin est clair → génère automatiquement sans poser de question
-- Si le besoin est vague → pose UNE seule question de clarification, puis génère à la réponse suivante
-- Ne pose JAMAIS plus de 2 questions avant de générer
-- Utilise le profil utilisateur pour personnaliser — ne repose jamais des questions déjà répondues
-- Reste concis, naturel, utile
+ABSOLUTE TRIGGERS — generate IMMEDIATELY if the user says:
+- generate, build, create, make it, go, let's go, do it, now
+- génère, crée, vas-y, fais-le, allez, maintenant
+
+Set "generate_stack": false ONLY if:
+- Initial greeting with no business context
+- General question with no business angle
+- Completely vague first message
+
+BEHAVIOR:
+- If the user says "go" / "génère" / "build it" → generate IMMEDIATELY
+- If the need is clear → generate without asking
+- If vague → ask ONE clarifying question, then generate on the next reply
+- Never ask more than 2 questions before generating
+- Use the user profile to personalize
 
 ${memoryText}${stackText}${historyText}
-Utilisateur: ${message}
+User: ${message}
 
-Retourne ce JSON:
+Return this JSON:
 {
-  "response": "ta réponse naturelle à l'utilisateur",
-  "objective": "résumé précis du besoin/objectif si identifié (null sinon)",
-  "generate_stack": true ou false,
-  "ready_reason": "pourquoi tu génères maintenant (null si generate_stack est false)"
+  "response": "your natural reply to the user",
+  "objective": "precise need/objective summary if identified (null otherwise)",
+  "generate_stack": true or false,
+  "ready_reason": "why you generate now (null if generate_stack is false)"
 }`
 
   try {
@@ -99,10 +112,11 @@ Retourne ce JSON:
           response: parsed.response ?? raw,
           objective: parsed.objective ?? null,
           generate_stack: parsed.generate_stack === true,
+          locale,
         })
       } catch { /* fall through */ }
     }
-    return NextResponse.json({ response: raw, objective: null })
+    return NextResponse.json({ response: raw, objective: null, locale })
   } catch {
     return NextResponse.json({ error: 'LLM error — please retry.' }, { status: 500 })
   }

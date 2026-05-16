@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const agents: StackAgent[] = body.agents
-  const ctx: Pick<UserContext, 'objective' | 'tech_level'> = body.ctx
+  const ctx: Pick<UserContext, 'objective' | 'tech_level' | 'locale' | 'preferred_model'> = body.ctx
 
   // Stream response — send each agent's guide as it's ready
   const encoder = new TextEncoder()

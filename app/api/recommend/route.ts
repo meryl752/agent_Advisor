@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { currentUser, auth } from '@clerk/nextjs/server'
-import { saveStack } from '@/lib/supabase/queries'
+import { saveStack, getConversationLocale, getInternalUserIdForRoute } from '@/lib/supabase/queries'
+import { trackProductEvent } from '@/lib/telemetry/trackProductEvent'
+import { PRODUCT_EVENTS } from '@/lib/telemetry/events'
+import { fetchAgentsForStack, computeLiveStackMetrics } from '@/lib/stacks/stackMetrics'
+import { computeStackScore } from '@/lib/stacks/stackScore'
+import type { AppLocale } from '@/lib/i18n/locale'
 import { updateStacksSummary } from '@/lib/supabase/memory'
 import { runOrchestrator } from '@/lib/agents/orchestrator'
 import { recommendSchema } from '@/lib/validators/api'
@@ -41,6 +46,11 @@ async function recommendHandler(req: NextRequest) {
 
     const { objective, sector, budget, tech_level, team_size, timeline, current_tools, session_id: sessionId, preferred_model } = validation.data
 
+    let locale: AppLocale = 'en'
+    if (sessionId) {
+      locale = await getConversationLocale(sessionId)
+    }
+
     const userContext = {
       objective,
       sector,
@@ -50,6 +60,7 @@ async function recommendHandler(req: NextRequest) {
       timeline,
       current_tools: current_tools ?? [],
       preferred_model,
+      locale,
     }
 
     let result
@@ -71,19 +82,43 @@ async function recommendHandler(req: NextRequest) {
 
     // Recalculate total_cost from real agent price_from values — never trust the LLM's estimate
     // Free tools (price_from === 0) are counted as 0, paid tools summed exactly
-    const realTotalCost = result.stack.agents.reduce((sum, a) => sum + (a.price_from ?? 0), 0)
-    result.stack.total_cost = realTotalCost
+    const agentIds = result.stack.agents.map((a) => a.id)
+    const catalogAgents = await fetchAgentsForStack(agentIds)
+    const live = computeLiveStackMetrics(catalogAgents)
+    result.stack.total_cost = live.total_cost
+    result.stack.roi_estimate = live.roi_estimate
+
+    const scoreResult = computeStackScore(
+      {
+        id: 'pending',
+        user_id: '',
+        name: result.stack.stack_name,
+        objective,
+        agent_ids: agentIds,
+        total_cost: live.total_cost,
+        roi_estimate: live.roi_estimate,
+        score: Math.round(
+          result.stack.agents.reduce((acc, a) => acc + a.score, 0) / result.stack.agents.length
+        ),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        digest_enabled: false,
+        digest_enabled_at: null,
+        score_breakdown: {},
+      },
+      catalogAgents,
+      locale
+    )
 
     const savedStack = await saveStack({
       user_id: user.id,
       name: result.stack.stack_name,
       objective,
-      agent_ids: result.stack.agents.map(a => a.id),
-      total_cost: result.stack.total_cost,
-      roi_estimate: result.stack.roi_estimate,
-      score: Math.round(
-        result.stack.agents.reduce((acc, a) => acc + a.score, 0) / result.stack.agents.length
-      ),
+      agent_ids: agentIds,
+      total_cost: live.total_cost,
+      roi_estimate: live.roi_estimate,
+      score: scoreResult.overall,
+      score_breakdown: scoreResult,
     }, token, userEmail)
 
     // Update user memory with new stack — non-blocking
@@ -93,6 +128,35 @@ async function recommendHandler(req: NextRequest) {
       agents: result.stack.agents.map(a => a.name),
       cost: result.stack.total_cost,
     }).catch(err => console.warn('[memory] updateStacksSummary error:', err))
+
+    const internalUserId = await getInternalUserIdForRoute(user.id)
+    if (savedStack?.id && internalUserId) {
+      await trackProductEvent({
+        event_name: PRODUCT_EVENTS.STACK_GENERATION_COMPLETED,
+        user_id: internalUserId,
+        session_id: sessionId ?? null,
+        stack_id: savedStack.id,
+        source: 'api',
+        properties: {
+          agent_count: agentIds.length,
+          total_cost: live.total_cost,
+          roi_estimate: live.roi_estimate,
+          health_score: scoreResult.overall,
+          locale,
+        },
+      })
+      await trackProductEvent({
+        event_name: PRODUCT_EVENTS.STACK_SCORE_COMPUTED,
+        user_id: internalUserId,
+        session_id: sessionId ?? null,
+        stack_id: savedStack.id,
+        source: 'api',
+        properties: {
+          overall: scoreResult.overall,
+          dimensions: scoreResult.dimensions.map((d) => ({ id: d.id, score: d.score })),
+        },
+      })
+    }
 
     // Link stack to conversation if session_id provided
     if (sessionId && savedStack?.id) {

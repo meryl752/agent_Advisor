@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
     if (error || !data?.stripe_customer_id) {
       return NextResponse.json(
-        { error: 'Aucun abonnement actif trouvé.' },
+        { error: 'No active subscription found.' },
         { status: 404 }
       )
     }
@@ -36,6 +36,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: session.url })
   } catch (err) {
     console.error('Stripe portal error:', err)
-    return NextResponse.json({ error: 'Impossible d\'ouvrir le portail.' }, { status: 500 })
+    return NextResponse.json({ error: 'Could not open billing portal.' }, { status: 500 })
   }
 }

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { callLLM } from '@/lib/llm/router'
 import { BUDGET_MAP, VALID_CATEGORIES } from '@/lib/constants'
 import type { UserContext, AnalyzedQuery } from './types'
+import { llmLanguageInstruction } from '@/lib/i18n/locale'
 
 // ─── Zod schema for LLM output validation ────────────────────────────────────
 // Nouvelle structure avec domaines et sous-tâches atomiques
@@ -90,10 +91,13 @@ function buildFallback(objective: string, sector: string, budgetValue: number): 
 
 export async function analyzeQuery(ctx: UserContext): Promise<AnalyzedQuery> {
   const budgetValue = BUDGET_MAP[ctx.budget] ?? 0
+  const locale = ctx.locale === 'fr' ? 'fr' : 'en'
+  const lang = llmLanguageInstruction(locale)
 
-  // ── Passe 1 : Analyse légère — sous-tâches et catégories ─────────────────
-  // Format simple, jamais tronqué, rapide
-  const pass1Prompt = `Tu es un expert en automatisation IA. Décompose cet objectif en sous-tâches concrètes.
+  const pass1Prompt =
+    locale === 'fr'
+      ? `Tu es un expert en automatisation IA. Décompose cet objectif en sous-tâches concrètes.
+${lang}
 
 OBJECTIF: "${ctx.objective}"
 SECTEUR: ${ctx.sector} | BUDGET: ${budgetValue}€/mois | NIVEAU: ${ctx.tech_level}
@@ -108,6 +112,22 @@ Retourne UNIQUEMENT ce JSON (sans markdown, sans backtick) :
 
 Catégories disponibles: ${VALID_CATEGORIES.join(', ')}
 Règle: autant de sous-tâches que nécessaire pour couvrir TOUT l'objectif.`
+      : `You are an AI automation expert. Break this objective into concrete subtasks.
+${lang}
+
+OBJECTIVE: "${ctx.objective}"
+SECTOR: ${ctx.sector} | BUDGET: ${budgetValue}€/month | LEVEL: ${ctx.tech_level}
+
+Return ONLY this JSON (no markdown, no backticks):
+{
+  "subtasks": ["precise subtask 1", "precise subtask 2", "..."],
+  "categories": ["category1", "category2"],
+  "sector_context": "1 sentence on sector specifics",
+  "constraints": ["implicit constraint if obvious"]
+}
+
+Available categories: ${VALID_CATEGORIES.join(', ')}
+Rule: as many subtasks as needed to cover the FULL objective.`
 
   let subtasks: string[] = []
   let required_categories: string[] = []
